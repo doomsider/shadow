@@ -14,3 +14,4 @@ Move all old text files to tables inside the database
 
 Create am easy way to edit the database
 
+Create some sort of web interface, for editing player data and maybe display things like players stats; kills etc

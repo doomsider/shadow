@@ -8,10 +8,15 @@ Shadow is written and tested with StarMade in mind but will be flexible enough t
 
 
 Current Goals (feel free to edit/add):
-Create installer that will detect dependancies and install mysql database or use an existing DB
+
+Finish Mysql libraries so that there are functions for all database needs
 
 Move all old text files to tables inside the database
 
 Create am easy way to edit the database
 
 Create some sort of web interface, for editing player data and maybe display things like players stats; kills etc
+
+
+Install:
+Copy shadow files to the parent directory of Starmade and make shadow.dtsd executable.  Run shadow.dtsd setup to create the initial configuration file.  Typing shadow.dtsd will display the available commands.

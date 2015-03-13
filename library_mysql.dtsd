@@ -1,0 +1,85 @@
+#!/bin/bash
+# This is the main set of functions for dealing with the Mysql database
+
+
+lib_mysend() {
+# Usage lib_mysend database user password command
+	MYSQLCOMMAND="${@:1}"
+#	echo "command to mysql $MYSQLCOMMAND"
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "$MYSQLCOMMAND"
+}
+
+core_mysend() {
+# This is a tempory core command for testing purposes
+#	echo "first arg $2"
+#	echo "second arg $3"
+#	echo "third arg $4"
+#	echo "fourth arg ${@:5}"
+	MYSQLCOMMAND="${@:5}"
+#	echo "command to mysql $MYSQLCOMMAND"
+	mysql -D $2 -u $3 -p$4 -e "$MYSQLCOMMAND"
+}
+
+lib_myinsert() {
+# This command creates a new row
+# Usage lib_myinsert table column value 
+	INSERTVALUE="${@:4}"
+	lib_mysend "INSERT INTO $2 ($3) VALUES ('$INSERTVALUE')"
+}
+
+core_myinsert() {
+# This is a tempory core command for testing purposes
+	COREINSERTVALUE="${@:3}"
+	lib_myinsert $1 $2 $COREINSERTVALUE
+}
+
+
+
+
+
+lib_mycreate() {
+# This command generates a list of tables and columns described by all related scripts and then
+# creates them if they do not eixst
+#	echo "Generating database tables and columns"
+#	echo "These vars detected"
+	CREATEVAR=( $(compgen -v | grep MYSQLDTSD_ ) )
+#	echo "var list $CREATEVAR" 
+	CREATEARRAY=0
+	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
+	do
+		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
+		SEARCHFUNCTION=${CURRENTSEARCH#*_}
+		MYSQLTABLENAME=${SEARCHFUNCTION%_*}
+		MYSQLCOLUMNNAME=${SEARCHFUNCTION##*_}
+		MYSQLDATATYPE=${!CURRENTSEARCH}
+#		echo "Column name is $MYSQLCOLUMNNAME"
+#		echo "Table name is $MYSQLTABLENAME"
+#		echo "Search function is $SEARCHFUNCTION"
+#		echo "Datatype is ${!CURRENTSEARCH}"
+		lib_mysend "CREATE TABLE IF NOT EXISTS $MYSQLTABLENAME ( line INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(line) )" 
+		lib_mysend "ALTER TABLE $MYSQLTABLENAME ADD $MYSQLCOLUMNNAME $MYSQLDATATYPE"
+		let CREATEARRAY++
+	done
+}
+
+core_mycreate() {
+# This is a tempory core command for testing purposes
+	MYCREATECORECOMMAND="${@:1}"
+	lib_mycreate $MYCREATECORECOMMAND
+}
+
+lib_myvarretrieve() {
+	INSERTVALUE="${@:3}"
+	VARMYRETRIEVE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -se "select $INSERTVALUE from $2")
+}
+
+core_retrieve() {
+	MYCREATECORECOMMAND="${@:1}"
+	lib_myvarretrieve $MYCREATECORECOMMAND
+	echo "This was retrieved from DB $VARMYRETRIEVE"
+}
+
+
+
+
+

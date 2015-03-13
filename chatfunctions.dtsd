@@ -1,0 +1,19 @@
+#!/bin/bash
+
+#MYSQLTABLE_settings_serverkey
+MYSQLDTSD_CHATLOG_LOGSTRING=TEXT
+MYSQLDTSD_CHATLOG_LOGDATE=TIMESTAMP
+
+
+#SEARCHCHAT="[CHAT]"
+LOGSEARCH_chat_log="[CHAT]"
+chat_log() {
+
+echo "This was sent to chat log $@"
+
+}
+
+core_sortsearch () {
+SORTSTRING="${@:2}"
+lib_searchlog $SORTSTRING
+}

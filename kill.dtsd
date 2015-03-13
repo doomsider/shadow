@@ -1,0 +1,21 @@
+#!/bin/bash
+# In start, create a screen for the server and then a screen for any DTSD functions, check to see if screens are already running and have option to terminate
+# Test file
+core_kill() {
+	echo "killing server"
+	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null
+    then
+		echo "Screen(s) identified by $CONFIGDTSD_MAINSCREEN detected and will be closed"
+		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN | awk '{print $2}') )   
+		echo "Trying to kill these ${PIDS[@]}"		
+		kill ${PIDS[@]}
+	fi
+  
+	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN >/dev/null
+    then
+		echo "Screen(s) identified by $CONFIGDTSD_DTSDSCREEN detected and will be closed"
+		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN | awk '{print $2}') )   
+	echo "Trying to kill these ${PIDS[@]}"		
+	kill ${PIDS[@]}
+	fi
+}

@@ -1,0 +1,105 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+
+lib_arraycontains() {
+    [[ -n "$1" && -n "$2" ]] || {
+        echo "usage: lib_arraycontains <array> <value>"
+        echo "Returns 0 if array contains value, 1 otherwise"
+        return 2
+    }
+    eval 'local values=("${'$1'[@]}")'
+    local element
+    for element in "${values[@]}"; do
+        [[ "$element" == "$2" ]] && return 0
+    done
+    return 1
+}
+
+lib_searchline() {
+# Usage lib_searchline line
+# This generates an array of all the search strings and then tests them against a line from the log
+	SEARCHVAR=( $(compgen -v | grep LOGSEARCH_ ) )
+	SEARCHARRAY=0
+	while [ -n "${SEARCHVAR[$SEARCHARRAY]+set}" ]
+	do
+		CURRENTSEARCH=${SEARCHVAR[$SEARCHARRAY]}
+		SEARCHSTRING=${!CURRENTSEARCH}
+		SEARCHFUNCTION=${CURRENTSEARCH#*_}
+		SEARCHCOMMAND="${@:1}"
+#		echo "here is the search command $SEARCHCOMMAND"
+		case "$SEARCHCOMMAND" in 
+		*"$SEARCHSTRING"*)   
+			echo "match found"
+			eval $SEARCHFUNCTION $SEARCHCOMMAND &
+		;;
+		esac
+#	echo "Search function is $SEARCHFUNCTION"
+#	echo "Search string is ${!CURRENTSEARCH}"
+		let SEARCHARRAY++
+	done
+}
+
+core_sortsearch () {
+# Temporary core function to test a string against current searches
+	SORTSTRING="${@:2}"
+	lib_searchline $SORTSTRING
+}
+
+
+lib_screenadd() {
+#usage lib_screenadd screenname
+	if ps aux | grep -v grep | grep SCREEN | grep $1 >/dev/null
+    then
+		echo "Screen(s) identified by $1 detected and will be closed"
+		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $1 | awk '{print $2}') )   
+		echo "Trying to kill these ${PIDS[@]}"		
+		kill ${PIDS[@]}
+	fi
+	echo "starting screen $1"
+	screen -dmS $1
+}
+
+core_screenadd() {
+# Temporary core function 
+	echo "attempting to create screen $2"
+	lib_screenadd $2
+}
+
+lib_screensend() {
+# usage lib_screensend screen command
+	STUFFCOMMAND="${@:2}"
+	echo "trying to send this command $STUFFCOMMAND to the screen $1"
+	screen -p 0 -S $1 -X stuff "$STUFFCOMMAND"$(printf \\r)
+}
+
+core_screensend() {
+# Temporary core function 
+	STUFFCOMMAND="${@:3}"
+	echo "Sending command"
+	lib_screensend $2 $STUFFCOMMAND
+}
+
+#function_exists(){
+#	if declare -f -F $1 > /dev/null 2>&1
+#	then
+#		return 0
+#	else 
+#		return 1
+#	fi
+#
+#FUNCTIONEXISTS=$?
+#}
+
+#Temporary holding spot for search strings, these will be placed in their respective functions
+#	SEARCHLOGIN="[SERVER][LOGIN] login received. returning login info for RegisteredClient: "
+#		SEARCHREMOVE="[SERVER][DISCONNECT] Client 'RegisteredClient:"
+#		SEARCHCHAT="[CHAT]"
+#		SEARCHCHANGE="has players attached. Doing Sector Change for PlS"
+#		SEARCHBUY="[BLUEPRINT][BUY]"
+#		SEARCHBOARD="[CONTROLLER][ADD-UNIT]"
+#		SEARCHDOCK="NOW REQUESTING DOCK FROM"
+#		SEARCHUNDOCK="NOW UNDOCKING:"
+#		SEARCHADMIN="[ADMIN COMMAND]"
+#		SEARCHKILL="Announcing kill:"
+#		SEARCHDESTROY="PERMANENTLY DELETING ENTITY:"
+#		SEARCHINIT="SPAWNING NEW CHARACTER FOR PlS"

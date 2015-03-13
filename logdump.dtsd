@@ -1,0 +1,51 @@
+#!/bin/bash
+MYSQLDTSD_DTSDLOG_LOGSTRING=TEXT
+MYSQLDTSD_DTSDLOG_LOGDATE=TIMESTAMP
+# Test logging script.  This function goes through the log from script by following the number of lines the log has and then
+# loading new lines as they are read into an array.  This array is fed into lib_searchline which will match it to any functions
+# that need returns from the log
+run_logdump() {
+	testloop=0
+	LINEARRAY=0
+# This test loop will get replaced by some check for the running server
+	while [ "$testloop" -eq "0" ]
+	do
+#		echo "started loop"
+# A tiny sleep to prevent cpu burning overhead
+		sleep 0.1
+# Uses Cat to calculate the number of lines in the log file
+		NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log | cut -d" " -f1)
+# In case Linestart does not have a value give it an interger value of 1.  The prevents a startup error on the script.
+		if [ -z "$LINESTART" ]
+		then
+			LINESTART=$NUMOFLINES
+#			echo "Start at line $LINESTART"
+		fi
+# If the number of lines read from the log file is greater than last line read + 1 from the log then feed more lines.
+		if [ "$NUMOFLINES" -gt "$LINESTART" ] 
+		then
+#	    		echo "$NUMOFLINES is the total lines of the log"
+#    			echo "$LINESTART is linestart"
+			let LINESTART++
+			OLD_IFS=$IFS
+# This sets the field seperator to use \n next line instead of next space.  This makes it so the array is a whole sentence not a word
+			IFS=$'\n'
+# Linestring is stored as an array of every line in the log
+			LINESTRING=( $(awk "NR==$LINESTART, NR==$NUMOFLINES" $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log) )
+			IFS=$OLD_IFS
+			LINESTART=$NUMOFLINES
+#			echo "$LINESTART is adjusted linestart"
+		else
+			LINESTRING=()
+		fi
+		LINENUMBER=0
+		while [ -n "${LINESTRING[$LINENUMBER]+set}" ] 
+		do
+#			echo "Current Line in Array $LINENUMBER"
+			CURRENTSTRING=${LINESTRING[$LINENUMBER]}
+# Add the search string function here
+			lib_searchline $CURRENTSTRING
+			let LINENUMBER++
+		done
+	done
+}

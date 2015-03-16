@@ -3,7 +3,8 @@
 # Test file
 core_start() {
 	echo "starting server"
-	if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
+	if lib_check_server_running
+	#	if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
 	then
 		echo "Tried to start but $CONFIGDTSD_SERVICE was already running!"
 	else

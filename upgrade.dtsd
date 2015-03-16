@@ -1,0 +1,34 @@
+#!/bin/bash
+# In start, create a screen for the server and then a screen for any DTSD functions, check to see if screens are already running and have option to terminate
+# Test file
+core_download() {
+if lib_check_server_running
+then
+	echo "$CONFIGDTSD_SERVICE is running! Will not start upgrade or install"
+else
+	echo "Downloading Starmade  !!Upgrade may hang at the end and you will have to ctrl-c to get out!! "
+	lib_pause
+	cd $CONFIGDTSD_INSTALLPATH
+	if [ -f $CONFIGDTSD_INSTALLPATH/StarMade-Starter.jar ]
+	then
+		echo "Starter file found running install"
+		java -jar StarMade-Starter.jar -nogui
+		echo "Upgrade Complete"	
+	else
+		echo "Starter file not found attempting to download"
+# Grab the starmade starter file for Linux - This location may need to be updated in the future
+		wget http://files.star-made.org/StarMade-Starter.jar
+# Execute the starters update routine for a headless server
+		if [ -f $CONFIGDTSD_INSTALLPATH/StarMade-Starter.jar ]
+		then
+			echo "Download successful, running update/install routine"
+			java -jar StarMade-Starter.jar -nogui
+			echo "Upgrade Complete"	
+		else
+			echo "Unable to acquire StarMade-Starter.jar ! Please visit official website to obtain http://star-made.org/download"			
+		fi
+	fi	
+	
+fi
+
+}

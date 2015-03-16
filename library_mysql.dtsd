@@ -23,19 +23,19 @@ core_mysend() {
 lib_myinsert() {
 # This command creates a new row
 # Usage lib_myinsert table column value 
-	INSERTVALUE="${@:4}"
-	lib_mysend "INSERT INTO $2 ($3) VALUES ('$INSERTVALUE')"
+	INSERTVALUE="${@:3}"
+	echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
+	lib_mysend "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
 }
+
+
+
 
 core_myinsert() {
 # This is a tempory core command for testing purposes
 	COREINSERTVALUE="${@:3}"
 	lib_myinsert $1 $2 $COREINSERTVALUE
 }
-
-
-
-
 
 lib_mycreate() {
 # This command generates a list of tables and columns described by all related scripts and then

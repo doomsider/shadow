@@ -15,6 +15,18 @@ lib_arraycontains() {
     return 1
 }
 
+lib_check_server_running() {
+if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
+then
+SERVERSTATUS=STOPPED
+return 0
+else
+SERVERSTATUS=RUNNING
+return 1 
+fi
+}
+
+
 lib_searchline() {
 # Usage lib_searchline line
 # This generates an array of all the search strings and then tests them against a line from the log
@@ -30,7 +42,7 @@ lib_searchline() {
 		case "$SEARCHCOMMAND" in 
 		*"$SEARCHSTRING"*)   
 			echo "match found"
-			eval $SEARCHFUNCTION $SEARCHCOMMAND &
+			eval $SEARCHFUNCTION '$SEARCHCOMMAND' &
 		;;
 		esac
 #	echo "Search function is $SEARCHFUNCTION"
@@ -77,6 +89,13 @@ core_screensend() {
 	STUFFCOMMAND="${@:3}"
 	echo "Sending command"
 	lib_screensend $2 $STUFFCOMMAND
+}
+
+
+
+lib_pause() {
+  local dummy
+  read -s -r -p "Press any key to continue..." -n 1 dummy
 }
 
 #function_exists(){

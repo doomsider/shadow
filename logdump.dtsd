@@ -7,8 +7,8 @@ MYSQLDTSD_DTSDLOG_LOGDATE=TIMESTAMP
 run_logdump() {
 	testloop=0
 	LINEARRAY=0
-# This test loop will get replaced by some check for the running server
-	while [ "$testloop" -eq "0" ]
+#	echo "Starting sort"
+	while true
 	do
 #		echo "started loop"
 # A tiny sleep to prevent cpu burning overhead
@@ -44,8 +44,20 @@ run_logdump() {
 #			echo "Current Line in Array $LINENUMBER"
 			CURRENTSTRING=${LINESTRING[$LINENUMBER]}
 # Add the search string function here
+			log_mysql_dtsd $CURRENTSTRING
 			lib_searchline $CURRENTSTRING
+			
 			let LINENUMBER++
 		done
 	done
+}
+
+core_runlog() {
+run_logdump
+
+}
+log_mysql_dtsd() {
+MYLOGDUMPCOMMAND="${@:1}"
+lib_myinsert DTSDLOG LOGSTRING $MYLOGDUMPCOMMAND
+
 }

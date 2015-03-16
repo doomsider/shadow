@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#This is a test of the current search variables to see if they will return to the proper function
 #MYSQLTABLE_settings_serverkey
 MYSQLDTSD_CHATLOG_LOGSTRING=TEXT
 MYSQLDTSD_CHATLOG_LOGDATE=TIMESTAMP
@@ -8,12 +8,15 @@ MYSQLDTSD_CHATLOG_LOGDATE=TIMESTAMP
 #SEARCHCHAT="[CHAT]"
 LOGSEARCH_chat_log="[CHAT]"
 chat_log() {
+MYCHATSTRING="${@:1}"
+	echo "This was sent to chat log $@"
+	log_mysql_chat $MYCHATSTRING
+	}
+	
+#	library_main.dtsd: eval: line 45: `chat_log [CHAT] Server(0) Doomsider: hey test'ng chat
+	
 
-echo "This was sent to chat log $@"
-
-}
-
-core_sortsearch () {
-SORTSTRING="${@:2}"
-lib_searchlog $SORTSTRING
+log_mysql_chat() {
+MYCHATDUMPCOMMAND="${@:1}"
+lib_myinsert CHATLOG LOGSTRING $MYCHATDUMPCOMMAND
 }

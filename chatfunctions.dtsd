@@ -5,32 +5,36 @@ MYSQLDTSD_CHATLOG_LOGSTRING=TEXT
 MYSQLDTSD_CHATLOG_LOGDATE=TIMESTAMP
 
 # RECEIVED ON Server(0): ChatMessage [message=hi, sender=Doomsider, receiverType=CHANNEL, receiver=all]
+# [CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT][sender=Doomsider][receiverType=CHANNEL][receiver=all][message=hey]
 
-
-
-#SEARCHCHAT="[CHAT]"
-LOGSEARCH_chat_log="ChatMessage ["
+#SEARCHCHAT="RECEIVED ON Server(0): [CHAT]"
+LOGSEARCH_chat_log="[CHAT]"
 chat_log() {
 MYCHATSTRING="${@:1}"
-# String manipulation with parameter expansion is used here to cut at the first = which reveals the message 
+# String manipulation with parameter expansion is used here to cut at the first = which reveals the sender 
 # followed by the rest of MYCHATSTRING	
 	CUTSTRING=${MYCHATSTRING#*=}
-# Remove everything after first comma to get just the message string
-	MESSAGESTRING=${CUTSTRING%%,*}
-# Remove everything before the next =
+# Remove everything after first ] to get just the name of the sender
+	SENDERNAME=${CUTSTRING%%]*}
+# Removes at the second =
 	CUTSTRING=${CUTSTRING#*=}
-# Remove after , to get sender name
-	SENDERSTRING=${CUTSTRING%%,*}
-# Remove before the last =
-    CUTSTRING=${CUTSTRING##*=}
-# Remove after the last ] to get the receiver
-	RECEIVERSTRING=${CUTSTRING%%]*}
-
+# Remove everything after ] to get receivertype
+	RECEIVERTYPE=${CUTSTRING%%]*}
+# Removes at the third =
+	CUTSTRING=${CUTSTRING#*=}
+# Remove everything after ] to get receiver
+	RECEIVERNAME=${CUTSTRING%%]*}
+# Removes at the fourth =
+	CUTSTRING=${CUTSTRING#*=}
+# Remove everything after ] to get message
+	MESSAGESTRING=${CUTSTRING%%]*}
+	
 	
 	echo "This was sent to chat log $@"
 	echo "This was the message $MESSAGESTRING"
-	echo "This was sender $SENDERSTRING"
-	echo "This was receiver $RECEIVERSTRING"
+	echo "This was sender $SENDERNAME"
+	echo "This was receiver $RECEIVERNAME"
+	echo "This was receivertype $RECEIVERTYPE"
 	
 	log_mysql_chat $MYCHATSTRING
 	}

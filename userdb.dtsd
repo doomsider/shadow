@@ -1,0 +1,12 @@
+#!/bin/bash
+# Test file
+
+LOGSEARCH_player_login="[SERVER][LOGIN] login received. returning login info for RegisteredClient: "
+
+player_login() {
+
+PLAYERLOGINSTRING="${@:1}"
+
+echo "This line sent to player_log $PLAYERLOGINSTRING"
+
+}

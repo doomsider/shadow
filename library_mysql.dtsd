@@ -1,6 +1,7 @@
 #!/bin/bash
 # This is the main set of functions for dealing with the Mysql database
 
+# mysql -u dtsduser -ppass -D dtsddb -e "SELECT LOGSTRING FROM DTSDLOG"
 
 lib_mysend() {
 # Usage lib_mysend database user password command
@@ -24,7 +25,7 @@ lib_myinsert() {
 # This command creates a new row
 # Usage lib_myinsert table column value 
 	INSERTVALUE="${@:3}"
-	echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
+#	echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
 	lib_mysend "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
 }
 

@@ -9,6 +9,7 @@ MYSQLDTSD_CHATLOG_LOGDATE=TIMESTAMP
 
 #SEARCHCHAT="RECEIVED ON Server(0): [CHAT]"
 LOGSEARCH_chat_log="[CHAT]"
+LOGSEARCH_chat_log_doubletest="[CHAT]"
 chat_log() {
 MYCHATSTRING="${@:1}"
 # String manipulation with parameter expansion is used here to cut at the first = which reveals the sender 
@@ -40,7 +41,11 @@ MYCHATSTRING="${@:1}"
 	}
 	
 #	library_main.dtsd: eval: line 45: `chat_log [CHAT] Server(0) Doomsider: hey test'ng chat
-	
+
+chat_log_doubletest() {
+echo "secondary chat log triggered"
+
+}
 
 log_mysql_chat() {
 MYCHATDUMPCOMMAND="${@:1}"

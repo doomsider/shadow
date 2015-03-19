@@ -26,7 +26,7 @@ lib_myinsert() {
 # Usage lib_myinsert table column value 
 	INSERTVALUE="${@:3}"
 #	echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
-	lib_mysend "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
+	lib_mysend "INSERT INTO $1 ($2) VALUES (\"$INSERTVALUE\")"
 }
 
 

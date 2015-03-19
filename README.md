@@ -20,3 +20,6 @@ Create some sort of web interface, for editing player data and maybe display thi
 
 Install:
 Copy shadow files to the parent directory of Starmade and make shadow.dtsd executable.  Run shadow.dtsd setup to create the initial configuration file.  Typing shadow.dtsd will display the available commands.
+
+Random Thoughts:  
+Create a system to search the log live when expecting returns from server commands such as player or ship info

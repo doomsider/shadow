@@ -91,7 +91,12 @@ core_screensend() {
 	lib_screensend $2 $STUFFCOMMAND
 }
 
+core_do() {
+STUFFCOMMAND="${@:2}"
+echo "Sending command"
+lib_screensend $CONFIGDTSD_MAINSCREEN $STUFFCOMMAND
 
+}
 
 lib_pause() {
   local dummy

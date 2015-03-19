@@ -1,8 +1,15 @@
 #!/bin/bash
 # Test file
-
+MYSQLDTSD_PLAYERDB_NAME="VARCHAR(25)"
+MYSQLDTSD_PLAYERDB_CREDITS=BIGINT
+MYSQLDTSD_PLAYERDB_FACTION="VARCHAR(25)"
+MYSQLDTSD_PLAYERDB_CURRENTIP="VARCHAR(15)"
+MYSQLDTSD_PLAYERDB_UPDATE=TIMESTAMP
 LOGSEARCH_player_login="[SERVER][LOGIN] login received. returning login info for RegisteredClient: "
-
+LOGSEARCH_collect_credits="[SERVER-LOCAL-ADMIN] [PL] CREDITS:"
+LOGSEARCH_collect_faction="[SERVER-LOCAL-ADMIN] [PL] FACTION:"
+LOGSEARCH_collect_ip="[SERVER-LOCAL-ADMIN] [PL] IP:"
+LOGSEARCH_collect_playername="[SERVER-LOCAL-ADMIN] [PL] Name:"
 player_login() {
 
 PLAYERLOGINSTRING="${@:1}"
@@ -10,3 +17,43 @@ PLAYERLOGINSTRING="${@:1}"
 echo "This line sent to player_log $PLAYERLOGINSTRING"
 
 }
+collect_credits() {
+
+COLLECTSTRING="${@:1}"
+
+echo "This line sent to collections $COLLECTSTRING"
+
+}
+
+collect_faction() {
+
+COLLECTSTRING="${@:1}"
+
+echo "This line sent to collections $COLLECTSTRING"
+
+}
+
+collect_ip() {
+
+COLLECTSTRING="${@:1}"
+
+echo "This line sent to collections $COLLECTSTRING"
+
+}
+
+collect_playername() {
+
+COLLECTSTRING="${@:1}"
+
+echo "This line sent to collections $COLLECTSTRING"
+
+}
+
+
+#[SERVER-LOCAL-ADMIN] [PL] SECTOR: (2, 2, 2)
+#[SERVER-LOCAL-ADMIN] [PL] FACTION: null
+#[SERVER-LOCAL-ADMIN] [PL] CREDITS: 20000
+#[SERVER-LOCAL-ADMIN] [PL] UPGRADED: false
+#[SERVER-LOCAL-ADMIN] [PL] SM-NAME: null
+#[SERVER-LOCAL-ADMIN] [PL] IP: /192.168.1.9
+#[SERVER-LOCAL-ADMIN] [PL] Name: Doomsider

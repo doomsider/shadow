@@ -61,7 +61,28 @@ lib_mycreate() {
 		lib_mysend "ALTER TABLE $MYSQLTABLENAME ADD $MYSQLCOLUMNNAME $MYSQLDATATYPE"
 		let CREATEARRAY++
 	done
-}
+
+# This was added to address the issue of having a unique index for Mysql.  This allows for columns like players' names
+# to not contain the same values without any sort of complicated checking.	
+	CREATEVAR=( $(compgen -v | grep MYSQLALTER_ ) )
+	CREATEARRAY=0
+	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
+	do
+		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
+		SEARCHFUNCTION=${CURRENTSEARCH#*_}
+		MYSQLTABLENAME=${SEARCHFUNCTION%_*}
+		MYSQLCOLUMNNAME=${SEARCHFUNCTION##*_}
+		MYSQLDATATYPE=${!CURRENTSEARCH}
+#		echo "Column name is $MYSQLCOLUMNNAME"
+#		echo "Table name is $MYSQLTABLENAME"
+#		echo "Search function is $SEARCHFUNCTION"
+#		echo "Datatype is ${!CURRENTSEARCH}"
+#		echo "Send this ALTER TABLE $MYSQLTABLENAME ADD $MYSQLDATATYPE ($MYSQLCOLUMNNAME)"
+		lib_mysend "ALTER TABLE $MYSQLTABLENAME ADD $MYSQLDATATYPE ($MYSQLCOLUMNNAME)"
+		let CREATEARRAY++
+	done
+	
+	}
 
 core_mycreate() {
 # This is a tempory core command for testing purposes

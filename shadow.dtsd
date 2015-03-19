@@ -10,11 +10,14 @@
 # For example return all log lines containing the word chat to the function log_chatcommand 
 # LOGSEARCH_log_chatcommands="[CHAT]"
 
-# Every script can identify a MYSQL table and columns.  lib_mycreate will be called to verify the database is setup.
+# Script can identify a MYSQL table and columns.  lib_mycreate will be called to verify the database is setup.
 # The format is MYSQLTABLE_tablename_column=datatype
 # This allows the script to check/create tables and columns automatically in the database.  You must set the default datatype.
 # You can set up MYSQL scripts here as well such as "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, data VARCHAR(100)" to setup a line number in the database
 # MYSQLTABLE_settings_serverkey=VARCHAR
+
+# Scripts may also us a unique index for Mysql columns with MYSQLALTER_tablename_column="UNIQUE INDEX"
+# This will allow for unique entries without cross checking to see if they already exist in columns
 
 
 #This check was added to make sure the config file is in place

@@ -4,12 +4,34 @@
 MYSQLDTSD_CHATLOG_LOGSTRING=TEXT
 MYSQLDTSD_CHATLOG_LOGDATE=TIMESTAMP
 
+# RECEIVED ON Server(0): ChatMessage [message=hi, sender=Doomsider, receiverType=CHANNEL, receiver=all]
+
+
 
 #SEARCHCHAT="[CHAT]"
-LOGSEARCH_chat_log="[CHAT]"
+LOGSEARCH_chat_log="ChatMessage ["
 chat_log() {
 MYCHATSTRING="${@:1}"
+# String manipulation with parameter expansion is used here to cut at the first = which reveals the message 
+# followed by the rest of MYCHATSTRING	
+	CUTSTRING=${MYCHATSTRING#*=}
+# Remove everything after first comma to get just the message string
+	MESSAGESTRING=${CUTSTRING%%,*}
+# Remove everything before the next =
+	CUTSTRING=${CUTSTRING#*=}
+# Remove after , to get sender name
+	SENDERSTRING=${CUTSTRING%%,*}
+# Remove before the last =
+    CUTSTRING=${CUTSTRING##*=}
+# Remove after the last ] to get the receiver
+	RECEIVERSTRING=${CUTSTRING%%]*}
+
+	
 	echo "This was sent to chat log $@"
+	echo "This was the message $MESSAGESTRING"
+	echo "This was sender $SENDERSTRING"
+	echo "This was receiver $RECEIVERSTRING"
+	
 	log_mysql_chat $MYCHATSTRING
 	}
 	

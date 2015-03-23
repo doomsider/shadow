@@ -6,16 +6,16 @@ MYSQLDTSD_PLAYERDB_FACTION="VARCHAR(25)"
 MYSQLDTSD_PLAYERDB_CURRENTIP="VARCHAR(15)"
 MYSQLDTSD_PLAYERDB_LASTUPDATE=TIMESTAMP
 MYSQLALTER_PLAYERDB_NAME="UNIQUE INDEX"
-LOGSEARCH_player_login="SPAWNING NEW CHARACTER FOR PlS"
-LOGSEARCH_collect_credits="[SERVER-LOCAL-ADMIN] [PL] CREDITS:"
-LOGSEARCH_collect_faction="[SERVER-LOCAL-ADMIN] [PL] FACTION:"
-LOGSEARCH_collect_ip="[SERVER-LOCAL-ADMIN] [PL] IP:"
-LOGSEARCH_collect_playername="[SERVER-LOCAL-ADMIN] [PL] Name:"
-player_login() {
+LOGSEARCH_player_login="[SERVER][TAG] SPAWNING POINT OF PlS"
+LOGSEARCH_collect_player_credits="[SERVER-LOCAL-ADMIN] [PL] CREDITS:"
+LOGSEARCH_collect_player_faction="[SERVER-LOCAL-ADMIN] [PL] FACTION:"
+LOGSEARCH_collect_player_ip="[SERVER-LOCAL-ADMIN] [PL] IP:"
+LOGSEARCH_collect_player_playername="[SERVER-LOCAL-ADMIN] [PL] Name:"
 
+player_login() {
 PLAYERLOGINSTRING="${@:1}"
 # Below is an example of the string received by player_login
-# [SERVER] org.schema.game.server.controller.GameServerController@23f96f01 SPAWNING NEW CHARACTER FOR PlS[Doomsider ; id(132)(2)f(0)]
+# [SERVER][TAG] SPAWNING POINT OF PlS[Doomsider ; id(4)(1)f(0)] WRITTEN: (0.0, -6.5, -8.0)
 # Cut everything before the first [
 cutstring=${PLAYERLOGINSTRING##*[}
 # Cut everything after the ; 
@@ -29,15 +29,17 @@ lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $LOGINPLAYERNAME
 }
 
 
-collect_credits() {
+collect_player_credits() {
 COLLECTSTRING="${@:1}"
 # [SERVER-LOCAL-ADMIN] [PL] CREDITS: 20000
-
+cutstring=${COLLECTSTRING##*:}
+COLLECT_PLAYER_CREDITS="${cutstring%"${cutstring##*[![:space:]]}"}"
+echo 
 echo "This line sent to collections $COLLECTSTRING"
 
 }
 
-collect_faction() {
+collect_player_faction() {
 COLLECTSTRING="${@:1}"
 # [SERVER-LOCAL-ADMIN] [PL] FACTION: null
 
@@ -46,7 +48,7 @@ echo "This line sent to collections $COLLECTSTRING"
 
 }
 
-collect_ip() {
+collect_player_ip() {
 COLLECTSTRING="${@:1}"
 # [SERVER-LOCAL-ADMIN] [PL] IP: /192.168.1.9
 
@@ -54,7 +56,7 @@ echo "This line sent to collections $COLLECTSTRING"
 
 }
 
-collect_playername() {
+collect_player_playername() {
 COLLECTSTRING="${@:1}"
 # [SERVER-LOCAL-ADMIN] [PL] Name: Doomsider
 
@@ -71,3 +73,9 @@ echo "This line sent to collections $COLLECTSTRING"
 #[SERVER-LOCAL-ADMIN] [PL] SM-NAME: null
 #[SERVER-LOCAL-ADMIN] [PL] IP: /192.168.1.9
 #[SERVER-LOCAL-ADMIN] [PL] Name: Doomsider
+
+
+#[CONTROLLERSTATE] Server(0); PlS[Doomsider ; id(4)(1)f(0)] CONTROLLER REQUEST RECEIVED  ControllerRequest [player=PlS[Doomsider ; id(4)(1$
+#[CONTROLLER][ADD-UNIT] (Server(0)): PlS[Doomsider ; id(4)(1)f(0)] Added to controllers: PlayerCharacter[(ENTITY_PLAYERCHARACTER_Doomsider$
+#[GRAVITY] PlayerCharacter[(ENTITY_PLAYERCHARACTER_Doomsider)(139)] FLAG changed gravity on Server(0) null -> (0.0, 0.0, 0.0)
+#Server(0) PlayerCharacter[(ENTITY_PLAYERCHARACTER_Doomsider)(139)] (handleGravity()) Deactivating gravity

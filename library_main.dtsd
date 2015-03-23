@@ -16,7 +16,8 @@ lib_arraycontains() {
 }
 
 lib_check_server_running() {
-if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
+#Special thanks to Robin for a simplified search here
+if pgrep -a java | grep $CONFIGDTSD_SERVICE | grep port:$CONFIGDTSD_PORT > /dev/null
 then
 SERVERSTATUS=STOPPED
 return 0

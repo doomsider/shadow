@@ -6,7 +6,7 @@ MYSQLDTSD_PLAYERDB_FACTION="VARCHAR(25)"
 MYSQLDTSD_PLAYERDB_CURRENTIP="VARCHAR(15)"
 MYSQLDTSD_PLAYERDB_LASTUPDATE=TIMESTAMP
 MYSQLALTER_PLAYERDB_NAME="UNIQUE INDEX"
-LOGSEARCH_player_login="[SERVER][LOGIN] login received. returning login info for RegisteredClient: "
+LOGSEARCH_player_login="SPAWNING NEW CHARACTER FOR PlS"
 LOGSEARCH_collect_credits="[SERVER-LOCAL-ADMIN] [PL] CREDITS:"
 LOGSEARCH_collect_faction="[SERVER-LOCAL-ADMIN] [PL] FACTION:"
 LOGSEARCH_collect_ip="[SERVER-LOCAL-ADMIN] [PL] IP:"
@@ -14,37 +14,49 @@ LOGSEARCH_collect_playername="[SERVER-LOCAL-ADMIN] [PL] Name:"
 player_login() {
 
 PLAYERLOGINSTRING="${@:1}"
-
+# Below is an example of the string received by player_login
+# [SERVER] org.schema.game.server.controller.GameServerController@23f96f01 SPAWNING NEW CHARACTER FOR PlS[Doomsider ; id(132)(2)f(0)]
+# Cut everything before the first [
+cutstring=${PLAYERLOGINSTRING##*[}
+# Cut everything after the ; 
+cutstring=${cutstring%;*}
+# Cut trailing space to get the playername that is logging in
+LOGINPLAYERNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+# string="[SERVER] org.schema.game.server.controller.GameServerController@23f96f01 SPAWNING NEW CHARACTER FOR PlS[Doomsider ; id(132)(2)f(0)]"; string=${string##*[}; string=${string%;*}; string="${string%"${string##*[![:space:]]}"}"; echo $string; echo ${#string}
+echo "$LOGINPLAYERNAME is logging in"
 echo "This line sent to player_log $PLAYERLOGINSTRING"
-
+lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $LOGINPLAYERNAME
 }
-collect_credits() {
 
+
+collect_credits() {
 COLLECTSTRING="${@:1}"
+# [SERVER-LOCAL-ADMIN] [PL] CREDITS: 20000
 
 echo "This line sent to collections $COLLECTSTRING"
 
 }
 
 collect_faction() {
-
 COLLECTSTRING="${@:1}"
+# [SERVER-LOCAL-ADMIN] [PL] FACTION: null
+
 
 echo "This line sent to collections $COLLECTSTRING"
 
 }
 
 collect_ip() {
-
 COLLECTSTRING="${@:1}"
+# [SERVER-LOCAL-ADMIN] [PL] IP: /192.168.1.9
 
 echo "This line sent to collections $COLLECTSTRING"
 
 }
 
 collect_playername() {
-
 COLLECTSTRING="${@:1}"
+# [SERVER-LOCAL-ADMIN] [PL] Name: Doomsider
 
 echo "This line sent to collections $COLLECTSTRING"
 

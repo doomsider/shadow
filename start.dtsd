@@ -21,7 +21,7 @@ core_start() {
 # lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar "$CONFIGDTSD_INSTALLPATH"StarMade/$CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 # This is where the run functions will be gathered and ran
 	RUNFUNCTIONS=( $(compgen -A function | grep run_) )
-	run_logdump
+	run_logcollect
 	fi  
 }
 

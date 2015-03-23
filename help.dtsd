@@ -1,0 +1,38 @@
+#!/bin/bash
+DTSDHELP_help="Help usage:  help [command name] to display specific core command or help to display all commands' help text"
+DTSDHELP_test="Test usage:  Just a test"
+
+core_help() {
+# Generate all the variables that match DTSDHELP into an array	
+	HELPCOMMANDS=( $(compgen -v | grep DTSDHELP_) )
+	HELPARRAY=0
+	while [ -n "${HELPCOMMANDS[$HELPARRAY]+set}" ]
+	do
+	declare MATCHHELP
+		CURRENTHELP=${HELPCOMMANDS[$HELPARRAY]}	
+# $# is the number of parameters issued, in this case we are looking for just one which corresponds to help with no parameters
+		if [ $# -eq 1 ]
+		then
+			echo ${!CURRENTHELP}
+			MATCHHELP=GOOD
+		fi
+# If there is at least one parameter
+		if [ $# -eq 2 ]
+		then
+		MATCHCOMMAND=${CURRENTHELP#*_}
+			if [ "$MATCHCOMMAND" = "$2" ] 
+			then
+				echo ${!CURRENTHELP}
+				MATCHHELP=GOOD
+			fi
+		fi
+		let HELPARRAY++ 
+    done
+# If no match
+	if  [ "$MATCHHELP" != "GOOD" ] 
+	then
+		echo "No command found"
+		echo $DTSDHELP_help
+	fi
+	unset MATCHHELP
+}

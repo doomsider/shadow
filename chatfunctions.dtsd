@@ -4,10 +4,9 @@
 MYSQLDTSD_CHATLOG_LOGSTRING=TEXT
 MYSQLDTSD_CHATLOG_LOGDATE=TIMESTAMP
 
-# RECEIVED ON Server(0): ChatMessage [message=hi, sender=Doomsider, receiverType=CHANNEL, receiver=all]
+# Below example of Chat string recieved
 # [CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT][sender=Doomsider][receiverType=CHANNEL][receiver=all][message=hey]
 
-#SEARCHCHAT="RECEIVED ON Server(0): [CHAT]"
 LOGSEARCH_chat_log="[CHAT]"
 LOGSEARCH_chat_log_doubletest="[CHAT]"
 chat_log() {
@@ -36,7 +35,8 @@ MYCHATSTRING="${@:1}"
 	echo "This was sender $SENDERNAME"
 	echo "This was receiver $RECEIVERNAME"
 	echo "This was receivertype $RECEIVERTYPE"
-	
+
+# [CHAT is error value for SENDERNAME
 	log_mysql_chat $MYCHATSTRING
 	}
 	

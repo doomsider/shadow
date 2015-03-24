@@ -22,45 +22,46 @@ cutstring=${PLAYERLOGINSTRING##*[}
 cutstring=${cutstring%;*}
 # Cut trailing space to get the playername that is logging in
 LOGINPLAYERNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
-# string="[SERVER] org.schema.game.server.controller.GameServerController@23f96f01 SPAWNING NEW CHARACTER FOR PlS[Doomsider ; id(132)(2)f(0)]"; string=${string##*[}; string=${string%;*}; string="${string%"${string##*[![:space:]]}"}"; echo $string; echo ${#string}
 echo "$LOGINPLAYERNAME is logging in"
-echo "This line sent to player_log $PLAYERLOGINSTRING"
 lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $LOGINPLAYERNAME
 }
 
 
 collect_player_credits() {
-COLLECTSTRING="${@:1}"
 # [SERVER-LOCAL-ADMIN] [PL] CREDITS: 20000
+COLLECTSTRING="${@:1}"
 cutstring=${COLLECTSTRING##*:}
 COLLECT_PLAYER_CREDITS="${cutstring%"${cutstring##*[![:space:]]}"}"
-echo 
-echo "This line sent to collections $COLLECTSTRING"
-
+echo "This was send to collect player credits $COLLECT_PLAYER_CREDITS"
+echo ${#COLLECT_PLAYER_CREDITS}
 }
 
 collect_player_faction() {
-COLLECTSTRING="${@:1}"
 # [SERVER-LOCAL-ADMIN] [PL] FACTION: null
-
-
-echo "This line sent to collections $COLLECTSTRING"
-
+COLLECTSTRING="${@:1}"
+cutstring=${COLLECTSTRING##*:}
+COLLECT_PLAYER_FACTION="${cutstring%"${cutstring##*[![:space:]]}"}"
+echo "This was send to collect player faction $COLLECT_PLAYER_FACTION"
+echo ${#COLLECT_PLAYER_FACTION}  
 }
 
 collect_player_ip() {
-COLLECTSTRING="${@:1}"
 # [SERVER-LOCAL-ADMIN] [PL] IP: /192.168.1.9
-
-echo "This line sent to collections $COLLECTSTRING"
-
+COLLECTSTRING="${@:1}"
+cutstring=${COLLECTSTRING##*:}
+COLLECT_PLAYER_IP="${cutstring%"${cutstring##*[![:space:]]}"}"
+echo "This was send to collect player IP $COLLECT_PLAYER_IP"
+echo ${#COLLECT_PLAYER_IP} 
 }
 
 collect_player_playername() {
-COLLECTSTRING="${@:1}"
 # [SERVER-LOCAL-ADMIN] [PL] Name: Doomsider
-
-echo "This line sent to collections $COLLECTSTRING"
+COLLECTSTRING="${@:1}"
+cutstring=${COLLECTSTRING##*:}
+COLLECT_PLAYER_NAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+echo "This was send to collect player name $COLLECT_PLAYER_NAME"
+echo ${#COLLECT_PLAYER_NAME}
+lib_myinsert PLAYERDB NAME $COLLECT_PLAYER_NAME
 
 }
 

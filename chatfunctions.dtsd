@@ -7,8 +7,8 @@ MYSQLDTSD_CHATLOG_LOGDATE=TIMESTAMP
 # Below example of Chat string recieved
 # [CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT][sender=Doomsider][receiverType=CHANNEL][receiver=all][message=hey]
 
-LOGSEARCH_chat_log="[CHAT]"
-LOGSEARCH_chat_log_doubletest="[CHAT]"
+LOGSEARCH_chat_log="[CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT]"
+LOGSEARCH_chat_log_doubletest="[CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT]"
 chat_log() {
 MYCHATSTRING="${@:1}"
 # String manipulation with parameter expansion is used here to cut at the first = which reveals the sender 

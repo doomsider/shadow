@@ -16,7 +16,7 @@ lib_arraycontains() {
 }
 
 lib_check_server_running() {
-#Special thanks to Robin for a simplified search here
+#Special thanks to tschaerni for a simplified search here
 if pgrep -a java | grep $CONFIGDTSD_SERVICE | grep port:$CONFIGDTSD_PORT > /dev/null
 then
 SERVERSTATUS=STOPPED

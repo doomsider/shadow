@@ -40,7 +40,7 @@ lib_myupdate() {
 # This command replaces a value in a column in a row containing a value
 # Current limitation of this command is inserting a value with a space in it
 COREINSERTVALUE="${@:5}"
-# Usage lib_myupdate table column_alter row_search_table row_search_value  
+# Usage lib_myupdate table column_alter row_replace_value row_search_table row_search_value  
 # lib_myupdate PLAYERDB IP 192.168.1 NAME Doomsider
 #	echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
 	lib_mysend "UPDATE $1 SET $2='$3' WHERE $4='$COREINSERTVALUE'"
@@ -48,7 +48,7 @@ COREINSERTVALUE="${@:5}"
 	
 
 core_myupdate() {
-echo "usage lib_myupdate table column_alter row_search_table row_search_value row_replace_valuePLAYERDB  "
+echo "usage lib_myupdate table column_alter row_replace_value row_search_table row_search_value"
 # This is a tempory core command for testing purposes
 	COREINSERTVALUE="${@:6}"
 	lib_myupdate $2 $3 $4 $5 $COREINSERTVALUE

@@ -106,9 +106,27 @@ core_mycreate() {
 	lib_mycreate $MYCREATECORECOMMAND
 }
 
-lib_myrowretrieve() {
-# Retrieves a row
-# Usage:  lib_myrowretrieve [table] [row]
+lib_myvalueretrieve() {
+# Usage: lib_mysend [column to search] [table column is in] [value in column]
+MYVALUERETRIEVENAME="${@:3}"
+echo "This is name $MYVALUERETRIEVENAME"
+
+mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -se "select $1 from $2 where NAME='$MYVALUERETRIEVENAME'"
+
+}
+
+core_valueretrieve() {
+
+
+MYVALUECOMMAND="${@:2}"
+
+lib_myvalueretrieve $MYVALUECOMMAND
+
+}
+
+lib_mycolumnretrieve() {
+# Retrieves an entire column
+# Usage:  lib_mycolumnretrieve [table] [row]
 #	echo "this is 1 parameter value $1"
 #		echo "this is 2 parameter value $2"
 #	echo "this is 3 parameter value $3"
@@ -118,16 +136,16 @@ lib_myrowretrieve() {
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -se "select $2 from $1"
 }
 
-core_rowretrieve() {
+core_columnretrieve() {
 
-# Usage:  rowretrieve [table] [row]
+# Usage:  columnretrieve [table] [row]
 # ./shadow.dtsd retrieve TMPDB TMPSTRING	
 #		echo "core this is 1 parameter value $1"
 #		echo "core this is 2 parameter value $2"
 #	echo "core this is 3 parameter value $3"
 #	echo "core this is 4 parameter value $4"
 #	echo "core this is 5 parameter value $5"
-	lib_myrowretrieve "${@:2}"
+	lib_mycolumnretrieve "${@:2}"
 	
 	}
 

@@ -106,16 +106,30 @@ core_mycreate() {
 	lib_mycreate $MYCREATECORECOMMAND
 }
 
-lib_myvarretrieve() {
-	INSERTVALUE="${@:3}"
-	VARMYRETRIEVE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -se "select $INSERTVALUE from $2")
+lib_myrowretrieve() {
+# Retrieves a row
+# Usage:  lib_myrowretrieve [table] [row]
+#	echo "this is 1 parameter value $1"
+#		echo "this is 2 parameter value $2"
+#	echo "this is 3 parameter value $3"
+#echo "this is 4 parameter value $4"
+#echo "this is 5 parameter value $5"
+#echo "this is fixed ${@:2}"
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -se "select $2 from $1"
 }
 
-core_retrieve() {
-	MYCREATECORECOMMAND="${@:1}"
-	lib_myvarretrieve $MYCREATECORECOMMAND
-	echo "This was retrieved from DB $VARMYRETRIEVE"
-}
+core_rowretrieve() {
+
+# Usage:  rowretrieve [table] [row]
+# ./shadow.dtsd retrieve TMPDB TMPSTRING	
+#		echo "core this is 1 parameter value $1"
+#		echo "core this is 2 parameter value $2"
+#	echo "core this is 3 parameter value $3"
+#	echo "core this is 4 parameter value $4"
+#	echo "core this is 5 parameter value $5"
+	lib_myrowretrieve "${@:2}"
+	
+	}
 
 
 

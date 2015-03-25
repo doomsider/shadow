@@ -115,6 +115,7 @@ lib_pause() {
 #FUNCTIONEXISTS=$?
 #}
 
+
 #Temporary holding spot for search strings, these will be placed in their respective functions
 #	SEARCHLOGIN="[SERVER][LOGIN] login received. returning login info for RegisteredClient: "
 #		SEARCHREMOVE="[SERVER][DISCONNECT] Client 'RegisteredClient:"

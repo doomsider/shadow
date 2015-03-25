@@ -1,0 +1,14 @@
+#!/bin/bash
+# This Database is designed to hold temporary information for functions.  It is used primarily in scraping the log when gathering
+# values for players, sectors, ships, etc.
+MYSQLDTSD_TMPDB_TMPSTRING=TEXT
+MYSQLDTSD_TMPDB_TMPDATE=TIMESTAMP
+
+log_mysql_write_TMPDB() {
+MYLOGDUMPCOMMAND="${@:1}"
+lib_myinsert TMPDB TMPSTRING $MYLOGDUMPCOMMAND
+}
+
+log_mysql_erase_TMPDB() {
+lib_mysend "TRUNCATE TABLE TMPDB"
+}

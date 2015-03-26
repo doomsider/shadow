@@ -1,0 +1,11 @@
+#!/bin/bash
+
+chatcommand_core() {
+	echo "Testing chatcommand core"
+	
+}
+
+chatcommand_test() {
+	echo "Testing chatcommand test"
+
+}

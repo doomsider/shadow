@@ -1,14 +1,17 @@
 #!/bin/bash
 #This is a test of the current search variables to see if they will return to the proper function
 #MYSQLTABLE_settings_serverkey
+MYSQLDTSD_CHATLOG_SENDER="VARCHAR(25)"
 MYSQLDTSD_CHATLOG_LOGSTRING=TEXT
+MYSQLDTSD_CHATLOG_RECIEVER="VARCHAR(25)"
 MYSQLDTSD_CHATLOG_LOGDATE=TIMESTAMP
 
 # Below example of Chat string recieved
 # [CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT][sender=Doomsider][receiverType=CHANNEL][receiver=all][message=hey]
 
 LOGSEARCH_chat_log="[CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT]"
-LOGSEARCH_chat_log_doubletest="[CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT]"
+LOGSEARCH_chat_commands="[CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT]"
+
 chat_log() {
 MYCHATSTRING="${@:1}"
 # String manipulation with parameter expansion is used here to cut at the first = which reveals the sender 
@@ -42,10 +45,68 @@ MYCHATSTRING="${@:1}"
 	
 #	library_main.dtsd: eval: line 45: `chat_log [CHAT] Server(0) Doomsider: hey test'ng chat
 
-chat_log_doubletest() {
-echo "secondary chat log triggered"
+chat_commands() {
 
+MYCHATSTRING="${@:1}"
+# String manipulation with parameter expansion is used here to cut at the first = which reveals the sender 
+# followed by the rest of MYCHATSTRING	
+	CUTSTRING=${MYCHATSTRING#*=}
+# Remove everything after first ] to get just the name of the sender
+	SENDERNAME=${CUTSTRING%%]*}
+# Removes at the second =
+	CUTSTRING=${CUTSTRING#*=}
+# Remove everything after ] to get receivertype
+	RECEIVERTYPE=${CUTSTRING%%]*}
+# Removes at the third =
+	CUTSTRING=${CUTSTRING#*=}
+# Remove everything after ] to get receiver
+	RECEIVERNAME=${CUTSTRING%%]*}
+# Removes at the fourth =
+	CUTSTRING=${CUTSTRING#*=}
+# Remove everything after ] to get message
+	MESSAGESTRING=${CUTSTRING%%]*}
+# Get the first letter of message string to test if it is a !
+	MESSAGEFIRSTLETTER=${MESSAGESTRING:0:1}
+	if [ "$MESSAGEFIRSTLETTER" == "!" ]
+	then
+		echo "chat command triggered"
+		CHATCOMMANDS=( $(compgen -A function | grep chatcommand_) )
+		MESSAGECUT=${MESSAGESTRING#*!}
+		echo "Message Cut $MESSAGECUT"
+# Feed the message string into an array so we can work with it as commands		
+		COMMANDARRAY=($MESSAGECUT)
+		USERCOMMAND=${COMMANDARRAY[0]}
+		USERPARAMETERS=${COMMANDARRAY[@]:1}
+		echo "User is $SENDERNAME"
+		echo "Command is $USERCOMMAND"
+		echo ${#USERCOMMAND}
+		echo "Parameters are $USERPARAMETERS"
+		echo "List of chat commands $CHATCOMMANDS[@]"
+		CHATCOMMANDARRAY=0
+		while [ -n "${CHATCOMMANDS[$CHATCOMMANDARRAY]+set}" ] 
+		do
+		CURRENTCHATCOMMAND=${CHATCOMMANDS[$CHATCOMMANDARRAY]}
+		echo "This is the current Chat Command $CURRENTCHATCOMMAND"
+		CUTCHATCOMMAND=${CURRENTCHATCOMMAND#*_}
+		echo "This remove chatcommand to get only the command name $CUTCHATCOMMAND"
+		if [ "$CUTCHATCOMMAND" = "$USERCOMMAND" ]
+			then
+				echo "Chat Command found"				
+				eval $CURRENTCHATCOMMAND $SENDERNAME $USERPARAMETERS
+				let CHATCOMMANDARRAY++
+			else
+				let CHATCOMMANDARRAY++
+			fi
+	
+		done
+		
+	fi
+	
 }
+
+
+
+
 
 log_mysql_chat() {
 MYCHATDUMPCOMMAND="${@:1}"

@@ -7,10 +7,11 @@ MYSQLDTSD_PLAYERDB_CURRENTIP="VARCHAR(15)"
 MYSQLDTSD_PLAYERDB_LASTUPDATE=TIMESTAMP
 MYSQLALTER_PLAYERDB_NAME="UNIQUE INDEX"
 LOGSEARCH_player_login="[SERVER] org.schema.game.server.controller.GameServerController@478b7093 SPAWNING NEW CHARACTER FOR PlS"
-LOGSEARCH_collect_player_credits="[SERVER-LOCAL-ADMIN] [PL] CREDITS:"
-LOGSEARCH_collect_player_faction="[SERVER-LOCAL-ADMIN] [PL] FACTION:"
-LOGSEARCH_collect_player_ip="[SERVER-LOCAL-ADMIN] [PL] IP:"
-LOGSEARCH_collect_player_playername="[SERVER-LOCAL-ADMIN] [PL] Name:"
+LOGSEARCH_collect_player_CREDITS="[SERVER-LOCAL-ADMIN] [PL] CREDITS:"
+LOGSEARCH_collect_player_FACTION="[SERVER-LOCAL-ADMIN] [PL] FACTION:"
+LOGSEARCH_collect_player_CURRENTIP="[SERVER-LOCAL-ADMIN] [PL] IP:"
+LOGSEARCH_collect_player_NAME="[SERVER-LOCAL-ADMIN] [PL] Name:"
+
 player_login() {
 PLAYERLOGINSTRING="${@:1}"
 # Below is an example of the string received by player_login
@@ -26,7 +27,7 @@ lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $LOGINPLAYERNAME
 }
 
 
-collect_player_credits() {
+collect_player_CREDITS() {
 # [SERVER-LOCAL-ADMIN] [PL] CREDITS: 20000
 COLLECTSTRING="${@:1}"
 cutstring=${COLLECTSTRING##*:}
@@ -36,7 +37,7 @@ echo "This was send to collect player credits $COLLECT_PLAYER_CREDITS"
 log_mysql_write_TMPDB COLLECT_PLAYER_CREDITS=$COLLECT_PLAYER_CREDITS
 }
 
-collect_player_faction() {
+collect_player_FACTION() {
 # [SERVER-LOCAL-ADMIN] [PL] FACTION: null
 COLLECTSTRING="${@:1}"
 cutstring=${COLLECTSTRING##*:}
@@ -46,17 +47,17 @@ echo "This was send to collect player faction $COLLECT_PLAYER_FACTION"
 log_mysql_write_TMPDB COLLECT_PLAYER_FACTION=$COLLECT_PLAYER_FACTION
 }
 
-collect_player_ip() {
+collect_player_CURRENTIP() {
 # [SERVER-LOCAL-ADMIN] [PL] IP: /192.168.1.9
 COLLECTSTRING="${@:1}"
 cutstring=${COLLECTSTRING##*:}
 cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
-COLLECT_PLAYER_IP="${cutstring%"${cutstring##*[![:space:]]}"}"
-echo "This was send to collect player IP $COLLECT_PLAYER_IP"
-log_mysql_write_TMPDB COLLECT_PLAYER_IP=$COLLECT_PLAYER_IP
+COLLECT_PLAYER_CURRENTIP="${cutstring%"${cutstring##*[![:space:]]}"}"
+echo "This was send to collect player IP $COLLECT_PLAYER_CURRENTIP"
+log_mysql_write_TMPDB COLLECT_PLAYER_CURRENTIP=$COLLECT_PLAYER_CURRENTIP
 }
 
-collect_player_playername() {
+collect_player_NAME() {
 # [SERVER-LOCAL-ADMIN] [PL] Name: Doomsider
 COLLECTSTRING="${@:1}"
 cutstring=${COLLECTSTRING##*:}
@@ -67,9 +68,10 @@ echo ${#COLLECT_PLAYER_NAME}
 lib_myinsert PLAYERDB NAME $COLLECT_PLAYER_NAME
 # lib_myrowretrieve TMPDB TMPSTRING
 
-
-RETRIEVE=$(lib_myrowretrieve TMPDB TMPSTRING)
+# Collect the retrieved variable of all the player values
+RETRIEVE=$(lib_mycolumnretrieve TMPDB TMPSTRING)
 echo $RETRIEVE
+# Set all player values to an array
 RETARRARY=($RETRIEVE)
 
 echo "Here is retrieve array zero ${RETARRARY[0]}"
@@ -88,16 +90,22 @@ TEMPARRAY=0
 while [ -n "${RETARRARY[$TEMPARRAY]+set}" ]
 	do
 	PLAYERTEMPVALUE=${RETARRARY[$TEMPARRAY]}
-	eval $PLAYERTEMPVALUE
+	echo "Player value variable $PLAYERTEMPVALUE"
+	PLAYERTEMPVAR=${PLAYERTEMPVALUE%=*}
+	echo "Player temp var is $PLAYERTEMPVAR"
+	PLAYERCOLUMN=${PLAYERTEMPVAR##*_}
+	echo "Player value goes to column $PLAYERCOLUMN"
+	PLAYERTEMPVAL=${PLAYERTEMPVALUE#*=}
+	echo "Player value is $PLAYERTEMPVAL"
+	#	eval $PLAYERTEMPVALUE
+	lib_myupdate PLAYERDB $PLAYERCOLUMN $PLAYERTEMPVAL NAME $COLLECT_PLAYER_NAME
 	let TEMPARRAY++
 	done
 	
-echo "lib_myupdate PLAYERDB IP $COLLECT_PLAYER_IP NAME $COLLECT_PLAYER_NAME"
-
-
-lib_myupdate PLAYERDB CURRENTIP $COLLECT_PLAYER_IP NAME $COLLECT_PLAYER_NAME
-lib_myupdate PLAYERDB FACTION $COLLECT_PLAYER_FACTION NAME $COLLECT_PLAYER_NAME
-lib_myupdate PLAYERDB CREDITS $COLLECT_PLAYER_CREDITS NAME $COLLECT_PLAYER_NAME
+#echo "lib_myupdate PLAYERDB IP $COLLECT_PLAYER_IP NAME $COLLECT_PLAYER_NAME"
+#lib_myupdate PLAYERDB CURRENTIP $COLLECT_PLAYER_IP NAME $COLLECT_PLAYER_NAME
+#lib_myupdate PLAYERDB FACTION $COLLECT_PLAYER_FACTION NAME $COLLECT_PLAYER_NAME
+#lib_myupdate PLAYERDB CREDITS $COLLECT_PLAYER_CREDITS NAME $COLLECT_PLAYER_NAME
 
 log_mysql_erase_TMPDB
 

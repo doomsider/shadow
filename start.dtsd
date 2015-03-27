@@ -17,11 +17,13 @@ core_start() {
 # Start script which will create a shell that is logged for all output.  This is useful to see the commands that are given.
 # -f is used to flush data as it is given and keeps the log file updated quickly
 	lib_screensend $CONFIGDTSD_MAINSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log
+	lib_screensend $CONFIGDTSD_DTSDSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_SCRIPTSCREEN.log
 	lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 # lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar "$CONFIGDTSD_INSTALLPATH"StarMade/$CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 # This is where the run functions will be gathered and ran
-	RUNFUNCTIONS=( $(compgen -A function | grep run_) )
-	run_logcollect
+	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH runlog
+#	RUNFUNCTIONS=( $(compgen -A function | grep run_) )
+#	run_logcollect
 	fi  
 }
 

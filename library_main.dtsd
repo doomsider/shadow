@@ -85,6 +85,13 @@ lib_screensend() {
 	screen -p 0 -S $1 -X stuff "$STUFFCOMMAND"$(printf \\r)
 }
 
+lib_screensendback() {
+# usage lib_screensend screen command
+	STUFFCOMMAND="${@:2}"
+	echo "trying to send this command $STUFFCOMMAND to the screen $1"
+	screen -p 0 -S $1 -X stuff "$STUFFCOMMAND &"$(printf \\r)
+}
+
 core_screensend() {
 # Temporary core function 
 	STUFFCOMMAND="${@:3}"

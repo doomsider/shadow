@@ -109,9 +109,9 @@ core_mycreate() {
 lib_myvalueretrieve() {
 # Usage: lib_mysend [column to search] [table column is in] [value in column]
 MYVALUERETRIEVENAME="${@:3}"
-echo "This is name $MYVALUERETRIEVENAME"
+# echo "This is name $MYVALUERETRIEVENAME"
 
-mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -se "select $1 from $2 where NAME='$MYVALUERETRIEVENAME'"
+mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where NAME='$MYVALUERETRIEVENAME'"
 
 }
 
@@ -149,7 +149,9 @@ core_columnretrieve() {
 	
 	}
 
-
+log_myerasetable() { 
+lib_mysend "TRUNCATE TABLE $1"
+}
 
 
 

@@ -64,7 +64,7 @@ while [ -n "${RANKCOMMANDS[$RANKARRAY]+set}" ]
 	eval COMMANDLIST=\( \${${CURRENTARRAY}[@]} \)
 	echo "here is the current command list ${COMMANDLIST[@]}"
 	lib_myinsert RANKLOG RANK ${!RANKNAME}
-	lib_myupdate 
+	lib_myupdate RANKLOG COMMANDSALLOWED '${COMMANDLIST[@]}' RANK ${!RANKNAME}
 	
 	let RANKARRAY++
 	

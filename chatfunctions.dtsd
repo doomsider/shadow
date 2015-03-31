@@ -92,7 +92,12 @@ MYCHATSTRING="${@:1}"
 		if [ "$CUTCHATCOMMAND" = "$USERCOMMAND" ]
 			then
 				echo "Chat Command found"				
+				if check_player_rank_allowed $USERCOMMAND $SENDERNAME
+				then
 				eval $CURRENTCHATCOMMAND $SENDERNAME $USERPARAMETERS
+				else
+				echo "Command not authorized"
+				fi
 				let CHATCOMMANDARRAY++
 			else
 				let CHATCOMMANDARRAY++

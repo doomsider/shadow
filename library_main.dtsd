@@ -130,6 +130,8 @@ lib_pause() {
 #FUNCTIONEXISTS=$?
 #}
 
+# Create an array with the indirect reference of the current rankcommand and the values command list contains
+#	eval COMMANDLIST=\( \${${CURRENTARRAY}[@]} \)
 
 #Temporary holding spot for search strings, these will be placed in their respective functions
 #	SEARCHLOGIN="[SERVER][LOGIN] login received. returning login info for RegisteredClient: "

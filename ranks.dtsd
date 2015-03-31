@@ -39,33 +39,30 @@ set_ranks_database() {
 # Erase existing RANKLOG table
 log_myerasetable RANKLOG
 
-#Set arrays for ranks and the commands they are allowed to use
-COMMANDLIST_RANK1=(help core)
-COMMANDLIST_RANK2=(help core)
-COMMANDLIST_RANK3=(help core)
-COMMANDLIST_RANK4=(help core)
-COMMANDLIST_RANK5=(help core)
+#Set strings for ranks and the commands they are allowed to use
+COMMANDLIST_RANK1="help core"
+COMMANDLIST_RANK2="help core"
+COMMANDLIST_RANK3="help core"
+COMMANDLIST_RANK4="help core"
+COMMANDLIST_RANK5="help core"
 
-echo "Here are rank commands ${!RANK*}"
 RANKCOMMANDS=${!COMMANDLIST*}
 RANKCOMMANDS=($RANKCOMMANDS)
-
 
 RANKARRAY=0
 
 while [ -n "${RANKCOMMANDS[$RANKARRAY]+set}" ]
 	do
 	CURRENTARRAY=${RANKCOMMANDS[$RANKARRAY]}
-#	echo $CURRENTARRAY
+	echo "The current array $CURRENTARRAY"
 #	echo ${!CURRENTARRAY}
 	RANKNAME=${CURRENTARRAY/COMMANDLIST/COMMANDS}
 	echo "Here is rank name ${!RANKNAME}"
-# Create an array with the indirect reference of the current rankcommand and the values command list contains
-	eval COMMANDLIST=\( \${${CURRENTARRAY}[@]} \)
-	echo "here is the current command list ${COMMANDLIST[@]}"
+	CURRENTVALUE=${!CURRENTARRAY}
+	echo $CURRENTVALUE
+	var3=$CURRENTVALUE
 	lib_myinsert RANKLOG RANK ${!RANKNAME}
-	lib_myupdate RANKLOG COMMANDSALLOWED '${COMMANDLIST[@]}' RANK ${!RANKNAME}
-	
+	lib_myupdate RANKLOG COMMANDSALLOWED "\${var3}" RANK ${!RANKNAME}
 	let RANKARRAY++
 	
 done

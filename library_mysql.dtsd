@@ -39,12 +39,12 @@ core_myinsert() {
 lib_myupdate() {
 # This command replaces a value in a column in a row containing a value
 # Current limitation of this command is inserting a value with a space in it
-eval string3="$3"
-COREINSERTVALUE="${@:5}"
+# eval string3="$3"
+UPDATESEARCHVALUE="${@:5}"
 # Usage lib_myupdate [table] [column_alter] [value to insert]  [row to search] [search value]  
 # lib_myupdate PLAYERDB IP 192.168.1 NAME Doomsider
 #	echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE $1 SET $2='$string3' WHERE $4='$COREINSERTVALUE'"
+	lib_mysend "UPDATE $1 SET $2='$3' WHERE $4='$UPDATESEARCHVALUE'"
 }
 	
 

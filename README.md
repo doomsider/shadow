@@ -22,7 +22,21 @@ Create some sort of web interface, for editing player data and maybe display thi
 
 Install:
 
-Copy shadow files to the parent directory of Starmade and make shadow.dtsd executable.  Run shadow.dtsd setup to create the initial configuration file.  Typing shadow.dtsd will display the available commands.
+Shadow is in testing mode only at the moment.  The current target test system is Ubuntu 14.04.  If you want to test shadow on other operating systems or configurations I cannot offer support during testing.  
+
+Copy shadow files to the parent directory of Starmade and make shadow.dtsd executable.  Run ./shadow.dtsd setup to create the initial configuration file.  Typing ./shadow.dtsd will display the available commands.
+
+To download a current copy of StarMade if you are doing a fresh install ./shadows.dtsd download
+
+Manual setup of mysql tables and columns is ./shadow.dtsd mycreate
+
+Manual setup for rank system is ./shadow.dtsd setranks
+
+Many of the commands are for debugging purposes right now and will be removed later after testing is complete 
+
+
+
+
 
 Random Thoughts:  
 
@@ -31,8 +45,13 @@ Need to come up with a way to allow script to handle running programs/function a
 
 Ideas:
 
-Create classes/professions for SM
-Make a web map
-Scripted events upon entering sectors
-More control over universe generation
+Create classes/professions for SM:
+
+Make a web map:
+
+Scripted events upon entering sectors:
+
+
+More control over universe generation:
+
 Abiliry to reduce database by removing unused sectors

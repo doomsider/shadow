@@ -94,7 +94,7 @@ MYCHATSTRING="${@:1}"
 				echo "Chat Command found"				
 				if check_player_rank_allowed $USERCOMMAND $SENDERNAME
 				then
-				eval $CURRENTCHATCOMMAND $SENDERNAME $USERPARAMETERS
+				eval $CURRENTCHATCOMMAND "$SENDERNAME" $USERPARAMETERS
 				else
 				echo "Command not authorized"
 				fi
@@ -109,11 +109,8 @@ MYCHATSTRING="${@:1}"
 	
 }
 
-
-
-
-
 log_mysql_chat() {
 MYCHATDUMPCOMMAND="${@:1}"
 lib_myinsert CHATLOG LOGSTRING $MYCHATDUMPCOMMAND
 }
+

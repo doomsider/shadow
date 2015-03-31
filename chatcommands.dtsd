@@ -9,3 +9,1288 @@ chatcommand_test() {
 	echo "Testing chatcommand test"
 
 }
+
+
+
+# chatcommand_DEPOSIT(){ 
+# #Deposits money into your server account from your player
+# #USAGE: !DEPOSIT <Amount>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !DEPOSIT <Amount>
+	# else
+# # Check to make sure a posistive amount was entered
+		# if ! test "$2" -gt 0 2> /dev/null
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
+		# else 
+# # Run playerinfo command to update playerfile and get the current player credits
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTICE BANK - Connecting to servers
+			# log_playerinfo $1
+# #			lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
+# #			echo "sent message to counsel, now sleeping"
+# # Sleep is added here to give the console a little bit to respond
+
+# # Check the playerfile to see if it was updated recently by comparing it to the current time
+			# CURRENTTIME=$(date +%s)
+# #			echo "Current time $CURRENTTIME"
+			# OLDTIME=$(grep PlayerLastUpdate $PLAYERFILE/$1 | cut -d= -f2- |  tr -d ' ')
+# #			echo "Old time from playerfile $OLDTIME"
+			# ADJUSTEDTIME=$(( $CURRENTTIME - 10 ))
+# #			echo "Adjusted time to remove 10 seconds $ADJUSTEDTIME"
+			# if [ "$OLDTIME" -ge "$ADJUSTEDTIME" ]
+			# then
+				# BALANCECREDITS=$(grep CreditsInBank $PLAYERFILE/$1 | cut -d= -f2- |  tr -d ' ')
+# #				echo $BALANCECREDITS
+				# CREDITSTOTAL=$(grep CurrentCredits $PLAYERFILE/$1 | cut -d= -f2- |  tr -d ' ')  
+# #				echo "Credits in log $CREDITTOTAL"
+# #				echo "Total credits are $CREDITSTOTAL on person and $BALANCECREDITS in bank"
+# #				echo "Credits to be deposited $2 "
+				# if [ "$CREDITSTOTAL" -ge "$2" ]
+				# then 
+# #					echo "enough money detected"
+					# NEWBALANCE=$(( $2 + $BALANCECREDITS ))
+					# NEWCREDITS=$(( $CREDITSTOTAL - $2 ))
+# #					echo "new bank balance is $NEWBALANCE"
+					# as_user "sed -i 's/CurrentCredits=$CREDITSTOTAL/CurrentCredits=$NEWCREDITS/g' $PLAYERFILE/$1"
+					# as_user "sed -i 's/CreditsInBank=$BALANCECREDITS/CreditsInBank=$NEWBALANCE/g' $PLAYERFILE/$1"
+					# #					as_user "sed -i '4s/.*/CreditsInBank=$NEWBALANCE/g' $PLAYERFILE/$1"
+					# lib_screensend $CONFIGDTSD_MAINSCREEN/give_credits $1 -$2
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK You successfully deposited $2 credits
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK Your balance is now $NEWBALANCE
+					# as_user "echo '$1 deposited $2' >> $BANKLOG"
+				# else
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK Insufficient money
+# #					echo "not enough money"
+				# fi
+			# else
+# #				echo "Time difference to great, playerfile not updated recently"
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Connecting to GALACTICE BANK servers failed
+			# fi
+		# fi
+	# fi	
+
+# #
+# }
+# chatcommand_WITHDRAW(){ 
+# #Takes money out of your server account and gives it to your player
+# #USAGE: !WITHDRAW <Amount>
+# #	echo "Withdraw command"
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !WITHDRAW <Amount>
+	# else
+
+		# if ! test "$2" -gt 0 2> /dev/null
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
+		# else
+# #			echo "Withdraw $2"
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+			# BALANCECREDITS=$(grep CreditsInBank $PLAYERFILE/$1 | cut -d= -f2 | tr -d ' ')
+# #			echo "bank balance is $BALANCECREDITS"
+			# if [ "$2" -le "$BALANCECREDITS" ]
+			# then
+				# NEWBALANCE=$(( $BALANCECREDITS - $2 ))
+# #				echo "new balance for bank account is $NEWBALANCE"
+				# lib_screensend $CONFIGDTSD_MAINSCREEN/give_credits $1 $2
+				# as_user "sed -i 's/CreditsInBank=$BALANCECREDITS/CreditsInBank=$NEWBALANCE/g' $PLAYERFILE/$1"
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK You successfully withdrawn $2 credits
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK Your balance is $NEWBALANCE credits
+				# as_user "echo '$1 witdrew $2' >> $BANKLOG"
+			# else
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You have insufficient funds
+			# fi
+		# fi
+	# fi
+# }
+# chatcommand_TRANSFER(){ 
+# #Sends money from your bank account to another players account
+# #USAGE: !TRANSFER <Player> <Amount>
+	# if [ "$#" -ne "3" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !TRANSFER <Player> <Amount>
+	# else
+# #	echo "Transfer $1 a total of $3 credits"
+	# if ! test "$3" -gt 0 2> /dev/null
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
+	# else 
+		# if [ -e $PLAYERFILE/$2 ] >/dev/null 
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+			# BALANCECREDITS=$(grep CreditsInBank $PLAYERFILE/$1 | cut -d= -f2 | tr -d ' ')
+# #			echo "Player transferring has $BALANCECREDITS in account"
+			# if [ "$3" -lt "$BALANCECREDITS" ]
+			# then
+				# TRANSFERBALANCE=$(grep CreditsInBank $PLAYERFILE/$2 | cut -d= -f2 | tr -d ' ')
+# #				echo "Player receiving has $TRANSFERBALANCE in his account"
+				# NEWBALANCETO=$(( $3 + $TRANSFERBALANCE ))
+				# NEWBALANCEFROM=$(( $BALANCECREDITS - $3 ))
+# #				echo "Changing $1 account to $NEWBALANCEFROM and $2 account to $NEWBALANCETO"
+				# as_user "sed -i 's/CreditsInBank=$BALANCECREDITS/CreditsInBank=$NEWBALANCEFROM/g' $PLAYERFILE/$1"
+				# as_user "sed -i 's/CreditsInBank=$TRANSFERBALANCE/CreditsInBank=$NEWBALANCETO/g' $PLAYERFILE/$2"
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You sent $3 credits to $2
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Your balance is now $NEWBALANCEFROM
+				# as_user "echo '$1 transferred to $2 in the amount of $3' >> $BANKLOG"
+			# else
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Not enough credits
+			# fi
+		# else 
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - No account found
+		# fi
+	# fi
+# fi
+# }
+# chatcommand_BALANCE(){
+# #Tells the player how much money is stored in their server account
+# #USAGE: !BALANCE
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !BALANCE
+	# else
+	# BALANCECREDITS=$(grep CreditsInBank $PLAYERFILE/$1 | cut -d= -f2 | tr -d ' ')
+	# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You have $BALANCECREDITS credits
+	# fi
+# }
+# chatcommand_FDEPOSIT(){
+# #Allows you to deposit credits into a shared faction bank account
+# #USAGE: !FDEPOSIT <Amount>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !FACTIONDEPOSIT <Amount>
+	# else
+		# if [ "$2" -gt 0 ] 2>/dev/null
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Connecting to GALACTICE BANK servers
+			# log_playerinfo $1
+			# FACTION=$(grep "PlayerFaction=" $PLAYERFILE/$1 | cut -d= -f2)
+			# if [ ! $FACTION = "None" ]
+			# then
+				# create_factionfile $FACTION
+				# CURRENTTIME=$(date +%s)
+# #				echo "Current time $CURRENTTIME"
+				# OLDTIME=$(grep PlayerLastUpdate $PLAYERFILE/$1 | cut -d= -f2- |  tr -d ' ')
+# #				echo "Old time from playerfile $OLDTIME"
+				# ADJUSTEDTIME=$(( $CURRENTTIME - 10 ))
+# #				echo "Adjusted time to remove 10 seconds $ADJUSTEDTIME"
+				# if [ "$OLDTIME" -ge "$ADJUSTEDTIME" ]
+				# then
+					# BALANCECREDITS=$(grep CreditsInBank $FACTIONFILE/$FACTION | cut -d= -f2- |  tr -d ' ')
+# #					echo $BALANCECREDITS
+					# CREDITSTOTAL=$(grep CurrentCredits $PLAYERFILE/$1 | cut -d= -f2- |  tr -d ' ')  
+# #					echo "Credits in log $CREDITTOTAL"
+# #					echo "Total credits are $CREDITSTOTAL on person and $BALANCECREDITS in bank"
+# #					echo "Credits to be deposited $2 "
+					# if [ "$CREDITSTOTAL" -ge "$2" ]
+					# then 
+# #						echo "enough money detected"
+						# NEWBALANCE=$(( $2 + $BALANCECREDITS ))
+						# NEWCREDITS=$(( $CREDITSTOTAL - $2 ))
+# #						echo "new bank balance is $NEWBALANCE"
+						# as_user "sed -i 's/CurrentCredits=.*/CurrentCredits=$NEWCREDITS/g' $PLAYERFILE/$1"
+						# as_user "sed -i 's/CreditsInBank=.*/CreditsInBank=$NEWBALANCE/g' $FACTIONFILE/$FACTION"
+# #						as_user "sed -i '4s/.*/CreditsInBank=$NEWBALANCE/g' $PLAYERFILE/$1"
+						# lib_screensend $CONFIGDTSD_MAINSCREEN/give_credits $1 -$2
+						# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK You successfully deposited $2 credits
+						# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK Your factions balance is now $NEWBALANCE
+						# as_user "echo '$1 deposited $2 into $FACTION bank account' >> $BANKLOG"
+					# else
+						# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK Insufficient money
+# #						echo "not enough money"
+					# fi
+				# else
+# #					echo "Time difference to great, playerfile not updated recently"
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Connecting to GALACTICE BANK servers failed
+				# fi
+			# else
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTICE BANK - You are not in a faction
+			# fi
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Please enter a positive whole number
+		# fi
+	# fi
+# }
+# chatcommand_FWITHDRAW(){
+# #Allows you to withdraw from a shared faction account
+# #USAGE: !FWITHDRAW <Amount>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !FACTIONWITHDRAW <Amount>
+	# else
+		# if [ "$2" -gt 0 ] 2>/dev/null
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTICE BANK - Connecting to servers
+			# log_playerinfo $1
+			# FACTION=$(grep "PlayerFaction=" $PLAYERFILE/$1 | cut -d= -f2)
+			# if [ ! $FACTION = "None" ]
+			# then
+				# create_factionfile $FACTION
+				# BALANCECREDITS=$(grep CreditsInBank $FACTIONFILE/$FACTION | cut -d= -f2 | tr -d ' ')
+# #				echo "bank balance is $BALANCECREDITS"
+				# if [ "$2" -le "$BALANCECREDITS" ]
+				# then
+					# NEWBALANCE=$(( $BALANCECREDITS - $2 ))
+# #					echo "new balance for bank account is $NEWBALANCE"
+					# lib_screensend $CONFIGDTSD_MAINSCREEN/give_credits $1 $2
+					# as_user "sed -i 's/CreditsInBank=$BALANCECREDITS/CreditsInBank=$NEWBALANCE/g' $FACTIONFILE/$FACTION"
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK You successfully withdrawn $2 credits
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK The factions balance is $NEWBALANCE credits
+					# as_user "echo '$1 witdrew $2 from $FACTION' >> $BANKLOG"
+				# else
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Your faction has insufficent funds
+				# fi
+			# else
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You are not in a faction
+			# fi
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Please enter positive whole numbers only.
+		# fi
+	# fi
+
+# }
+# chatcommand_FBALANCE(){
+# #Allows you to see how many credits are in a shared faction account
+# #USAGE: !FBALANCE
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !BALANCE
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+		# log_playerinfo $1
+		# FACTION=$(grep "PlayerFaction" $PLAYERFILE/$1 | cut -d= -f2)
+		# if [ ! $FACTION = "None" ]
+		# then
+			# BALANCECREDITS=$(grep CreditsInBank $FACTIONFILE/$FACTION | cut -d= -f2 | tr -d ' ')
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Your faction has $BALANCECREDITS credits
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You are not in a faction
+		# fi
+	# fi
+# }
+# chatcommand_VOTEEXCHANGE(){
+# #Converts the specified number of voting points into credits at the rate of 1,000,000 credits per vote
+# #USAGE: !VOTEEXCHANGE <Amount>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !VOTEEXCHANGE <Amount>
+	# else
+		# if [ $2 -gt 0 ] 2>/dev/null
+		# then
+			# BALANCECREDITS=$(grep CreditsInBank $PLAYERFILE/$1 | cut -d= -f2 | tr -d ' ')
+			# VOTEBALANCE=$(grep "VotingPoints=" $PLAYERFILE/$1 | cut -d= -f2)
+			# if [ $VOTEBALANCE -ge $2 ]
+			# then
+				# NEWVOTE=$(($VOTEBALANCE - $2))
+				# NEWCREDITS=$(($BALANCECREDITS + $CREDITSPERVOTE * $2))
+				# as_user "sed -i 's/CreditsInBank=.*/CreditsInBank=$NEWCREDITS/g' $PLAYERFILE/$1"
+				# as_user "sed -i 's/VotingPoints=.*/VotingPoints=$NEWVOTE/g' $PLAYERFILE/$1"
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You traded in $2 voting points for $(($BALANCECREDITS + $CREDITSPERVOTE * $2)) credits. The credits have been sent to your bank account.
+			# else
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You dont have enough voting points to do that! You only have $VOTEBALANCE voting points
+			# fi
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid amount entered. Please only use positive whole numbers.
+		# fi
+	# fi
+# }
+
+# #Rank Commands
+# chatcommand_RANKME(){
+# #Tells you what your rank is and what commands are available to you
+# #USAGE: !RANKME
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKME
+	# else
+			# USERRANK=$(sed -n '3p' "$PLAYERFILE/$PLAYERCHATID" | cut -d" " -f2 | cut -d"[" -f2 | cut -d"]" -f1)
+			# USERCOMMANDS=$(grep $USERRANK $RANKCOMMANDS | cut -d" " -f2-)
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $1 rank is $USERRANK 
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Commands available are $USERCOMMANDS 
+	# fi
+# }
+# chatcommand_RANKLIST(){
+# #Lists all the available ranks
+# #USAGE: !RANKLIST
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKLIST
+	# else
+	    # LISTRANKS=( $(cut -d " " -f 1 $RANKCOMMANDS) )
+		# CHATLIST=${LISTRANKS[@]}	
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The Ranks are: $CHATLIST 
+	# fi
+# }
+# chatcommand_RANKSET(){
+# #Sets the rank of the player
+# #USAGE: !RANKSET <Player> <Rank>
+	# if [ "$#" -ne "3" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKSET <Name> <Rank>
+	# else
+		# if ! grep -q $3 $RANKCOMMANDS
+		# then
+			# if [ -e $PLAYERFILE/$2 ]
+			# then
+				# as_user "sed -i '3s/.*/Rank: \[$3\]/g' $PLAYERFILE/$2"
+			# else
+				# MakePlayerFile $2
+				# as_user "sed -i '3s/.*/Rank: \[$3\]/g' $PLAYERFILE/$2"
+			# fi
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 is now the rank $3
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 That rank does not exist
+		# fi
+	# fi
+# }
+# chatcommand_RANKUSER(){
+# #Finds out the rank of the given player
+# #USAGE: !RANKUSER <Player>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKUSER <Name>
+	# else
+		# if [ -e $PLAYERFILE/$2 ]
+		# then
+			# RANKUSERSTING=$(sed -n '3p' $PLAYERFILE/$2 | cut -d" " -f2)
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $RANKUSERSTING
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has no current Rank or does not exist
+		# fi
+	# fi
+# }
+# chatcommand_RANKCOMMAND(){
+# #Lists all commands available to you
+# #USAGE: !RANKCOMMAND
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKCOMMAND
+	# else		
+		# RANKUCOMMAND=$(grep $PLAYERRANK $RANKCOMMANDS | cut -d" " -f2-)
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Commands are $RANKUCOMMAND
+	# fi
+# }
+
+# #Functional Commands
+# chatcommand_PLAYERWHITELIST(){
+# #Adds or removes players from your personal whitelist, allowing them to use your jumpgates
+# #USAGE: !PLAYERWHITELIST <+/-> <Player/All>
+	# if [ "$#" -ne "3" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !PLAYERWHITELIST <+/-> <PlayerName/All>
+	# else
+		# if [ ! -e $GATEWHITELIST/$1 ]
+		# then
+			# echo "AllPlayers" >> $GATEWHITELIST/${GATEINFO[7]}
+		# fi
+		# if [ $2 = "+" ]
+		# then
+			# if [ $3 = "All" ] || [ $3 = "all" ]
+			# then
+				# if grep -q "AllPlayers" $GATEWHITELIST/$1
+				# then
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your gates are already public!
+				# else
+					# echo "AllPlayers" >> $GATEWHITELIST/$1
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your gates have been made public!
+				# fi
+			# else
+				# if grep -q "$3" $GATEWHITELIST/$1
+				# then
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $3 Is already on your whitelist
+				# else
+					# echo $3 >> $GATEWHITELIST/$1
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Added $3 to your whitelist. They can now use your jumpgates!
+				# fi
+			# fi
+		# elif [ $2 = "-" ]
+		# then
+			# if [ $3 = "All" ] || [ $3 = "all" ]
+			# then
+				# if ! grep -q "AllPlayers" $GATEWHITELIST/$1
+				# then
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your gates are already non-public!
+				# else
+					# as_user "sed -i '/AllPlayers/d' $GATEWHITELIST/$1"
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your gates have been made non-public!
+				# fi
+			# else
+				# if ! grep -q "$3" $GATEWHITELIST/$1
+				# then
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $3 isnt on your whitelist!
+				# else
+					# as_user "sed -i '/$3/d' $GATEWHITELIST/$1"
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Removed $3 from your whitelist!
+				# fi
+			# fi
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid operator! Please only use + or -
+		# fi
+	# fi
+# }
+# chatcommand_CONFIRM(){ 
+# #Confirms any actions for the next 20 seconds (redundant at the moment)
+# #USAGE: !CONFIRM
+# #	A generic command confirmation command. Simply changes the CommandConfirm feild in the player log to 1 for 20 seconds
+# #	If you want to have a user to confirm an action, simply ask them to type !CONFIRM and give them a max of 10 seconds to use the command
+# #	before looking at the CommandConfirm field in their player log
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CONFIRM
+	# else
+		# as_user "sed -i 's/CommandConfirm=.*/CommandConfirm=1/g' $PLAYERFILE/$1"
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Commands confirmed for the next 20 seconds!
+		# sleep 20
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Commands are no longer confirmed!
+		# as_user "sed -i 's/CommandConfirm=1/CommandConfirm=0/g' $PLAYERFILE/$1"
+	# fi
+# }
+# chatcommand_VOTEBALANCE(){ 
+# #Tells you how many voting points you have saved up
+# #USAGE: !VOTEBALANCE
+	# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have $(grep "VotingPoints=" $PLAYERFILE/$1 | cut -d= -f2 | tr -d " " ) votes to spend!
+# }
+
+# #Utility Commands
+# chatcommand_HELP(){ 
+# #Provides help on any and all functions available to the player
+# #USAGE: !HELP <Command (optional)>
+	# if [ "$#" -gt "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !HELP <Command (Optional)>
+	# else		
+		# PLAYERRANK[$1]=$(grep "Rank=" $PLAYERFILE/$1 | cut -d= -f2)
+		# ALLOWEDCOMMANDS[$1]=$(grep $PLAYERRANK $RANKCOMMANDS)
+		# HELPCOMMAND=$(echo $2 | tr [a-z] [A-Z])
+		# if [ "$#" -eq "1" ]
+		# then
+			# if [[ "${ALLOWEDCOMMANDS[$1]}" =~ "-ALL-" ]]
+			# then
+				# OLD_IFS=$IFS
+				# IFS=$'\n'
+				# for LINE in $(tac $DAEMONPATH)
+				# do
+					# if [[ $LINE =~ "chatcommand_" ]] && [[ ! $LINE =~ "#" ]] && [[ ! $LINE =~ "\$" ]]
+					# then
+						# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $(echo $LINE | cut -d"_" -f2 | cut -d"(" -f1) 
+					# fi
+				# done
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Type !HELP <Command> to get more info about that command!
+				# IFS=$OLD_IFS
+			# else
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $(echo ${ALLOWEDCOMMANDS[$1]} | cut -d" " -f2-)
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 All available commands are:
+			# fi
+		# else
+			# function_exists "COMMAND_$HELPCOMMAND"
+			# if [[ "$FUNCTIONEXISTS" == "0" ]]
+			# then
+				# if [[ "${ALLOWEDCOMMANDS[$1]}" =~ "$HELPCOMMAND" ]] || [[ "${ALLOWEDCOMMANDS[$1]}" =~ "-ALL-" ]]
+				# then
+					# OLDIFS=$IFS
+					# IFS=$'\n'
+					# HELPTEXT=( $(grep -A3 "chatcommand_$HELPCOMMAND()" $DAEMONPATH) )
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $(echo ${HELPTEXT[2]} | cut -d\# -f2)
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $(echo ${HELPTEXT[1]} | cut -d\# -f2)
+					# IFS=$OLDIFS
+				# else
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You dont have permission to use $2
+				# fi
+			# else
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 That command doesnt exist.
+			# fi
+		# fi
+	# fi
+# }
+# chatcommand_CORE(){
+# #Provides you with a ship core. Only usable once every 10 minutes
+# #USAGE: !CORE	
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CORE
+	# else	
+		# OLDPLAYERLASTCORE=$(grep PlayerLastCore $PLAYERFILE/$1 | cut -d= -f2- | tr -d ' ')
+		# CURRENTTIME=$(date +%s)
+		# ADJUSTEDTIME=$(( $CURRENTTIME - 600 ))
+		# if [ "$ADJUSTEDTIME" -gt "$OLDPLAYERLASTCORE" ]
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 1 1
+			# as_user "sed -i 's/PlayerLastCore=$OLDPLAYERLASTCORE/PlayerLastCore=$CURRENTTIME/g' $PLAYERFILE/$1"
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have received one core. There is a 10 minute cooldown before you can use it again
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Please allow Core command to cooldown. $((600-($(date +%s)-$(grep "PlayerLastCore=" $PLAYERFILE/$1 | cut -d= -f2)))) seconds left
+		# fi
+	# fi
+# }
+
+# #Vanilla Admin Commands
+# chatcommand_BANHAMMER(){
+# #Bans the specified player from the server by IP, Name and Account
+# #USAGE: !BANHAMMER <Player>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !BANHAMMER <Name>
+	# else
+# # BANHAMMER command bans all IPs attached to player name.	Player does not have to be logged on
+# # Set bannarray to zero
+		# BANARRAY=0
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/ban_name $2
+# # Create the temporary file string
+		# BANfiLESTRING="$STARTERPATH/StarMade/server-database/ENTITY_PLAYERSTATE_player.ent"
+# # Edit the file string with the playername to find the actual entity playerstate file
+		# BANfiLENAME=${BANfiLESTRING/player/$2}
+# #		echo "We are are looking for this player entity file $BANfiLENAME"
+# # Grab all the Ip's for the banned player as an array
+		# BANHAMMERIP=( $(cat $BANfiLENAME | strings | grep -v null | grep \/ | cut -d\/ -f2) )
+# # Calculate the array total for debugging purposes
+		# BANIPTOTAL=$(( ${#BANHAMMERIP[@]} ))
+# #		echo "$BANIPTOTAL total IP addresses to ban"
+# # Check for the filename
+		# if	[ -e $BANfiLENAME ]
+		# then
+# # While there is still a value in the array
+			# while [ -n "${BANHAMMERIP[$BANARRAY]+set}" ]
+			# do
+# # Set the current IP to be banned to Bannedip
+				# BANNEDIP=${BANHAMMERIP[$BANARRAY]}
+# #				echo "Banning $BANNEDIP"
+# # Ban that IP
+				# lib_screensend $CONFIGDTSD_MAINSCREEN/ban_ip $BANNEDIP
+# # To prevent spamming all the commands at once
+				# sleep 2
+# # Add 1 to the array
+				# let BANARRAY++
+			# done
+# # if no file is found
+		# else
+# #		echo "No player entity file found"
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 BANHAMMER fail no file for $2 found
+		# fi
+	# fi
+# }
+# chatcommand_SEARCH(){
+# #Searches the universe for the last known coordinates of your ship
+# #USAGE: !SEARCH
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SEARCH
+	# else
+# # This commands needs to be disabled if logging is not active
+# # Set searcharray to zero
+		# SEARCHARRAY=0
+# # Get the Shipnames with current player from shiplog
+		# OLD_ifS=$ifS
+		# ifS=$'\n'
+		# SEARCHSHIPNAMES=( $(grep $1 $SHIPLOG) )
+		# ifS=$OLD_ifS
+# # Calculate the array total for debugging purposes
+# #		SEARCHSHIPTOTAL=$(( ${#SEARCHSHIPNAMES[@]} ))
+# #		echo "$SEARCHSHIPTOTAL total ships found"
+# # While the array is set 
+		# while [ -n "${SEARCHSHIPNAMES[$SEARCHARRAY]+set}" ]
+		# do
+# # Set the current grep string to SEARCHSHIP to be displayed
+			# SEARCHSHIP=${SEARCHSHIPNAMES[$SEARCHARRAY]}
+# #			echo "Ship $SEARCHSHIP"
+# # Display that ship
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $SEARCHSHIP
+# # To prevent spamming all the commands at once
+# # Add 1 to the array
+			# let SEARCHARRAY++
+		# done
+	# fi
+# }
+# chatcommand_KILL(){
+# #Kills a player instantly
+# #USAGE: !KILL <Player>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KILL <Name>
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/kill_character $2 
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 was killed
+	# fi
+# }
+# chatcommand_WHITEADD(){
+# #Adds a player to the whitelist
+# #USAGE: !WHITEADD <Player>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !WHITEADD <Name>
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/whitelist_name $2
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The name $2 has been whitelisted
+	# fi
+# }
+# chatcommand_BANPLAYER(){
+# #Bans a player from the server
+# #USAGE: !BANPLAYER <Player>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !BANPLAYER <Name>
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/ban_name $2
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The name $2 is now banned from the server
+	# fi
+# }
+# chatcommand_UNBAN(){
+# #Removes a player from the ban list
+# #USAGE: !UNBAN <Player>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !UNBAN <Name>
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/unban_name $2
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The name $2 is no longer banned
+	# fi
+# }
+# chatcommand_SHUTDOWN(){
+# #Shuts the server down
+# #USAGE: !SHUTDOWN <Time Delay>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SHUTDOWN <Time>
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/shutdown $2
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The server will shut down in $2 seconds
+	# fi
+# }
+# chatcommand_RESTART(){
+# #Shuts the server down and then starts it back up again
+# #USAGE: !RESTART
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RESTART
+	# else
+		# as_user "$DAEMONPATH restart"
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The server will now restart
+	# fi
+# }
+# chatcommand_CREDITS(){
+# #Gives you, or another player the specified number of credits
+# #USAGE: !CREDITS <Player (optional)> <Amount>
+	# if [ "$#" -ne "2" ] && [ "$#" -ne "3" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CREDITS <Playername (optional)> <Amount>
+	# else
+		# if [ "$2" -eq "$2" ] 2>/dev/null
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN/give_credits $1 $2
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You received $2 credits
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN/give_credits $2 $3
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 received $3 credits
+		# fi
+	# fi
+# }
+# chatcommand_IMPORT(){
+# #Imports an exported sector file to the sector specified (sector must be unloaded)
+# #USAGE: !IMPORT <X> <Y> <Z> <Export name>
+	# if [ "$#" -ne "5" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !IMPORT <X> <Y> <Z> <Export name>
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/import_sector $2 $3 $4 $5
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Attempted to spawn the sector file $5 to sector $2,$3,$4. If there were players nearby the spawn will have failed
+	# fi
+# }
+# chatcommand_EXPORT(){
+# #Saves the specified sector to a file with a specified name
+# #USAGE: !EXPORT <X> <Y> <Z> <Export name>
+	# if [ "$#" -ne "5" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !EXPORT <X> <Y> <Z> <Export name>
+	# else	
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/export_sector $2 $3 $4 $5
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The secotr $2,$3,$4 has been exported to a file called $5
+	# fi
+# }
+# chatcommand_DESPAWN(){
+# #Destroys all ships with a specified name from the specified sector
+# #USAGE: !DESPAWN <X> <Y> <Z> <Ship name>
+	# if [ "$#" -ne "5" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !DESPAWN <X> <Y> <Z> <Ship name>
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/despawn_sector $5 all true $2 $3 $4
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 All entities called $5 have been removed from sector $2,$3,$4
+	# fi
+# }
+# chatcommand_LOADSHIP(){
+# #Spawns in the specified ship from the catalogue to the specified coords
+# #USAGE: !LOADSHIP <Blueprint Name> <Entity Name> <X> <Y> <Z>
+	# if [ "$#" -ne "6" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !LOADSHIP <Blueprint Name> <Entity Name> <X> <Y> <Z>
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/spawn_entity $2 $3 $4 $5 $6 0 false
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The blueprint $2 has been spawned in sector $4,$5,$6 and is called $3
+	# fi
+# }
+# chatcommand_GIVE(){
+# #Gives you, or another player the specified item ID with a specified quantity
+# #USAGE: !GIVE <Player (optional)> <ID> <Amount>
+	# if [ "$#" -ne "3" ] && [ "$#" -ne "4" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVE <Playername (optional)> <ID> <Amount>
+	# else
+		# if [ "$2" -eq "$2" ] 2>/dev/null
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 $2 $3
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You received $3 of item ID $2
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $2 $3 $4
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 received $4 of $3
+		# fi
+	# fi
+# }
+# chatcommand_GIVESET() {
+# #Give complete build set of different hulls, ship internals, and decorations
+# #USAGE: !GIVESET <Set name> <Set type (only used for normal or hard hull)> - Set names are grey, white, black, red, blue, yellow, green, brown, purple, glass, light, weapon, internal, decoration, terrain, plants
+# if [ "$#" -ne "2" ] && [ "$#" -ne "3" ]
+# then
+	# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVESET <Set name> <Set type (only used for normal or hard hull)> - Set names are grey, white, black, red, blue, yellow, green, brown, purple, orange, glass, light, logic, weapon, internal, crystal, decoration, terrain, plants
+# else
+	# case "$2" in
+	# *"glass"*) 
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 63 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 329 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 330 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 368 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 367 10000
+	# ;;
+	# *"crystal"*) 
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 452 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 453 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 454 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 455 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 456 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 457 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 458 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 459 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 444 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 286 10000
+	# ;;
+	# *"light"*) 
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 65 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 62 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 282 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 283 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 284 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 285 10000
+	# ;;
+	# *"logic"*) 
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 405 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 406 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 407 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 408 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 409 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 410 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 411 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 412 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 413 10000
+	# ;;
+	# *"weapon"*)
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 6 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 16 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 4 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 24 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 39 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 30 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 38 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 32 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 344 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 345 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 14 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 334 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 335 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 332 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 333 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 414 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 415 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 416 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 417 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 418 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 419 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 420 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 421 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 422 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 423 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 424 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 425 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 460 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 461 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 462 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 463 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 464 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 465 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 466 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 467 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 344 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 345 10000	
+	# ;;
+	# *"terrain"*) 
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 64 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 80 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 138 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 139 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 140 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 141 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 73 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 74 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 82 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 83 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 86 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 87 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 90 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 91 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 93 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 95 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 107 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 275 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 278 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 279 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 280 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 281 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 274 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 275 10000
+	# ;;
+	# *"plant"*) 
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 84 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 85 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 89 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 92 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 96 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 97 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 98 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 99 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 100 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 101 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 102 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 103 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 104 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 105 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 106 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 108 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 276 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 277 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 287 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 288 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 109 10000
+	# ;;
+	# *"decoration"*) 
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 340 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 336 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 337 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 338 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 339 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 272 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 273 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 445 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 446 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 447 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 448 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 449 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 450 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 451 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 436 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 437 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 438 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 439 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 440 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 441 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 442 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 443 10000
+	# ;;
+	# *"internal"*) 
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 1 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 2 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 3 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 8 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 331 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 289 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 290 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 7 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 88 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 15 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 22 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 56 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 47 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 120 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 121 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 122 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 123 10000	
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 94 10000	
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 113 10000	
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 291 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 292 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 346 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 347 10000
+	# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 347 10000
+	# ;;
+	# *"grey"*) 
+	# if [ "$3" = "normal" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 5 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 293 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 302 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 348 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 357 10000
+	# elif [ "$3" = "hard" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 311 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 320 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 263 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 401 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 402 10000
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET <color of hull> <normal or hard>
+	# fi
+	# ;;
+	# *"white"*) 
+	# if [ "$3" = "normal" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 81 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 301 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 310 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 400 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 392 10000
+	# elif [ "$3" = "hard" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 319 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 328 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 384 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 376 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 271 10000
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET <color of hull> <normal or hard>
+	# fi
+	# ;;
+	# *"black"*) 
+	# if [ "$3" = "normal" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 75 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 296 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 305 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 393 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 385 10000
+	# elif [ "$3" = "hard" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 264 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 312 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 321 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 377 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 369 10000
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET <color of hull> <normal or hard>
+	# fi
+	# ;;
+	# *"red"*) 
+	# if [ "$3" = "normal" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 76 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 297 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 306 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 394 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 386 10000
+	# elif [ "$3" = "hard" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 265 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 313 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 322 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 378 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 370 10000
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET <color of hull> <normal or hard>
+	# fi
+	# ;;
+	# *"yellow"*) 
+	# if [ "$3" = "normal" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 79 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 300 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 309 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 398 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 391 10000
+	# elif [ "$3" = "hard" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 270 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 318 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 327 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 383 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 375 10000
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET <color of hull> <normal or hard>
+	# fi
+	# ;;
+	# *"green"*) 
+	# if [ "$3" = "normal" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 79 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 299 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 308 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 397 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 389 10000
+	# elif [ "$3" = "hard" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 268 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 316 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 325 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 381 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 373 10000
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET <color of hull> <normal or hard>
+	# fi
+	# ;;
+	# *"brown"*) 
+	# if [ "$3" = "normal" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 70 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 295 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 304 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 404 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 403 10000
+	# elif [ "$3" = "hard" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 269 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 317 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 326 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 382 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 374 10000
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET <color of hull> <normal or hard>
+	# fi
+	# ;;
+		# *"purple"*) 
+	# if [ "$3" = "normal" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 69 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 294 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 303 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 395 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 387 10000
+	# elif [ "$3" = "hard" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 266 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 314 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 323 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 379 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 371 10000
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET <color of hull> <normal or hard>
+	# fi
+	# ;;
+		# *"orange"*) 
+	# if [ "$3" = "normal" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 426 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 427 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 428 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 429 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 430 10000
+	# elif [ "$3" = "hard" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 431 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 432 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 433 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 434 10000
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 435 10000
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET <color of hull> <normal or hard>
+	# fi
+	# ;;
+	# *) 
+	# ;;
+	# esac
+# fi
+# }
+# chatcommand_GIVEMETA(){ 
+# #Gives you, or another player the specified meta item
+# #USAGE: !GIVEMETA <Player (optional)> <METAUTEN>
+	# if [ "$#" -ne "2" ] && [ "$#" -ne "3" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVE <Playername (optional)> <Metaitem>
+	# else
+		# if [ "$#" -eq "2" ] 2>/dev/null
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN/give_metaitem $1 $2
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You received $2
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN/give_metaitem $2 $3
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 received $3
+		# fi
+	# fi
+# }
+# chatcommand_CLEAR(){
+# #Removes all items from your inventory
+# #USAGE: !CLEAR
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CLEAR
+	# else	
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/give_all_items $1 -99999
+# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your inventory has been cleaned		
+	# fi
+# }
+# chatcommand_KICK(){
+# #Kicks the specified player from the server
+# #USAGE: !KICK <Player>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KICK <Player>
+	# else	
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/kick $2
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has been kicked from the server
+	# fi
+# }
+# chatcommand_GODON(){
+# #Turns on godmode, making your character immune to all forms of damage
+# #USAGE: !GODON
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GODON
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/god_mode $1 true
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are now in god mode
+	# fi
+# }
+# chatcommand_GODOFF(){
+# #Turns off godmode, making your character killable again
+# #USAGE: !GODOFF
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GODOFF
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/god_mode $1 false
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are no longer in god mode
+	# fi
+# }
+# chatcommand_LISTWHITE(){ 
+# #Tells you all the names, IPs and accounts that are whitelisted on the server
+# #USAGE: !LISTWHITE <name/account/ip/all>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !LISTWHITE <name/account/ip/all>
+	# else
+		# WHITELIST=( $( cat $STARTERPATH/StarMade/whitelist.txt ) )
+		# WHITENAME=()
+		# WHITEIP=()
+		# WHITEACCOUNT=()
+		# for ENTRY in ${WHITELIST[@]}
+		# do
+			# case $(echo $ENTRY | cut -d":" -f1) in
+			# nm)
+				# WHITENAME+=( $(echo $ENTRY | cut -d":" -f2) )
+				# ;;
+			# ip)
+				# WHITEIP+=( $(echo $ENTRY | cut -d":" -f2) )
+				# ;;
+			# ac)
+				# WHITEACCOUNT+=( $(echo $ENTRY | cut -d":" -f2) )
+				# ;;
+			# esac
+		# done
+		# if [[ $(echo $2 | tr [a-z] [A-Z]) ==  "NAME" ]]
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 ${WHITENAME[@]}
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Whitelisted name\'s are:
+		# elif [[ $(echo $2 | tr [a-z] [A-Z]) ==  "IP" ]]
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 ${WHITEIP[@]}
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Whitelisted ip\'s are:
+		# elif [[ $(echo $2 | tr [a-z] [A-Z]) ==  "ACCOUNT" ]]
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 ${WHITEACCOUNT[@]}
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Whitelisted account\'s are:
+		# elif [[ $(echo $2 | tr [a-z] [A-Z]) ==  "ALL" ]]
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 ${WHITELIST[*]}
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 All whitelisted names, accounts and ip\'s:
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !LISTWHITE <name/account/ip/all>
+		# fi			
+	# fi
+# }
+# chatcommand_INVISION(){
+# #Makes your character invisible to everyone else
+# #USAGE: !INVISIOn	
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !INVISION
+	# else	
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/invisibility_mode $1 true
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are now invisible
+	# fi
+# }
+# chatcommand_INVISIOFF(){
+#Makes your character visible to everyone else again
+#USAGE: !INVISIOFF
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !INVISIOFF
+	# else	
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/invisibility_mode $1 false
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are no longer invisible
+	# fi
+#}
+chatcommand_TELEPORT(){
+#Teleports you and the entity you are controlling, or another player and the entity they are controling to the specified sector
+#USAGE: !TELEPORT <Player (optional)> <X> <Y> <Z>
+	if [ "$#" -ne "4" ] && [ "$#" -ne "5" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/pm $1 Invalid parameters. Please use !TELEPORT <Player (optional)> <X> <Y> <Z>"
+	else	
+		if [ "$2" -eq "$2" ] 2>/dev/null
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $1 $2 $3 $4
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have been teleported to $2,$3,$4
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $2 $3 $4 $5
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has been teleported to $2,$3,$4
+		fi
+	fi
+}
+# # chatcommand_PROTECT(){
+# Prevents damage to entities inside the specified sector
+# USAGE: !PROTECT <X> <Y> <Z>	
+	# # if [ "$#" -ne "4" ]
+	# # then
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !PROTECT <X> <Y> <Z>
+	# # else		
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN/sector_chmod $2 $3 $4 + protected
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is now protected
+	# # fi
+# # }
+# # chatcommand_UNPROTECT(){
+# Allows damage to entities inside the specified sector
+# USAGE: !UNPROTECT <X> <Y> <Z>
+	# # if [ "$#" -ne "4" ]
+	# # then
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !UNPROTECT <X> <Y> <Z>
+	# # else		
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN/sector_chmod $2 $3 $4 - protected
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is no longer protected
+	# # fi
+# # }
+# # chatcommand_SPAWNSTOP(){
+# Prevents enemies from attacking you while insider the specified sector
+# USAGE: !SPAWNSTOP <X> <Y> <Z>
+	# # if [ "$#" -ne "4" ]
+	# # then
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTOP <X> <Y> <Z>
+	# # else		
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN/sector_chmod $2 $3 $4 + peace
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is no longer hostile
+	# # fi
+# # }
+# # chatcommand_SPAWNSTART(){
+# Allows enemies to start attacking you inside the specified sector
+# USAGE: !SPAWNSTART <X> <Y> <Z>
+	# # if [ "$#" -ne "4" ]
+	# # then
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTART <X> <Y> <Z>
+	# # else		
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN/sector_chmod $2 $3 $4 - peace
+		# # lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is hostile again
+	# # fi
+# # }

@@ -1,0 +1,881 @@
+Admin Command List (StarMade v0.1836)
+
+add_admin
+DESCRIPTION: Gives admin rights to (param0(String)))
+PARAMETERS: PlayerName(String)
+EXAMPLE: /add_admin schema
+
+add_admin_denied_comand
+DESCRIPTION: Forbids admin the use of a command
+PARAMETERS: PlayerName(String), Command(String)
+EXAMPLE: /add_admin_denied_comand schema destroy_entity
+
+ban_account
+DESCRIPTION: bans a starMade account from this server (user must be uplinked)
+PARAMETERS: StarMadeUserName(String)
+EXAMPLE: /ban_account schema
+
+ban_account_by_playername
+DESCRIPTION: bans a starMade account from this server by playername (user must be uplinked)
+PARAMETERS: Name(String)
+EXAMPLE: /ban_account_by_playername schema
+
+ban_ip
+DESCRIPTION: bans a ip from this server
+PARAMETERS: PlayerIP(String)
+EXAMPLE: /ban_ip 192.0.0.1
+
+ban_ip_by_playername
+DESCRIPTION: bans a ip of a player from this server
+PARAMETERS: Name(String)
+EXAMPLE: /ban_ip_by_playername schema
+
+ban_name
+DESCRIPTION: bans a playername from this server
+PARAMETERS: PlayerName(String)
+EXAMPLE: /ban_name schema
+
+break_ship
+DESCRIPTION: tests breaking from this point (debug)
+PARAMETERS:
+EXAMPLE: /break_ship
+
+change_sector
+DESCRIPTION: teleports the current player to another sector
+PARAMETERS: X(Integer), Y(Integer), Z(Integer)
+EXAMPLE: /change_sector 2 3 4
+
+change_sector_copy
+DESCRIPTION: teleports the current player to another sector and leave a copy of the current controlled structure behind
+PARAMETERS: X(Integer), Y(Integer), Z(Integer)
+EXAMPLE: /change_sector_copy 2 3 4
+
+change_sector_for
+DESCRIPTION: teleports any player to another sector
+PARAMETERS: player(String), X(Integer), Y(Integer), Z(Integer)
+EXAMPLE: /change_sector_for schema 2 3 4
+
+change_sector_for_copy
+DESCRIPTION: teleports any player to another sector and leave a copy of the current controlled structure behind
+PARAMETERS: player(String), X(Integer), Y(Integer), Z(Integer)
+EXAMPLE: /change_sector_for_copy schema 2 3 4
+
+change_sector_for_uid
+DESCRIPTION: teleports any entity (by uid) to another sector
+PARAMETERS: UID(String), X(Integer), Y(Integer), Z(Integer)
+EXAMPLE: /change_sector_for_uid ENTITY_SHIP_myship 2 3 4
+
+clear_overheating
+DESCRIPTION: removes all active overheating objects in current sector
+PARAMETERS:
+EXAMPLE: /clear_overheating
+
+clear_overheating_all
+DESCRIPTION: removes all active overheating objects
+PARAMETERS:
+EXAMPLE: /clear_overheating_all
+
+create_spawner_test
+DESCRIPTION: Debug Only
+PARAMETERS:
+EXAMPLE: /create_spawner_test
+
+creature_animation_start
+DESCRIPTION: forces an animation for a creature
+PARAMETERS: Animation(String), LoopMode(String), Speed(Float), FullBody(Boolean)
+EXAMPLE: /creature_animation_start TALK_SALUTE loop/dont_loop 1 true/false
+
+creature_animation_stop
+DESCRIPTION: stops the forced animation
+PARAMETERS:
+EXAMPLE: /creature_animation_stop
+
+creature_enter_gravity
+DESCRIPTION: debug for gravity on AI creature
+PARAMETERS:
+EXAMPLE: /creature_enter_gravity
+
+creature_goto
+DESCRIPTION: order selected to go to
+PARAMETERS:
+EXAMPLE: /creature_goto
+
+creature_idle
+DESCRIPTION: makes the select one idle
+PARAMETERS:
+EXAMPLE: /creature_idle
+
+creature_rename
+DESCRIPTION: Renames teh selected creature or AI character
+PARAMETERS: Name(String)
+EXAMPLE: /creature_rename ACreature
+
+creature_roam
+DESCRIPTION: makes the select one roam in a small space
+PARAMETERS:
+EXAMPLE: /creature_roam
+
+creature_script
+DESCRIPTION: sets the creature to a script in /data/scripts/
+PARAMETERS: Script(String)
+EXAMPLE: /creature_script MyScript.lua
+
+creature_sit
+DESCRIPTION: order selected to sit down
+PARAMETERS:
+EXAMPLE: /creature_sit
+
+creature_stand_up
+DESCRIPTION: order selected to stand up from sitting
+PARAMETERS:
+EXAMPLE: /creature_stand_up
+
+cubatom_random_fill
+DESCRIPTION: gives a set of random cubatom to player
+PARAMETERS: PlayerName(String)
+EXAMPLE: /cubatom_random_fill schema
+
+daytime
+DESCRIPTION: sets the time of the day in hours
+PARAMETERS: TimeInHours(Integer)
+EXAMPLE: /daytime 12
+
+debug_fsm_info
+DESCRIPTION: shows FSM state of objects (Debug Command: slows down network)
+PARAMETERS: true/false(Boolean)
+EXAMPLE: /debug_fsm_info false
+
+debug_id
+DESCRIPTION: sets the id of an object to debug
+PARAMETERS: ID(Integer)
+EXAMPLE: /debug_id 1
+
+decay
+DESCRIPTION: sets a structure decayed or not decayed
+PARAMETERS: Decayed(Boolean)
+EXAMPLE: /decay true
+
+delay_save
+DESCRIPTION: delays autosave in secs
+PARAMETERS: Seconds(Integer)
+EXAMPLE: /delay_save 60
+
+despawn_all
+DESCRIPTION: WARNING: this will delete the entites that start with the given pattern from the database!
+PARAMETERS: ShipNameStart(String), Mode(used/unused/all)(String), ShipOnly(Boolean)
+EXAMPLE: /despawn_all MOB_ unused true
+
+despawn_sector
+DESCRIPTION: WARNING: this will delete the entites of a sector that start with the given pattern from the database!
+PARAMETERS: ShipNameStart(String), Mode(used/unused/all)(String), ShipOnly(Boolean), X(Integer), Y(Integer), Z(Integer)
+EXAMPLE: /despawn_sector MOB_ unused true 2 2 2
+
+destroy_entity
+DESCRIPTION: Destroys the selected Entity
+PARAMETERS:
+EXAMPLE: /destroy_entity
+
+destroy_entity_dock
+DESCRIPTION: Destroys the selected Entity and all docked ships
+PARAMETERS:
+EXAMPLE: /destroy_entity_dock
+
+destroy_uid
+DESCRIPTION: Removes an entity (warning: cannot be undone)
+PARAMETERS: UID(String)
+EXAMPLE: /destroy_uid ENTITY_SHIP_myship
+
+destroy_uid_docked
+DESCRIPTION: Removes an entity and all that is docked to it (warning: cannot be undone)
+PARAMETERS: UID(String)
+EXAMPLE: /destroy_uid_docked ENTITY_SHIP_myship
+
+execute_entity_effect
+DESCRIPTION: Debug Only
+PARAMETERS: ID(Integer)
+EXAMPLE: /execute_entity_effect 1
+
+explode_planet_sector
+DESCRIPTION: Simulates the effect of core destruction for all planet segments in the current sector
+PARAMETERS:
+EXAMPLE: /explode_planet_sector
+
+explode_planet_sector_not_core
+DESCRIPTION: Simulates the effect of core destruction for all planet segments in the current sector (but keeps core)
+PARAMETERS:
+EXAMPLE: /explode_planet_sector_not_core
+
+export_sector
+DESCRIPTION: exports the whole sector. be sure to use /force_save before
+PARAMETERS: X(Integer), Y(Integer), Z(Integer), name(String)
+EXAMPLE: /export_sector 2 3 4 mySavedSector
+
+export_sector_bulk
+DESCRIPTION: exports the whole sector from file. be sure to use /force_save before
+PARAMETERS: fileName(String)
+EXAMPLE: /export_sector_bulk sector-bulk-export-import-example.txt
+
+faction_add_member
+DESCRIPTION: adds a member to a faction
+PARAMETERS: factionID(Integer), PlayerName(String)
+EXAMPLE: /faction_add_member 10001 schema
+
+faction_check
+DESCRIPTION: checks sanity of factions (removes leftover/invalid factions)
+PARAMETERS:
+EXAMPLE: /faction_check
+
+faction_create
+DESCRIPTION: creates a faction with name and description)
+PARAMETERS: FactionName(String), Leader(String)
+EXAMPLE: /faction_create myNewFaction playername
+
+faction_create_as
+DESCRIPTION: creates a faction with name and description)
+PARAMETERS: FactionId(Integer), FactionName(String), Leader(String)
+EXAMPLE: /faction_create_as 1001 myNewFaction playername
+
+faction_delete
+DESCRIPTION: removes a faction
+PARAMETERS: factionID(Integer)
+EXAMPLE: /faction_delete -1
+
+faction_del_member
+DESCRIPTION: deletes a player from the faction
+PARAMETERS: PlayerName(String), FactionId(Integer)
+EXAMPLE: /faction_del_member schema 1
+
+faction_edit
+DESCRIPTION: edits a faction with name and description
+PARAMETERS: factionID(Integer), FactionName(String), Description(String)
+EXAMPLE: /faction_edit 1001 myNewFaction mustbeoneword
+
+faction_join_id
+DESCRIPTION: joins a player to a faction with given id
+PARAMETERS: PlayerName(String), factionID(Integer)
+EXAMPLE: /faction_join_id schema 1001
+
+faction_list
+DESCRIPTION: lists all factions
+PARAMETERS:
+EXAMPLE: /faction_list
+
+faction_list_members
+DESCRIPTION: lists members of faction
+PARAMETERS: factionID(Integer)
+EXAMPLE: /faction_list_members -1
+
+faction_mod_member
+DESCRIPTION: sets a player to role within the faction
+PARAMETERS: PlayerName(String), Role(1-5)(Integer)
+EXAMPLE: /faction_mod_member schema 1
+
+faction_mod_relation
+DESCRIPTION: sets relation of two factions
+PARAMETERS: FactionID(Integer), FactionID(Integer), enemy/ally/neutral(String)
+EXAMPLE: /faction_mod_relation 1001 1002 enemy
+
+faction_point_add
+DESCRIPTION: Adds faction points of a faction by a value (negative substracts)
+PARAMETERS: FactionId(Integer), points(Integer)
+EXAMPLE: /faction_point_add 10001 10
+
+faction_point_get
+DESCRIPTION: Retrieves faction points of a faction
+PARAMETERS: FactionId(Integer)
+EXAMPLE: /faction_point_get 10001
+
+faction_point_protect_player
+DESCRIPTION: Protects player from faction point loss on death (persistent)
+PARAMETERS: Name(String), true/false(Boolean)
+EXAMPLE: /faction_point_protect_player schema false
+
+faction_point_set
+DESCRIPTION: Sets faction points of a faction to a value
+PARAMETERS: FactionId(Integer), points(Integer)
+EXAMPLE: /faction_point_set 10001 10
+
+faction_point_turn
+DESCRIPTION: Forces the next faction point calculation turn
+PARAMETERS:
+EXAMPLE: /faction_point_turn
+
+faction_reinstitute
+DESCRIPTION: adds ids to players from faction members
+PARAMETERS:
+EXAMPLE: /faction_reinstitute
+
+faction_reset_activity
+DESCRIPTION: resets activity flags for all member of the faction (all to inactive)
+PARAMETERS: FactionId(Integer)
+EXAMPLE: /faction_reset_activity 10001
+
+faction_set_all_relations
+DESCRIPTION: Set relation for all factions
+PARAMETERS: Relation(String)
+EXAMPLE: /faction_set_all_relations ally/neutral/enemy
+
+faction_set_entity
+DESCRIPTION: Set faction ID for an entity
+PARAMETERS: factionID(Integer)
+EXAMPLE: /faction_set_entity 1001
+
+faction_set_id_member
+DESCRIPTION: sets a player to a faction id (warning: debug! not a join)
+PARAMETERS: PlayerName(String), factionID(Integer)
+EXAMPLE: /faction_set_id_member schema 1001
+
+force_save
+DESCRIPTION: The server will save all data to disk
+PARAMETERS:
+EXAMPLE: /force_save
+
+gate_dest
+DESCRIPTION: Gives player credits)
+PARAMETERS: UID(String)
+EXAMPLE: /gate_dest ENTITY_SPACESTATION_something
+
+give
+DESCRIPTION: Gives player elements by NAME
+PARAMETERS: PlayerName(String), ElementName(String), Count(Integer)
+EXAMPLE: /give schema Power 10
+
+giveid
+DESCRIPTION: Gives player elements by ID
+PARAMETERS: PlayerName(String), ElementID(Short), Count(Integer)
+EXAMPLE: /giveid schema 2 10
+
+give_all_items
+DESCRIPTION: Adds every item for a player
+PARAMETERS: PlayerName(String), count(Integer)
+EXAMPLE: /give_all_items schema 20
+
+give_category_items
+DESCRIPTION: Adds for player items from category
+PARAMETERS: PlayerName(String), count(Integer), terrain/ship/station(String)
+EXAMPLE: /give_category_items schema 20 20
+
+give_credits
+DESCRIPTION: Gives player credits)
+PARAMETERS: PlayerName(String), Count(Integer)
+EXAMPLE: /give_credits schema 1000
+
+give_heal_weapon
+DESCRIPTION: Gives player heal beam)
+PARAMETERS: PlayerName(String)
+EXAMPLE: /give_heal_weapon schema
+
+give_laser_weapon
+DESCRIPTION: Gives player laser weapon)
+PARAMETERS: PlayerName(String)
+EXAMPLE: /give_laser_weapon schema
+
+give_look
+DESCRIPTION: gives <count> of the block the player is looking at
+PARAMETERS: Count(Integer)
+EXAMPLE: /give_look 100
+
+give_marker_weapon
+DESCRIPTION: Gives player marker beam)
+PARAMETERS: PlayerName(String)
+EXAMPLE: /give_marker_weapon schema
+
+give_metaitem
+DESCRIPTION: Gives player a meta item)
+PARAMETERS: PlayerName(String), Type(String)
+EXAMPLE: /give_metaitem schema logbook/weapon/helmet
+
+give_power_supply_weapon
+DESCRIPTION: Gives player power supply beam)
+PARAMETERS: PlayerName(String)
+EXAMPLE: /give_power_supply_weapon schema
+
+give_recipe
+DESCRIPTION: Gives player recipe)
+PARAMETERS: PlayerName(String), TypeOutput(Integer)
+EXAMPLE: /give_recipe schema 1
+
+give_rocket_launcher_weapon
+DESCRIPTION: Gives player rocket launcher)
+PARAMETERS: PlayerName(String)
+EXAMPLE: /give_rocket_launcher_weapon schema
+
+give_slot
+DESCRIPTION: gives <count> of the block the player has currently selected in the build action bar
+PARAMETERS: Count(Integer)
+EXAMPLE: /give_slot 100
+
+give_sniper_weapon
+DESCRIPTION: Gives player sniper rifle beam)
+PARAMETERS: PlayerName(String)
+EXAMPLE: /give_sniper_weapon schema
+
+god_mode
+DESCRIPTION: enables god mode for a player
+PARAMETERS: PlayerName(String), active(Boolean)
+EXAMPLE: /god_mode schema true/false
+
+ignore_docking_area
+DESCRIPTION: enables/disables docking area validation (default off)
+PARAMETERS: enable(Boolean)
+EXAMPLE: /ignore_docking_area false
+
+import_sector
+DESCRIPTION: make sure that the target sector is unloaded
+PARAMETERS: toX(Integer), toY(Integer), toZ(Integer), name(String)
+EXAMPLE: /import_sector 2 3 4 mySavedSector
+
+import_sector_bulk
+DESCRIPTION: make sure that the target sector is unloaded
+PARAMETERS: fileName(String)
+EXAMPLE: /import_sector_bulk sector-bulk-export-import-example.txt
+
+initiate_wave
+DESCRIPTION: Initiates an enemy wave
+PARAMETERS: Level(Integer), Seconds(Integer)
+EXAMPLE: /initiate_wave 5 20
+
+invisibility_mode
+DESCRIPTION: enables invisibility mode for a player
+PARAMETERS: PlayerName(String), active(Boolean)
+EXAMPLE: /invisibility_mode schema true/false
+
+jump
+DESCRIPTION: Jump to an object in line of sight if possible
+PARAMETERS:
+EXAMPLE: /jump
+
+kick
+DESCRIPTION: kicks a player from the server
+PARAMETERS: PlayerName(String)
+EXAMPLE: /kick schema
+
+kick_reason
+DESCRIPTION: kicks a player from the server with a reason message (use quotes in message)
+PARAMETERS: PlayerName(String), Reason(String)
+EXAMPLE: /kick_reason schema "I don't like you"
+
+kill_character
+DESCRIPTION: kills the entity with that name
+PARAMETERS: PlayerName(String)
+EXAMPLE: /kill_character schema
+
+last_changed
+DESCRIPTION: shows the unique id of the players that spawned and/or last modified the selected structure
+PARAMETERS:
+EXAMPLE: /last_changed
+
+list_admins
+DESCRIPTION: Lists all admins
+PARAMETERS:
+EXAMPLE: /list_admins
+
+list_admin_denied_commands
+DESCRIPTION: Lists all forbidden commands for a player
+PARAMETERS: PlayerName(String)
+EXAMPLE: /list_admin_denied_commands schema
+
+list_banned_accounts
+DESCRIPTION: Lists all banned star-made.org accounts
+PARAMETERS:
+EXAMPLE: /list_banned_accounts
+
+list_banned_ip
+DESCRIPTION: Lists all banned IPs
+PARAMETERS:
+EXAMPLE: /list_banned_ip
+
+list_banned_name
+DESCRIPTION: Lists all banned names
+PARAMETERS:
+EXAMPLE: /list_banned_name
+
+list_control_units
+DESCRIPTION: who is attached to what (debug)
+PARAMETERS:
+EXAMPLE: /list_control_units
+
+list_ships
+DESCRIPTION: Lists the current ship catalog
+PARAMETERS:
+EXAMPLE: /list_ships
+
+list_whitelist_accounts
+DESCRIPTION: Lists all whitelisted star-made.org accounts
+PARAMETERS:
+EXAMPLE: /list_whitelist_accounts
+
+list_whitelist_ip
+DESCRIPTION: Lists all whitelisted IPs
+PARAMETERS:
+EXAMPLE: /list_whitelist_ip
+
+list_whitelist_name
+DESCRIPTION: Lists all whitelisted names
+PARAMETERS:
+EXAMPLE: /list_whitelist_name
+
+load
+DESCRIPTION: Loads the object and puts it in the nearest available spot
+PARAMETERS: CatalogName(String), ShipName(String)
+EXAMPLE: /load mySavedShip myShipInGame
+
+load_sector_range
+DESCRIPTION: loads sectors from pos (incl) to pos (incl) (debug)
+PARAMETERS: fromX(Integer), fromY(Integer), fromZ(Integer), toX(Integer), toY(Integer), toZ(Integer)
+EXAMPLE: /load_sector_range 2 3 4 9 8 7
+
+load_system
+DESCRIPTION: loads the whole system (debug)
+PARAMETERS: X(Integer), Y(Integer), Z(Integer)
+EXAMPLE: /load_system 2 3 4
+
+missile_defense_friendly_fire
+DESCRIPTION: enables/disables point defense friendly fire
+PARAMETERS: true/false(Boolean)
+EXAMPLE: /missile_defense_friendly_fire false
+
+player_info
+DESCRIPTION: displays info about a player (even when player is not on)
+PARAMETERS: Name(String)
+EXAMPLE: /player_info schema
+
+player_list
+DESCRIPTION: Lists online players
+PARAMETERS:
+EXAMPLE: /player_list
+
+player_protect
+DESCRIPTION: protects a playername with a star-made.org account name
+PARAMETERS: PlayerName(String), StarMadeAccountName(String)
+EXAMPLE: /player_protect myNameOnTheServer myLoginName
+
+player_unprotect
+DESCRIPTION: removes protection of a playername with its star-made.org account name
+PARAMETERS: PlayerName(String)
+EXAMPLE: /player_unprotect schema
+
+populate_sector
+DESCRIPTION: WARNING: this will populate the sector. Use this as a reset after using /despawn_sector!
+PARAMETERS: X(Integer), Y(Integer), Z(Integer)
+EXAMPLE: /populate_sector 2 2 2
+
+power_outage
+DESCRIPTION: brings down the shields of the selected object or the currently controlling
+PARAMETERS:
+EXAMPLE: /power_outage
+
+refresh_server_msg
+DESCRIPTION: Refreshes the server welcome message
+PARAMETERS:
+EXAMPLE: /refresh_server_msg
+
+remove_admin
+DESCRIPTION: Removes admin rights of player
+PARAMETERS: PlayerName(String)
+EXAMPLE: /remove_admin schema
+
+remove_admin_denied_comand
+DESCRIPTION: Removes a forbidden command for an admin
+PARAMETERS: PlayerName(String), Command(String)
+EXAMPLE: /remove_admin_denied_comand schema destroy_entity
+
+remove_spawners
+DESCRIPTION: Removes all spawners from selected entity
+PARAMETERS:
+EXAMPLE: /remove_spawners
+
+repair_sector
+DESCRIPTION: attempts to correct the regitry of the sector
+PARAMETERS: X(Integer), Y(Integer), Z(Integer)
+EXAMPLE: /repair_sector 2 3 4
+
+restruct_aabb
+DESCRIPTION: Reconstructs the AABBs of all objects on the server
+PARAMETERS:
+EXAMPLE: /restruct_aabb
+
+save
+DESCRIPTION: Saves the currently entered/selected Object in the Catalog
+PARAMETERS: NameInCatalog(String)
+EXAMPLE: /save myNewShip
+
+save_uid
+DESCRIPTION: Saves the currently entered/selected Object in the Catalog
+PARAMETERS: Uid(String), NameInCatalog(String)
+EXAMPLE: /save_uid ENTITY_SHIP_myship myNewShip
+
+search
+DESCRIPTION: Returns the sector of a ship of station with that uid
+PARAMETERS: ShipOrStationName(String)
+EXAMPLE: /search myLostShip
+
+sector_chmod
+DESCRIPTION: Changes the sector mode: example '/sector_chmod 8 8 8 + peace', available modes are 'peace'(no enemy spawn), 'protect'(no attacking possible)
+PARAMETERS: SectorX(Integer), SectorY(Integer), SectorZ(Integer), +/-(String), peace/protect/noenter/noexit/noindications/nofploss(String)
+EXAMPLE: /sector_chmod 10 12 15 + noenter
+
+sector_info
+DESCRIPTION: displays info about a sector (works with unloaded)
+PARAMETERS: SectorX(Integer), SectorY(Integer), SectorZ(Integer)
+EXAMPLE: /sector_info 10 12 15
+
+sector_size
+DESCRIPTION: sets sector dimension)
+PARAMETERS: Size [300-5000](Integer)
+EXAMPLE: /sector_size 1000
+
+server_message_broadcast
+DESCRIPTION: Sends a custom message to all players
+PARAMETERS: Type(String), Message(String)
+EXAMPLE: /server_message_broadcast plain/info/warning/error Hello!
+
+server_message_to
+DESCRIPTION: Sends a custom message to a player
+PARAMETERS: Type(String), PlayerName(String), Message(String)
+EXAMPLE: /server_message_to plain/info/warning/error schema Hello!
+
+set_debug_mode
+DESCRIPTION: set's mode to debug server remotely
+PARAMETERS: mode(Integer)
+EXAMPLE: /set_debug_mode 1
+
+set_global_spawn
+DESCRIPTION: sets default spawnpoint to where client is now
+PARAMETERS:
+EXAMPLE: /set_global_spawn
+
+set_spawn
+DESCRIPTION: Sets the spawing point for this player to the current position
+PARAMETERS:
+EXAMPLE: /set_spawn
+
+set_spawn_player
+DESCRIPTION: Sets the spawing point for this player to the current position
+PARAMETERS: Name(String)
+EXAMPLE: /set_spawn_player schema
+
+shield_damage
+DESCRIPTION: damages the shield for value provided
+PARAMETERS: Damage(Integer)
+EXAMPLE: /shield_damage 120
+
+shield_outage
+DESCRIPTION: brings down the shields of the selected object or the currently controlling
+PARAMETERS:
+EXAMPLE: /shield_outage
+
+ship_info_name
+DESCRIPTION: displays info about a ship (works with unloaded)
+PARAMETERS: Name(String)
+EXAMPLE: /ship_info_name schema
+
+ship_info_selected
+DESCRIPTION: displays info about a ship
+PARAMETERS:
+EXAMPLE: /ship_info_selected
+
+ship_info_uid
+DESCRIPTION: displays info about a ship (works with unloaded)
+PARAMETERS: UID(String)
+EXAMPLE: /ship_info_uid schema
+
+shop_infinite
+DESCRIPTION: Turn infinite shop on/off (unlimited stock at 0 credits price)
+PARAMETERS:
+EXAMPLE: /shop_infinite
+
+shop_restock
+DESCRIPTION: Restocks the selected shop with items
+PARAMETERS:
+EXAMPLE: /shop_restock
+
+shop_restock_full
+DESCRIPTION: Fully Restocks the selected shop with items
+PARAMETERS:
+EXAMPLE: /shop_restock_full
+
+shop_restock_full_uid
+DESCRIPTION: Restocks a shop to full with a uid. Works for unloaded shops as well
+PARAMETERS: ShopUID(String)
+EXAMPLE: /shop_restock_full_uid ENTITY_SHOP_-4198426460705605982_315
+
+shop_restock_uid
+DESCRIPTION: Restocks a shop with a uid. Works for unloaded shops as well
+PARAMETERS: ShopUID(String)
+EXAMPLE: /shop_restock_uid ENTITY_SHOP_-4198426460705605982_315
+
+shutdown
+DESCRIPTION: shutsdown the server in specified seconds (neg values will stop any active countdown)
+PARAMETERS: TimeToShutdown(Integer)
+EXAMPLE: /shutdown 120
+
+simulation_ai_enable
+DESCRIPTION: enables/disables AI simulation
+PARAMETERS: enable(Boolean)
+EXAMPLE: /simulation_ai_enable false
+
+simulation_invoke
+DESCRIPTION: invokes the simulation thread directly
+PARAMETERS:
+EXAMPLE: /simulation_invoke
+
+simulation_spawn_delay
+DESCRIPTION: sets the time of the day in hours
+PARAMETERS: TimeInSecs(Integer)
+EXAMPLE: /simulation_spawn_delay 300
+
+spawn_creature
+DESCRIPTION: (debug)
+PARAMETERS:
+EXAMPLE: /spawn_creature
+
+spawn_creature_mass
+DESCRIPTION: (debug)
+PARAMETERS: amount(Integer)
+EXAMPLE: /spawn_creature_mass 2
+
+spawn_entity
+DESCRIPTION: Spawns a ship in any sector with a faction tag and AI tag.
+PARAMETERS: BlueprintName(String), ShipName(String), X(Integer), Y(Integer), Z(Integer), factionID(Integer), ActiveAI(Boolean)
+EXAMPLE: /spawn_entity mySavedShip shipName sectorX sectorY sectorZ -1 true/false
+
+spawn_entity_pos
+DESCRIPTION: Spawns a ship in any sector with a faction tag and AI tag.
+PARAMETERS: BlueprintName(String), ShipName(String), SecX(Integer), SecY(Integer), SecZ(Integer), PosX(Float), PosY(Float), PosZ(Float), factionID(Integer), ActiveAI(Boolean)
+EXAMPLE: /spawn_entity_pos mySavedShip shipName sectorX sectorY sectorZ local-X local-Y local-Z -1 true/false
+
+spawn_item
+DESCRIPTION: spawn an item in front of you
+PARAMETERS: BlockName(String), count(Integer)
+EXAMPLE: /spawn_item power 20
+
+spawn_mobs
+DESCRIPTION: Spawn AI from catalog with factionID at random places around you
+PARAMETERS: CatalogName(String), factionID(Integer), count(Integer)
+EXAMPLE: /spawn_mobs mySavedShip -1 20
+
+spawn_mobs_line
+DESCRIPTION: Spawn AI from catalog with factionID at the point you are looking at
+PARAMETERS: CatalogName(String), factionID(Integer), count(Integer)
+EXAMPLE: /spawn_mobs_line mySavedShip -1 20
+
+start_countdown
+DESCRIPTION: Starts a countdown visible for everyone)
+PARAMETERS: Seconds(Integer), Message(String)
+EXAMPLE: /start_countdown 180 may contain spaces
+
+start_ship_ai
+DESCRIPTION: Makes current ship into a AI for faction
+PARAMETERS: factionID(Integer)
+EXAMPLE: /start_ship_ai -1
+
+status
+DESCRIPTION: Displays server status
+PARAMETERS:
+EXAMPLE: /status
+
+stop_ship_ai
+DESCRIPTION: Current ship will stop being AI
+PARAMETERS:
+EXAMPLE: /stop_ship_ai
+
+structure_set_minable
+DESCRIPTION: Sets minability of selected structure
+PARAMETERS: true/false(Boolean)
+EXAMPLE: /structure_set_minable false
+
+structure_set_vulnerable
+DESCRIPTION: Sets vulnerability of selected structure
+PARAMETERS: true/false(Boolean)
+EXAMPLE: /structure_set_vulnerable false
+
+teleport_selected_to
+DESCRIPTION: teleports the currently selected entity
+PARAMETERS: X(Float), Y(Float), Z(Float)
+EXAMPLE: /teleport_selected_to 0.0 1.0 3.5
+
+teleport_self_home
+DESCRIPTION: teleports the current controlled entity to the spawning point of the player controlling it
+PARAMETERS:
+EXAMPLE: /teleport_self_home
+
+teleport_self_to
+DESCRIPTION: teleports the current controlled entity
+PARAMETERS: X(Float), Y(Float), Z(Float)
+EXAMPLE: /teleport_self_to 0.0 1.0 3.5
+
+teleport_to
+DESCRIPTION: teleports a player entity
+PARAMETERS: PlayerName(String), X(Float), Y(Float), Z(Float)
+EXAMPLE: /teleport_to schema 0.0 1.0 3.5
+
+teleport_uid_to
+DESCRIPTION: teleports an entity entity
+PARAMETERS: UID(String), X(Float), Y(Float), Z(Float)
+EXAMPLE: /teleport_uid_to ENTITY_SHIP_myship 0.0 1.0 3.5
+
+territory_make_unclaimable
+DESCRIPTION: makes a system unclaimable (use system coords, reset with /territory_reset)
+PARAMETERS: SystemX(Integer), SystemY(Integer), SystemZ(Integer)
+EXAMPLE: /territory_make_unclaimable 10 12 15
+
+territory_reset
+DESCRIPTION: takes away claim of a system (use system coords)
+PARAMETERS: SystemX(Integer), SystemY(Integer), SystemZ(Integer)
+EXAMPLE: /territory_reset 10 12 15
+
+tint
+DESCRIPTION: sets a tint (colors must be between 0 and 1) on a selected player (astronaut)
+PARAMETERS: r(Float), g(Float), b(Float), a(Float)
+EXAMPLE: /tint 1 0.3 0 1.0
+
+tint_name
+DESCRIPTION: sets a tint (colors must be between 0 and 1) on a player by name (astronaut)
+PARAMETERS: r(Float), g(Float), b(Float), a(Float), playername(String)
+EXAMPLE: /tint_name 1 0.3 0 1.0 schema
+
+tp
+DESCRIPTION: warp a player to your position
+PARAMETERS: PlayerName(String)
+EXAMPLE: /tp schema
+
+tp_to
+DESCRIPTION: warp to player's position
+PARAMETERS: PlayerName(String)
+EXAMPLE: /tp_to schema
+
+unban_ip
+DESCRIPTION: unbans a ip from this server
+PARAMETERS: PlayerIP(String)
+EXAMPLE: /unban_ip 192.0.0.1
+
+unban_name
+DESCRIPTION: unbans a playername from this server
+PARAMETERS: PlayerName(String)
+EXAMPLE: /unban_name schema
+
+update_shop_prices
+DESCRIPTION: Updates the prices of all shops instantly
+PARAMETERS:
+EXAMPLE: /update_shop_prices
+
+whitelist_account
+DESCRIPTION: whitelists a starMade account for this server (needs require user auth in server.cfg)
+PARAMETERS: StarMadeUserName(String)
+EXAMPLE: /whitelist_account schema
+
+whitelist_activate
+DESCRIPTION: Turns white list on/off (will be saved in server.cfg)
+PARAMETERS: enable(Boolean)
+EXAMPLE: /whitelist_activate false
+
+whitelist_ip
+DESCRIPTION: add an IP to the white list
+PARAMETERS: PlayerIP(String)
+EXAMPLE: /whitelist_ip 192.0.0.1
+
+whitelist_name
+DESCRIPTION: add a playername to the white list
+PARAMETERS: PlayerName(String)
+EXAMPLE: /whitelist_name schema

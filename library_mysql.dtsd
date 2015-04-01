@@ -154,5 +154,9 @@ log_myerasetable() {
 lib_mysend "TRUNCATE TABLE $1"
 }
 
+core_erasetable() { 
+MYVALUECOMMAND="${@:2}"
 
+log_myerasetable $MYVALUECOMMAND
+}
 

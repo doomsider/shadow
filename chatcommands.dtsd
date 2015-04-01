@@ -5,16 +5,6 @@
 
 #City varchar(255) DEFAULT 'Sandnes'
 
-chatcommand_core() {
-	echo "Testing chatcommand core"
-	
-}
-
-chatcommand_test() {
-	echo "Testing chatcommand test"
-
-}
-
 #####################################USER COMMANDS#####################################
 chatcommand_CORE(){
 #Provides you with a ship core. Only usable once every 10 minutes
@@ -24,19 +14,19 @@ chatcommand_CORE(){
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CORE
 	else
 		PLAYERLASTCORE=$(lib_myvalueretrieve LASTCORE PLAYERDB $1)
-#		OLDPLAYERLASTCORE=$(grep PlayerLastCore $PLAYERFILE/$1 | cut -d= -f2- | tr -d ' ')
+		OLDPLAYERLASTCORE=$(grep PlayerLastCore $PLAYERFILE/$1 | cut -d= -f2- | tr -d ' ')
 		CURRENTTIME=$(date +%s)
 		ADJUSTEDTIME=$(( $CURRENTTIME - 600 ))
 		if [ "$ADJUSTEDTIME" -gt "$OLDPLAYERLASTCORE" ]
 		then
 			lib_screensend $CONFIGDTSD_MAINSCREEN/giveid $1 1 1
-#			as_user "sed -i 's/PlayerLastCore=$OLDPLAYERLASTCORE/PlayerLastCore=$CURRENTTIME/g' $PLAYERFILE/$1"
+			as_user "sed -i 's/PlayerLastCore=$OLDPLAYERLASTCORE/PlayerLastCore=$CURRENTTIME/g' $PLAYERFILE/$1"
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have received one core. There is a 10 minute cooldown before you can use it again
 		else
-			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Please allow Core command to cooldown. $((600-($(date +%s)-$PLAYERLASTCORE)) seconds left
-		# fi
-	# fi
-# }
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Please allow Core command to cooldown. $((600-($(date +%s)-$PLAYERLASTCORE))) seconds left
+		fi
+	 fi
+}
 
 #####################################MODIFIED ADMIN COMMANDS#####################################
 chatcommand_TELEPORT(){
@@ -57,13 +47,13 @@ chatcommand_TELEPORT(){
 	fi
 }
 chatcommand_SPAWNSTART(){
-# Allows enemies to start attacking you inside the specified sector
+ Allows enemies to start attacking you inside the specified sector
 # USAGE: !SPAWNSTART <X> <Y> <Z>
 	if [ "$#" -ne "4" ]
 	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTART <X> <Y> <Z>
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTART X Y Z
 	else		
-		lib_screensend $CONFIGDTSD_MAINSCREEN/sector_chmod $2 $3 $4 - peace
+		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 - peace
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is hostile again
 	fi
 }

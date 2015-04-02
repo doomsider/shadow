@@ -3,7 +3,6 @@
 
 # Script files for DTSD are broken up into core functions, libraries, and running functions.  
 # Core functions beginning with core_ are designed to interact with the server on a direct level such as starting or stopping it
-# Run functions are abbreviated with run_ and are standalone scripts that accomplish things like monitoring the server or database
 # Libraries are indicated with lib_ and contain functions that are designed to help make scripting easier
 
 # Every script can identify a logsearch variable.  The format is LOGSEARCH_function_to_return_to="searchstring"

@@ -1,4 +1,9 @@
 #!/bin/bash
+DTSDHELP_help="Help usage:  shadow.dtsd help [command name] or [nothing] to display help text\nFind help for using core functions\n"
+DTSDHELP_start="Start usage: shadow.dtsd start\nStart the server\n"
+DTSDHELP_kill="Kill usage: shadow.dtsd kill [player name]\nKills a player\n"
+DTSDHELP_download="Download usage: shadow.dtsd download\nUsed to download and update Starmade to newest version\n"
+
 core_download() {
 if lib_check_server_running
 then
@@ -30,8 +35,6 @@ else
 fi
 
 }
-
-
 core_help() {
 # Generate all the variables that match DTSDHELP into an array	
 	HELPCOMMANDS=( $(compgen -v | grep DTSDHELP_) )
@@ -43,7 +46,7 @@ core_help() {
 # $# is the number of parameters issued, in this case we are looking for just one which corresponds to help with no parameters
 		if [ $# -eq 1 ]
 		then
-			echo ${!CURRENTHELP}
+			echo -e "${!CURRENTHELP}"
 			MATCHHELP=GOOD
 		fi
 # If there is at least one parameter
@@ -52,7 +55,7 @@ core_help() {
 			MATCHCOMMAND=${CURRENTHELP#*_}
 			if [ "$MATCHCOMMAND" = "$2" ] 
 			then
-				echo ${!CURRENTHELP}
+				echo -e "${!CURRENTHELP}"
 				MATCHHELP=GOOD
 			fi
 		fi
@@ -62,12 +65,10 @@ core_help() {
 	if  [ "$MATCHHELP" != "GOOD" ] 
 	then
 		echo "No command found"
-		echo $DTSDHELP_help
+		echo  -e "$DTSDHELP_help"
 	fi
 	unset MATCHHELP
 }
-
-
 core_kill() {
 	echo "killing server"
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null
@@ -86,9 +87,6 @@ core_kill() {
 	kill ${PIDS[@]}
 	fi
 }
-
-
-
 core_start() {
 	echo "starting server"
 	if lib_check_server_running
@@ -110,19 +108,11 @@ core_start() {
 # lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar "$CONFIGDTSD_INSTALLPATH"StarMade/$CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 
 # Backgrounding runlog is disabled in testing so you can stop it and restart it from the dtsdscreen
-#	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH runlog
-	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH runlog
+#	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH lib_logcollect
+	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH lib_logcollect
 
-	# This is where the run functions will be gathered and ran
-	#	RUNFUNCTIONS=( $(compgen -A function | grep run_) )
-#	run_logcollect
 	fi  
 }
-
-
-
-
-
 core_status() {
 	echo "Testing server status"
 	if lib_check_server_running
@@ -132,14 +122,6 @@ core_status() {
 		echo "Server has stopped"
 	fi
 }
-
-DTSDHELP_help="Help usage:  shadow.dtsd help [command name] or [nothing] to display help text"
-DTSDHELP_start="Start usage: shadow.dtsd start"
-DTSDHELP_kill="Kill usage: shadow.dtsd kill [player name]"
-DTSDHELP_download="Download usage: shadow.dtsd download"
-
-
-
 
 #######################WORKING############################
 

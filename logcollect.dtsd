@@ -4,7 +4,7 @@ MYSQLDTSD_DTSDLOG_LOGDATE=TIMESTAMP
 # Test logging script.  This function goes through the log from script by following the number of lines the log has and then
 # loading new lines as they are read into an array.  This array is fed into lib_searchline which will match it to any functions
 # that need returns from the log
-run_logcollect() {
+lib_logcollect() {
 	testloop=0
 	LINEARRAY=0
 #	echo "Starting sort"
@@ -52,8 +52,8 @@ run_logcollect() {
 	done
 }
 
-core_runlog() {
-run_logdump
+core_logcollect() {
+lib_logcollect
 
 }
 log_mysql_dtsd() {

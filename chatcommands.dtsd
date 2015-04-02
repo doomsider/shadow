@@ -47,6 +47,17 @@ chatcommand_INVISIOFF(){
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are no longer invisible
 	fi
 }
+chatcommand_KILL(){
+# Kills a player instantly
+# USAGE: !KILL <Player>
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KILL Name
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /kill_character $2 
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 was killed
+	fi
+}
 chatcommand_PROTECT(){
 # Prevents damage to entities inside the specified sector
 # USAGE: !PROTECT <X> <Y> <Z>	
@@ -80,6 +91,17 @@ chatcommand_SPAWNSTART(){
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is hostile again
 	fi
 }
+chatcommand_SPAWNSTOP(){
+# Prevents enemies from attacking you while insider the specified sector
+# USAGE: !SPAWNSTOP <X> <Y> <Z>
+	if [ "$#" -ne "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTOP X Y Z
+	else		
+		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 + peace
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is no longer hostile
+	fi
+}
 chatcommand_TELEPORT(){
 #Teleports you and the entity you are controlling, or another player and the entity they are controling to the specified sector
 #USAGE: !TELEPORT <Player (optional)> <X> <Y> <Z>
@@ -97,28 +119,9 @@ chatcommand_TELEPORT(){
 		fi
 	fi
 }
-chatcommand_SPAWNSTOP(){
-# Prevents enemies from attacking you while insider the specified sector
-# USAGE: !SPAWNSTOP <X> <Y> <Z>
-	if [ "$#" -ne "4" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTOP X Y Z
-	else		
-		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 + peace
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is no longer hostile
-	fi
-}
-chatcommand_KILL(){
-# Kills a player instantly
-# USAGE: !KILL <Player>
-	if [ "$#" -ne "2" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KILL Name
-	else
-		lib_screensend $CONFIGDTSD_MAINSCREEN /kill_character $2 
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 was killed
-	fi
-}
+
+
+
 chatcommand_WHITEADD(){
 # Adds a player to the whitelist
 # USAGE: !WHITEADD <Player>

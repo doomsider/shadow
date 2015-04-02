@@ -1,0 +1,598 @@
+#!/bin/bash
+core_download() {
+if lib_check_server_running
+then
+	echo "$CONFIGDTSD_SERVICE is running! Will not start upgrade or install"
+else
+	echo "Downloading Starmade  !!Upgrade may hang at the end and you will have to ctrl-c to get out!! "
+	lib_pause
+	cd $CONFIGDTSD_INSTALLPATH
+	if [ -f $CONFIGDTSD_INSTALLPATH/StarMade-Starter.jar ]
+	then
+		echo "Starter file found running install"
+		java -jar StarMade-Starter.jar -nogui
+		echo "Upgrade Complete"	
+	else
+		echo "Starter file not found attempting to download"
+# Grab the starmade starter file for Linux - This location may need to be updated in the future
+		wget http://files.star-made.org/StarMade-Starter.jar
+# Execute the starters update routine for a headless server
+		if [ -f $CONFIGDTSD_INSTALLPATH/StarMade-Starter.jar ]
+		then
+			echo "Download successful, running update/install routine"
+			java -jar StarMade-Starter.jar -nogui
+			echo "Upgrade Complete"	
+		else
+			echo "Unable to acquire StarMade-Starter.jar ! Please visit official website to obtain http://star-made.org/download"			
+		fi
+	fi	
+	
+fi
+
+}
+
+
+core_help() {
+# Generate all the variables that match DTSDHELP into an array	
+	HELPCOMMANDS=( $(compgen -v | grep DTSDHELP_) )
+	HELPARRAY=0
+	declare MATCHHELP
+	while [ -n "${HELPCOMMANDS[$HELPARRAY]+set}" ]
+	do	
+		CURRENTHELP=${HELPCOMMANDS[$HELPARRAY]}	
+# $# is the number of parameters issued, in this case we are looking for just one which corresponds to help with no parameters
+		if [ $# -eq 1 ]
+		then
+			echo ${!CURRENTHELP}
+			MATCHHELP=GOOD
+		fi
+# If there is at least one parameter
+		if [ $# -eq 2 ]
+		then
+			MATCHCOMMAND=${CURRENTHELP#*_}
+			if [ "$MATCHCOMMAND" = "$2" ] 
+			then
+				echo ${!CURRENTHELP}
+				MATCHHELP=GOOD
+			fi
+		fi
+		let HELPARRAY++ 
+    done
+# If no match
+	if  [ "$MATCHHELP" != "GOOD" ] 
+	then
+		echo "No command found"
+		echo $DTSDHELP_help
+	fi
+	unset MATCHHELP
+}
+
+
+core_kill() {
+	echo "killing server"
+	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null
+    then
+		echo "Screen(s) identified by $CONFIGDTSD_MAINSCREEN detected and will be closed"
+		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN | awk '{print $2}') )   
+		echo "Trying to kill these ${PIDS[@]}"		
+		kill ${PIDS[@]}
+	fi
+  
+	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN >/dev/null
+    then
+		echo "Screen(s) identified by $CONFIGDTSD_DTSDSCREEN detected and will be closed"
+		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN | awk '{print $2}') )   
+	echo "Trying to kill these ${PIDS[@]}"		
+	kill ${PIDS[@]}
+	fi
+}
+
+
+
+core_start() {
+	echo "starting server"
+	if lib_check_server_running
+	#	if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
+	then
+		echo "Tried to start but $CONFIGDTSD_SERVICE was already running!"
+	else
+		echo "$CONFIGDTSD_SERVICE was not running... starting."
+# Lib_screen add will detect if screens already running and will terminate them if so.
+	lib_screenadd $CONFIGDTSD_MAINSCREEN
+	lib_screenadd $CONFIGDTSD_DTSDSCREEN
+# For java to launch Starmade it must be launched in the correct directory
+	lib_screensend $CONFIGDTSD_MAINSCREEN cd $CONFIGDTSD_INSTALLPATH/StarMade
+# Start script which will create a shell that is logged for all output.  This is useful to see the commands that are given.
+# -f is used to flush data as it is given and keeps the log file updated quickly
+	lib_screensend $CONFIGDTSD_MAINSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log
+	lib_screensend $CONFIGDTSD_DTSDSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_SCRIPTSCREEN.log
+	lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
+# lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar "$CONFIGDTSD_INSTALLPATH"StarMade/$CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
+
+# Backgrounding runlog is disabled in testing so you can stop it and restart it from the dtsdscreen
+#	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH runlog
+	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH runlog
+
+	# This is where the run functions will be gathered and ran
+	#	RUNFUNCTIONS=( $(compgen -A function | grep run_) )
+#	run_logcollect
+	fi  
+}
+
+
+
+
+
+core_status() {
+	echo "Testing server status"
+	if lib_check_server_running
+	then 
+		echo "Server Running"
+	else
+		echo "Server has stopped"
+	fi
+}
+
+DTSDHELP_help="Help usage:  shadow.dtsd help [command name] or [nothing] to display help text"
+DTSDHELP_start="Start usage: shadow.dtsd start"
+DTSDHELP_kill="Kill usage: shadow.dtsd kill [player name]"
+DTSDHELP_download="Download usage: shadow.dtsd download"
+
+
+
+
+#######################WORKING############################
+
+
+
+sm_stop() {
+if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+then
+	echo "$SERVICE is running... stopping."
+# Issue Chat and a command to the server to shutdown
+	as_user "screen -p 0 -S $SCREENID -X eval 'stuff \"/chat Server Going down be back in a bit.\"\015'"
+	as_user "screen -p 0 -S $SCREENID -X eval 'stuff \"/shutdown 60\"\015'"
+# Give the server a chance to gracefully shutdown if not kill it and then seg fault it if necessary
+	sleep 60
+	for LOOPNO in {0..30}
+	do
+		if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+		then
+			sleep 1
+		else
+			echo $SERVICE took $LOOPNO seconds to close
+			as_user "screen -S $SCREENLOG -X quit"
+			break
+		fi
+	done
+	if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+    then
+		echo $SERVICE is taking too long to close and may be frozen. Forcing shut down
+		PID=$(ps aux | grep -v grep | grep $SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')
+		kill $PID
+		for LOOPNO in {0..30}
+		do
+			if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null 
+			then
+				sleep 1
+			else
+				echo $SERVICE took $(($LOOPNO + 30)) seconds to close, and had to be force shut down
+				as_user "screen -S $SCREENLOG -X quit"
+				break
+			fi
+		done
+		if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null 
+		then
+			PID=$(ps aux | grep -v grep | grep $SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')
+			kill -9 $PID
+# This was added in to troubleshoot freezes at the request of Schema			
+			as_user "screen -S $SCREENLOG -X quit"
+			screen -wipe
+			$SERVICE took too long to close. $SERVICE had to be killed
+		fi
+	fi
+	else
+		echo "$SERVICE not running"
+  fi
+}
+
+
+sm_backup() {
+if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+then
+	echo "$SERVICE is running! Will not start backup."
+else
+	echo "Backing up starmade data" 
+# Check to see if zip is installed, it isn't on most minimal server builds. 
+if command -v zip >/dev/null
+then 
+	if [ -d "$BACKUP" ] 
+	then
+		cd $STARTERPATH 
+		as_user "zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade"
+		as_user "mv $BACKUPNAME*.zip $BACKUP"
+		echo "Backup complete"
+	else
+		echo "Directory not found attempting to create"
+		cd $STARTERPATH
+		as_user "mkdir $BACKUP"
+# Create a zip of starmade with time stamp and put it in backup
+		as_user "zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade"
+		as_user "mv $BACKUPNAME*.zip $BACKUP"
+		echo "Backup complete" 
+	fi
+else
+	echo "Please install Zip"
+	fi 
+fi
+}
+sm_livebackup() {
+# WARNING! Live Backup make only a Backup of the Database! Because, some other dirs and files are in use
+if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+then
+# Check to see if zip is installed, it isn't on most minimal server builds.
+	if command -v zip >/dev/null
+	then
+		if [ -d "$BACKUP" ]
+		then
+			cd $STARTERPATH
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/chat Starting live-backup\n'"
+			echo "Starting live-backup"
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/force_save\n'"
+			sleep 10
+# /delay_save prevents saving of the Server
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/delay_save 3600\n'"
+			sleep 5
+# Create a zip of starmade with time stamp and put it in backup
+			as_user "zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade/server-database"
+			if [ "$?" == "0" ]
+			then
+				as_user "mv $BACKUPNAME*.zip $BACKUP"
+				as_user "screen -p 0 -S $SCREENID -X stuff $'/chat live-backup complete and successfull\n'"
+				echo "live-backup complete and successfull"
+			else
+				as_user "screen -p 0 -S $SCREENID -X stuff $'/chat live-backup exited with error. Please contact the admins.\n'"
+				echo "live-backup exited with error. Please check"
+			fi
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/delay_save 1\n'"
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/force_save\n'"
+		else
+			echo "Directory not found attempting to create"
+			cd $STARTERPATH
+			as_user "mkdir $BACKUP"
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/chat Starting live-backup\n'"
+			echo "Starting live-backup"
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/force_save\n'"
+			sleep 10
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/delay_save 3600\n'"
+			sleep 5
+			as_user "zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade/server-database"
+			if [ "$?" == "0" ]
+			then
+				as_user "mv $BACKUPNAME*.zip $BACKUP"
+				as_user "screen -p 0 -S $SCREENID -X stuff $'/chat live-backup complete and successfull\n'"
+				echo "live-backup complete and successfull"
+			else
+				as_user "screen -p 0 -S $SCREENID -X stuff $'/chat live-backup exited with error. Please contact the admins.\n'"
+				echo "live-backup exited with error. Please check"
+			fi
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/delay_save 1\n'"
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/force_save\n'"
+		fi
+	else
+		echo "Please install Zip"
+	fi
+else
+	echo "$SERVICE isn't running, make a regular backup"
+	sm_backup
+fi
+}
+
+sm_upgrade() {
+if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+then
+	echo "$SERVICE is running! Will not start Install"
+else
+	echo "Upgrading Starmade"
+	cd $STARTERPATH
+# Execute the starters update routine for a headless server
+	as_user "java -jar StarMade-Starter.jar -nogui"
+fi
+echo "Upgrade Complete"	
+}
+
+sm_precheck() {
+# A big thanks to MichaelSeph for pointing out the code and Schema for writing it.  Without this help this feature
+# would have taken far longer to add.
+# Check for latest PRE version and install it 
+as_user "wget -q --user dev --password dev -O tmp.html http://files.star-made.org/build/pre/"
+RELEASE_URL=$(cat tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
+as_user "rm tmp.html"
+# echo $RELEASE_URL
+SNEWVERSION1=$(echo $RELEASE_URL | cut -d_ -f2)
+# echo $SNEWVERSION1
+SNEWVERSION2=$(echo $RELEASE_URL | cut -d_ -f3 | cut -d. -f1)
+# echo $SNEWVERSION2
+CURRENTVER=$(cat $STARTERPATH/StarMade/version.txt)
+# echo $CURRENTVER
+OLDSMVER1=$(echo $CURRENTVER | cut -d# -f2 | cut -d_ -f1)
+# echo $OLDSMVER1
+OLDSMVER2=$(echo $CURRENTVER | cut -d_ -f2)
+# echo $OLDSMVER2
+if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
+then 
+	echo "Newer Version Detected"
+	cd $STARTERPATH
+# At this point the cronjobs and server will need to be stopped and a backup made just in case
+    as_user "screen -p 0 -S $SCREENID -X stuff $'/chat New version detected going down for backup and upgrade\n'"
+	sm_stop
+	sm_backup
+	as_user "wget --user dev --password dev http://files.star-made.org/build/pre/$RELEASE_URL"
+	as_user "unzip -o $RELEASE_URL -d $STARTERPATH/StarMade"
+	as_user "rm installed-version"
+	as_user "touch $STARTERPATH/installed-version"
+	echo $RELEASE_URL >> $STARTERPATH/installed-version
+# At this point the server should started and cronjobs restored
+else
+	echo "No new version detected"
+fi
+}
+sm_check() {
+# Check for latest version and install it 
+as_user "wget -q -O tmp.html http://files.star-made.org/build/"
+RELEASE_URL=$(cat tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
+as_user "rm tmp.html"
+# echo $RELEASE_URL
+SNEWVERSION1=$(echo $RELEASE_URL | cut -d_ -f2)
+# echo $SNEWVERSION1
+SNEWVERSION2=$(echo $RELEASE_URL | cut -d_ -f3 | cut -d. -f1)
+# echo $SNEWVERSION2
+CURRENTVER=$(cat $STARTERPATH/StarMade/version.txt)
+# echo $CURRENTVER
+OLDSMVER1=$(echo $CURRENTVER | cut -d# -f2 | cut -d_ -f1)
+# echo $OLDSMVER1
+OLDSMVER2=$(echo $CURRENTVER | cut -d_ -f2)
+# echo $OLDSMVER2
+if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
+then 
+	echo "Newer Version Detected"
+	cd $STARTERPATH
+# At this point the cronjobs and server will need to be stopped and a backup made just in case
+	as_user "screen -p 0 -S $SCREENID -X stuff $'/chat New version detected going down for backup and upgrade\n'"
+	sm_stop
+	sm_backup
+	as_user "wget http://files.star-made.org/build/$RELEASE_URL"
+	as_user "unzip -o $RELEASE_URL -d $STARTERPATH/StarMade"
+	as_user "rm installed-version"
+	as_user "touch $STARTERPATH/installed-version"
+	echo $RELEASE_URL >> $STARTERPATH/installed-version
+# At this point the server should started and cronjobs restored
+else
+	echo "No new version detected"
+fi
+}
+
+sm_ebrake() {
+if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+then
+	PID=$(ps aux | grep -v grep | grep $SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')    
+	jstack $PID >> $STARTERPATH/logs/threaddump.log
+	kill $PID
+# Give server a chance to gracefully shut down
+	for LOOPNO in {0..30}
+	do
+		if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+		then
+			sleep 1
+		else
+			echo $SERVICE closed after $LOOPNO seconds
+			as_user "screen -S $SCREENLOG -X quit"
+			break
+		fi
+	done
+# Check to make sure server is shut down if not kill it with a seg fault.
+	if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+	then
+		PID=$(ps aux | grep -v grep | grep $SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')
+# This was added in to troubleshoot freezes at the request of Schema
+		jstack $PID >> $STARTERPATH/logs/threaddump.log  
+		kill -9 $PID
+		echo $SERVICE has to be forcibly closed. A thread dump has been taken and is saved at $STARTERPATH/logs/threaddump.log and should be sent to schema.
+		as_user "screen -S $SCREENLOG -X quit"
+		screen -wipe
+	fi
+else
+	echo "$SERVICE not running"
+fi
+}
+
+sm_detect() {
+# Special thanks to Fire219 for providing the means to test this script.  Appreciation to Titansmasher for collaboration.
+if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+then
+# Add in a routine to check for STDERR: [SQL] Fetching connection 
+# Send the curent time as a serverwide message
+	if (tail -5 /dev/shm/output$PORT.log | grep "Fetching connection" >/dev/null)
+	then 
+		echo "Database Repairing itself"
+	else
+# Set the current to Unix time which is number of seconds since Unix was created.  Next send this as a PM to Unix time which will cause the console to error back Unix time.
+		CURRENTTIME=$(date +%s)
+		as_user "screen -p 0 -S $SCREENID -X stuff $'/pm $CURRENTTIME testing\n'"   
+		echo "Unix time is $CURRENTTIME"
+		sleep 10
+# Check output.log to see if message was recieved by server.  The tail variable may need to be adjusted so that the
+# log does not generate more lines that it looks back into the log
+		if tac /dev/shm/output$PORT.log | grep -m 1 "$CURRENTTIME" >/dev/null
+		then
+			echo "Server is responding"
+			echo "Server time variable is $CURRENTTIME"
+        else
+			echo "Server is not responding, shutting down and restarting"
+			sm_ebrake
+			sm_start
+		fi
+	fi
+else
+	echo "Starmade is not running!"
+	sm_start
+fi
+}
+
+sm_say() {
+# Check to see if server is running and if so pass the second argument as a chat command to server.  Use quotes if you use spaces.
+if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+then
+	SAYSTRING=$(echo $@ | cut -d" " -f2- | tr -d '<>()!@#$%^&*/[]{},\\' | sed "s/'//g" | sed "s/\"//g")
+	as_user "screen -p 0 -S $SCREENID -X stuff $'/chat $SAYSTRING\n'"
+else
+	echo "Starmade is not running!"
+fi
+}
+
+sm_do() {
+if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+# Check for starmade running the passes second argument as a command on server.  Use quotations if you have spaces in command.
+then
+	DOSTRING=$(echo $@ | cut -d" " -f2- | tr -d '<>()!@#$%^&*/[]{},\\' | sed "s/'//g" | sed "s/\"//g")
+	as_user "screen -p 0 -S $SCREENID -X stuff $'/$DOSTRING\n'"
+else
+	echo "Starmade is not running!"
+fi
+}
+
+sm_setplayermax() {
+# Get the current max player setting and format it by removing spaces
+CURRENTMAXPLAYER=$(grep MAX_CLIENTS $STARTERPATH/StarMade/server.cfg | tail -1 | cut -d = -f2 | cut -d / -f1 | tr -d ' ') 
+echo "Current value is $CURRENTMAXPLAYER"
+# Replace the current value with the one choosen by user
+as_user "sed -i 's/MAX_CLIENTS = $CURRENTMAXPLAYER/MAX_CLIENTS = $2/g' $STARTERPATH/StarMade/server.cfg"
+echo "Max player value changed to $2"
+}
+sm_restore() {
+# Checks for server running and then restores the given backup zip file.  It pulls from the backup directory so no path is needed.
+if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+then
+	echo "Starmade Server is running."
+	else
+	cd $BACKUP
+	as_user "unzip -o $2 -d $STARTERPATH"
+	echo "Server $2 is restored"
+fi
+}
+sm_ban() {
+# Check to see if server is running and if so pass the second argument as a chat command to server.  Use quotes if you use spaces.
+if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+then
+# Set bannarray to zero
+	BANARRAY=0
+# Get the banhammer name from the chat command
+	BANHAMMERNAME=$2
+	echo "$BANHAMMERNAME is getting banned"
+	as_user "screen -p 0 -S $SCREENID -X stuff $'/ban_name $BANHAMMERNAME\n'"
+# Added a kick as requested by BDLS
+	as_user "screen -p 0 -S $SCREENID -X stuff $'/kick $BANHAMMERNAME\n'"
+# Create the temporary file string
+	BANFILESTRING="$STARTERPATH/StarMade/server-database/ENTITY_PLAYERSTATE_player.ent"
+# Edit the file string with the playername to find the actual entity playerstate file
+	BANFILENAME=${BANFILESTRING/player/$BANHAMMERNAME}
+	echo "We are are looking for this player entity file $BANFILENAME"
+# Grab all the Ip's for the banned player as an array
+	BANHAMMERIP=( $(cat $BANFILENAME | strings | grep -v null | grep \/ | cut -d\/ -f2) )
+# Calculate the array total for debugging purposes
+	BANIPTOTAL=$(( ${#BANHAMMERIP[@]} ))
+	echo "$BANIPTOTAL total IP addresses to ban"
+# Check for the filename
+	if  [ -e $BANFILENAME ]
+	then
+# While there is still a value in the array
+		while [ -n "${BANHAMMERIP[$BANARRAY]+set}" ]
+		do
+# Set the current IP to be banned to Bannedip
+			BANNEDIP=${BANHAMMERIP[$BANARRAY]}
+			echo "Banning $BANNEDIP"
+# Ban that IP
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/ban_ip $BANNEDIP\n'"
+# Keep from spamming commands to fast to server
+			sleep 1
+# Add 1 to the array
+			let BANARRAY++
+		done
+# If no file is found
+	else
+		echo "No player entity file found"
+	fi
+else 
+	echo "server not running"
+fi
+}
+
+sm_dump() {
+# Check to see if server is running and if so pass the second argument as a chat command to server.  Use quotes if you use spaces.
+if command -v jstack >/dev/null
+then
+	if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+	then
+		if [ "$#" -ne "2" ] 
+		then
+			echo "Usage - smdump <amount of thread dumps> <amount of delay between dumps> smdump 2 10"
+			exit 
+		fi
+		PID=$(ps aux | grep -v grep | grep $SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')    
+		count=$2
+		delay=$3
+		while [ $count -gt 0 ]
+		do
+			jstack $PID >> $STARTERPATH/logs/threaddump$(date +%H%M%S.%N).log
+			sleep $delay
+			let count--
+		done
+		else
+		echo "$SERVICE not running"
+	fi
+else
+echo "Please install Java JDK (ie: openjdk-7-jdk) to make dumps"
+fi
+}
+
+sm_box() {
+PRECEIVE=$(ls $PLAYERFILE)
+#echo "Players $PRECEIVE"
+ISPLAYER=$3
+#echo "Possible playername $ISPLAYER"
+if [[ $PRECEIVE =~ $ISPLAYER ]]
+then
+	echo "player found"
+	MESSAGE=${@:4}
+	case "$2" in
+		*"green"*) 
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_to info $3 \'$MESSAGE\'\n'"
+		;;
+		*"blue"*)
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_to warning $3 \'$MESSAGE\'\n'"
+		;;
+		*"red"*) 
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_to error $3 \'$MESSAGE\'\n'"
+		;;
+		*) 
+		;;
+	esac
+else
+	echo "No player found"
+	MESSAGE=${@:3}
+	case "$2" in
+		*"green"*) 
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_broadcast info \'$MESSAGE\'\n'"
+		;;
+		*"blue"*)
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_broadcast warning \'$MESSAGE\'\n'"
+		;;
+		*"red"*) 
+			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_broadcast error \'$MESSAGE\'\n'"
+		;;
+		*) 
+		;;
+	esac
+fi
+}
+

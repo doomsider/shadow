@@ -1,4 +1,5 @@
 #!/bin/bash
+# Shadow .01 Based off of DTSD
 # This is the setup function used to determine dependencies and setup the game server config file and database
 core_setup() {
 	echo "Press enter to accept default answer in brackets or type in your setting. Note: running this will overwrite existing configuration"

@@ -1,5 +1,7 @@
 #!/bin/bash
+# Shadow .01 Based off of DTSD
 # This is the main set of functions for dealing with the Mysql database
+
 
 # mysql -u dtsduser -ppass -D dtsddb -e "SELECT LOGSTRING FROM DTSDLOG"
 

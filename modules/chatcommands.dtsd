@@ -1,5 +1,6 @@
 #!/bin/bash
-
+# Shadow .01 Based off of DTSD
+# Location of all the regular chat commands
 
 #####################################USER COMMANDS#####################################
 chatcommand_CORE(){

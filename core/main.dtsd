@@ -1,4 +1,6 @@
 #!/bin/bash
+# Shadow .01 Based off of DTSD
+# Contains the basic core commands for DTSD
 DTSDHELP_help="Help usage:  shadow.dtsd help [command name] or [nothing] to display help text\nFind help for using core functions\n"
 DTSDHELP_start="Start usage: shadow.dtsd start\nStart the server\n"
 DTSDHELP_kill="Kill usage: shadow.dtsd kill [player name]\nKills a player\n"

@@ -1,6 +1,10 @@
 #!/bin/bash
-#This is a test of the current search variables to see if they will return to the proper function
-#MYSQLTABLE_settings_serverkey
+# Shadow .01 Based off of DTSD
+# Location of all the functions related to the chat system
+
+
+
+
 MYSQLDTSD_CHATLOG_SENDER="VARCHAR(25)"
 MYSQLDTSD_CHATLOG_LOGSTRING=TEXT
 MYSQLDTSD_CHATLOG_RECIEVER="VARCHAR(25)"

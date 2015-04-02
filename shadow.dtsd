@@ -1,5 +1,6 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
+# Main file for running Shadow functions.  Collects all core functions and then executes them with parameters
 
 # Script files for DTSD are broken up into core functions, libraries, and running functions.  
 # Core functions beginning with core_ are designed to interact with the server on a direct level such as starting or stopping it

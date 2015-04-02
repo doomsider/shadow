@@ -1,4 +1,7 @@
 #!/bin/bash
+# Shadow .01 Based off of DTSD
+# Script that follows the log and feeds the log into the search functions and database
+
 MYSQLDTSD_DTSDLOG_LOGSTRING=TEXT
 MYSQLDTSD_DTSDLOG_LOGDATE=TIMESTAMP
 # Test logging script.  This function goes through the log from script by following the number of lines the log has and then

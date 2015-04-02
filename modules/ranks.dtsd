@@ -1,4 +1,6 @@
 #!/bin/bash
+# Shadow .01 Based off of DTSD
+# The rank system allows for a range of control over various chat commands
 MYSQLDTSD_RANKLOG_COMMANDSALLOWED=TEXT
 MYSQLDTSD_RANKLOG_NAME="VARCHAR(25)"
 MYSQLALTER_RANKLOG_NAME="UNIQUE INDEX"

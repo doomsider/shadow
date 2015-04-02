@@ -1,5 +1,7 @@
 #!/bin/bash
-# Test file
+# Shadow .01 Based off of DTSD
+# User database will contain all values related to a player
+
 MYSQLDTSD_PLAYERDB_NAME="VARCHAR(25)"
 MYSQLDTSD_PLAYERDB_RANK="VARCHAR(25) DEFAULT 'Ensign'"
 MYSQLDTSD_PLAYERDB_CREDITS="BIGINT DEFAULT '0'"

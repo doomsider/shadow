@@ -1,6 +1,6 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
-
+# Main library for all DTSD related functions
 lib_arraycontains() {
     [[ -n "$1" && -n "$2" ]] || {
         echo "usage: lib_arraycontains <array> <value>"

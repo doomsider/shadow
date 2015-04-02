@@ -21,6 +21,7 @@
 
 #This check was added to make sure the config file is in place
 SCRIPTPATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
+echo $SCRIPTPATH
 SCRIPTDIR=${SCRIPTPATH%/*}
 #echo $SCRIPTDIR
 if [ ! -e "$SCRIPTDIR/core/config.dtsd" ]
@@ -33,7 +34,7 @@ fi
 SOURCES=( $(ls *dtsd | grep -v shadow.dtsd) )
 # echo ${SOURCES[@]}
 # Go through the sources array and then source each .dtsd file to load all the related scripts
-for i in $(find ./core/* -type f) $(find ./modules/* -type f)
+for i in $(find ./core/* -type f) $(find ./modules/* -type f) $SOURCES
 do
 # The check below that is commented out is useful to troubleshoot what scripts are loading successfully
 	echo "loading module $i"	

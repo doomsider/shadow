@@ -153,7 +153,7 @@ core_setup() {
 	;;
 	esac
 	CONFIGDTSD_INSTALLPATH=$SCRIPTDIR
-    CONFIGDTSD_SCRIPTPATH=$SCRIPTDIR
+    CONFIGDTSD_SCRIPTPATH=$SCRIPTPATH
 	ME=`whoami`
 	read -p "User that has privileges to run the game and read write access to game directories [$ME] : " INPUT
 	if [ -n "$INPUT" ]
@@ -212,10 +212,10 @@ core_setup() {
 	else
 		CONFIGDTSD_DTSDSCREEN=$DTSDSCREENDEFAULT
 	fi
-	if [ -e $CONFIGDTSD_INSTALLPATH/config.dtsd ]
+	if [ -e $CONFIGDTSD_INSTALLPATH/core/config.dtsd ]
 	then
 		echo "Config file found - removing"
-		rm $CONFIGDTSD_INSTALLPATH/config.dtsd
+		rm $CONFIGDTSD_INSTALLPATH/core/config.dtsd
 	fi
 #Gather all of the variables to write to config.dtsd
 	compgen -v | while read var

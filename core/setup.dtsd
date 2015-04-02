@@ -152,19 +152,8 @@ core_setup() {
 	exit
 	;;
 	esac
-	SCRIPTPATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
-	SCRIPTDIR=${SCRIPTPATH%/*}
-	CORRECTEDSCRIPTPATH=${SCRIPTPATH/setup.dtsd/shadow.dtsd}
 	CONFIGDTSD_INSTALLPATH=$SCRIPTDIR
-	read -p "Path to Shadow script [$CORRECTEDSCRIPTPATH] : " INPUT
-	if [ -n "$INPUT" ]
-	then
-		echo "Script path set to $INPUT"
-		CONFIGDTSD_SCRIPTPATH=$INPUT
-	else
-		echo "CORRECTEDSCRIPTPATH path set to $CORRECTEDSCRIPTPATH"
-		CONFIGDTSD_SCRIPTPATH=$CORRECTEDSCRIPTPATH	
-	fi
+    CONFIGDTSD_SCRIPTPATH=$SCRIPTDIR
 	ME=`whoami`
 	read -p "User that has privileges to run the game and read write access to game directories [$ME] : " INPUT
 	if [ -n "$INPUT" ]
@@ -231,6 +220,6 @@ core_setup() {
 #Gather all of the variables to write to config.dtsd
 	compgen -v | while read var
 	do 
-		printf "%s=%q\n" "$var" "${!var}" | grep CONFIGDTSD_ >> config.dtsd
+		printf "%s=%q\n" "$var" "${!var}" | grep CONFIGDTSD_ >> $SCRIPTDIR/core/config.dtsd
 	done	
 }

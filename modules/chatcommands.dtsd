@@ -2,6 +2,9 @@
 # Shadow .01 Based off of DTSD
 # Location of all the regular chat commands
 
+CHATHELP_HELP="[Display help for a chat command] Help usage: HELP chatcommand"
+CHATHELP_CORE="[Gives player a ship core, 10 minute cooldown] Core usage: CORE"
+
 #####################################USER COMMANDS#####################################
 chatcommand_CORE(){
 #Provides you with a ship core. Only usable once every 10 minutes
@@ -22,6 +25,42 @@ chatcommand_CORE(){
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Please allow Core command to cooldown. $((600-($(date +%s)-$PLAYERLASTCORE))) seconds left
 		fi
 	 fi
+}
+
+chatcommand_HELP() {
+	HELPCOMMANDS=( $(compgen -v | grep CHATHELP_) )
+	HELPARRAY=0
+	declare MATCHHELP
+# $# is the number of parameters issued, in this case we are looking for just one which corresponds to help with no parameters	
+	if [ $# -eq 1 ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $CHATHELP_HELP
+		MATCHHELP=GOOD
+	fi
+# If there is at least one parameter
+	if [ $# -eq 2 ]
+	then
+		while [ -n "${HELPCOMMANDS[$HELPARRAY]+set}" ]
+		do	
+			CURRENTHELP=${HELPCOMMANDS[$HELPARRAY]}	
+			MATCHCOMMAND=${CURRENTHELP#*_}
+			if [ "$MATCHCOMMAND" = "$2" ] 
+			then
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 ${!CURRENTHELP}
+				MATCHHELP=GOOD
+			fi
+			let HELPARRAY++ 
+		done
+	fi
+# If no match
+	if  [ "$MATCHHELP" != "GOOD" ] 
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "No command found"
+	fi
+	unset MATCHHELP
+
+
+
 }
 
 #####################################MODIFIED ADMIN COMMANDS#####################################

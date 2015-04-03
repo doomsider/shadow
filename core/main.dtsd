@@ -1,11 +1,11 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
 # Contains the basic core commands for DTSD
-DTSDHELP_help="Help usage:  shadow.dtsd help [command name] or [nothing] to display help text\nFind help for using core functions\n"
-DTSDHELP_start="Start usage: shadow.dtsd start\nStart the server\n"
-DTSDHELP_kill="Kill usage: shadow.dtsd kill [player name]\nKills a player\n"
-DTSDHELP_download="Download usage: shadow.dtsd download\nUsed to download and update Starmade to newest version\n"
-
+DTSDHELP_help="\nHelp usage:  shadow.dtsd help [command name] or [nothing] to display help text\nFind help for using core functions\n"
+DTSDHELP_start="\nStart usage: shadow.dtsd start\nStart the server\n"
+DTSDHELP_kill="\nKill usage: shadow.dtsd kill [player name]\nKills a player\n"
+DTSDHELP_download="\nDownload usage: shadow.dtsd download\nUsed to download and update Starmade to newest version\n"
+DTSDHELP_status="\nStatus usage: shadow.dtsd status\nCheck to see if server process is active\n"
 core_download() {
 if lib_check_server_running
 then
@@ -42,27 +42,27 @@ core_help() {
 	HELPCOMMANDS=( $(compgen -v | grep DTSDHELP_) )
 	HELPARRAY=0
 	declare MATCHHELP
-	while [ -n "${HELPCOMMANDS[$HELPARRAY]+set}" ]
-	do	
-		CURRENTHELP=${HELPCOMMANDS[$HELPARRAY]}	
-# $# is the number of parameters issued, in this case we are looking for just one which corresponds to help with no parameters
-		if [ $# -eq 1 ]
-		then
-			echo -e "${!CURRENTHELP}"
-			MATCHHELP=GOOD
-		fi
+# $# is the number of parameters issued, in this case we are looking for just one which corresponds to help with no parameters	
+	if [ $# -eq 1 ]
+	then
+		echo -e "$DTSDHELP_help"
+		MATCHHELP=GOOD
+	fi
 # If there is at least one parameter
-		if [ $# -eq 2 ]
-		then
+	if [ $# -eq 2 ]
+	then
+		while [ -n "${HELPCOMMANDS[$HELPARRAY]+set}" ]
+		do	
+			CURRENTHELP=${HELPCOMMANDS[$HELPARRAY]}	
 			MATCHCOMMAND=${CURRENTHELP#*_}
 			if [ "$MATCHCOMMAND" = "$2" ] 
 			then
 				echo -e "${!CURRENTHELP}"
 				MATCHHELP=GOOD
 			fi
-		fi
-		let HELPARRAY++ 
-    done
+			let HELPARRAY++ 
+		done
+	fi
 # If no match
 	if  [ "$MATCHHELP" != "GOOD" ] 
 	then
@@ -109,7 +109,7 @@ core_start() {
 	lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 # lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar "$CONFIGDTSD_INSTALLPATH"StarMade/$CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 
-# Backgrounding runlog is disabled in testing so you can stop it and restart it from the dtsdscreen
+# Backgrounding runlog is disabled in testing so you can stop it and restart it from the dtsdscreen with logcollect
 #	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH core_logcollect
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
@@ -132,49 +132,49 @@ core_status() {
 
 
 sm_stop() {
-if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+if lib_check_server_running
 then
 	echo "$SERVICE is running... stopping."
 # Issue Chat and a command to the server to shutdown
-	as_user "screen -p 0 -S $SCREENID -X eval 'stuff \"/chat Server Going down be back in a bit.\"\015'"
-	as_user "screen -p 0 -S $SCREENID -X eval 'stuff \"/shutdown 60\"\015'"
+	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Server Going down be back in a bit."
+	lib_screensend $CONFIGDTSD_MAINSCREEN "/shutdown 60"
 # Give the server a chance to gracefully shutdown if not kill it and then seg fault it if necessary
 	sleep 60
 	for LOOPNO in {0..30}
 	do
-		if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+		if lib_check_server_running
 		then
 			sleep 1
 		else
-			echo $SERVICE took $LOOPNO seconds to close
+			echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+			lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH kill
 			as_user "screen -S $SCREENLOG -X quit"
 			break
 		fi
 	done
-	if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+	if lib_check_server_running
     then
-		echo $SERVICE is taking too long to close and may be frozen. Forcing shut down
-		PID=$(ps aux | grep -v grep | grep $SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')
+		echo $CONFIGDTSD_SERVICE is taking too long to close and may be frozen. Forcing shut down
+		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')
 		kill $PID
 		for LOOPNO in {0..30}
 		do
-			if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null 
+			if lib_check_server_running
 			then
 				sleep 1
 			else
-				echo $SERVICE took $(($LOOPNO + 30)) seconds to close, and had to be force shut down
-				as_user "screen -S $SCREENLOG -X quit"
+				echo $CONFIGDTSD_SERVICE took $(($LOOPNO + 30)) seconds to close, and had to be force shut down
+				lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH kill
 				break
 			fi
 		done
-		if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null 
+		if lib_check_server_running 
 		then
-			PID=$(ps aux | grep -v grep | grep $SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')
+			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')
 			kill -9 $PID
 # This was added in to troubleshoot freezes at the request of Schema			
-			as_user "screen -S $SCREENLOG -X quit"
-			screen -wipe
-			$SERVICE took too long to close. $SERVICE had to be killed
+			$CONFIGDTSD_SERVICE took too long to close. $CONFIGDTSD_SERVICE had to be killed
+			lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH kill
 		fi
 	fi
 	else

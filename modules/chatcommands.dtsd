@@ -4,7 +4,9 @@
 
 CHATHELP_HELP="[Display help for a chat command] Help usage: HELP chatcommand"
 CHATHELP_CORE="[Gives player a ship core, 10 minute cooldown] Core usage: CORE"
+CHATHELP_INVISION="[Makes your character invisible to everyone else] Usage: !INVISION	"
 
+	
 #####################################USER COMMANDS#####################################
 chatcommand_CORE(){
 #Provides you with a ship core. Only usable once every 10 minutes

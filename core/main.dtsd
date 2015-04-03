@@ -6,6 +6,39 @@ DTSDHELP_start="\nStart usage: shadow.dtsd start\nStart the server\n"
 DTSDHELP_kill="\nKill usage: shadow.dtsd kill [player name]\nKills a player\n"
 DTSDHELP_download="\nDownload usage: shadow.dtsd download\nUsed to download and update Starmade to newest version\n"
 DTSDHELP_status="\nStatus usage: shadow.dtsd status\nCheck to see if server process is active\n"
+
+core_backup() {
+#Backups current Starmade directory into backupdir with the below backupname and a timestamp
+BACKUPNAME="Starmade_backup_"
+BACKUPDIR=$CONFIGDTSD_INSTALLPATH/SMBACKUP
+if lib_check_server_running
+then
+	echo "$SERVICE is running! Will not start backup."
+else
+	echo "Backing up starmade data" 
+# Check to see if zip is installed, it isn't on most minimal server builds. 
+if command -v zip >/dev/null
+then 
+	if [ -d "$BACKUPDIR" ] 
+	then
+		cd CONFIGDTSD_INSTALLPATH
+		zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade
+		mv $BACKUPNAME*.zip $BACKUPDIR
+		echo "Backup complete"
+	else
+		echo "Directory not found attempting to create"
+		cd $CONFIGDTSD_INSTALLPATH
+		mkdir $BACKUPDIR
+# Create a zip of starmade with time stamp and put it in backup
+		zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade
+		mv $BACKUPNAME*.zip $BACKUPDIR
+		echo "Backup complete" 
+	fi
+else
+	echo "Please install Zip"
+	fi 
+fi
+}
 core_download() {
 if lib_check_server_running
 then
@@ -126,12 +159,7 @@ core_status() {
 		echo "Server has stopped"
 	fi
 }
-
-#######################WORKING############################
-
-
-
-sm_stop() {
+core_stop() {
 if lib_check_server_running
 then
 	echo "$SERVICE is running... stopping."
@@ -147,8 +175,7 @@ then
 			sleep 1
 		else
 			echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
-			lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH kill
-			as_user "screen -S $SCREENLOG -X quit"
+			$CONFIGDTSD_SCRIPTPATH kill
 			break
 		fi
 	done
@@ -164,7 +191,7 @@ then
 				sleep 1
 			else
 				echo $CONFIGDTSD_SERVICE took $(($LOOPNO + 30)) seconds to close, and had to be force shut down
-				lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH kill
+				$CONFIGDTSD_SCRIPTPATH kill
 				break
 			fi
 		done
@@ -174,7 +201,7 @@ then
 			kill -9 $PID
 # This was added in to troubleshoot freezes at the request of Schema			
 			$CONFIGDTSD_SERVICE took too long to close. $CONFIGDTSD_SERVICE had to be killed
-			lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH kill
+			$CONFIGDTSD_SCRIPTPATH kill
 		fi
 	fi
 	else
@@ -183,37 +210,10 @@ then
 }
 
 
-sm_backup() {
-if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
-then
-	echo "$SERVICE is running! Will not start backup."
-else
-	echo "Backing up starmade data" 
-# Check to see if zip is installed, it isn't on most minimal server builds. 
-if command -v zip >/dev/null
-then 
-	if [ -d "$BACKUP" ] 
-	then
-		cd $STARTERPATH 
-		as_user "zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade"
-		as_user "mv $BACKUPNAME*.zip $BACKUP"
-		echo "Backup complete"
-	else
-		echo "Directory not found attempting to create"
-		cd $STARTERPATH
-		as_user "mkdir $BACKUP"
-# Create a zip of starmade with time stamp and put it in backup
-		as_user "zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade"
-		as_user "mv $BACKUPNAME*.zip $BACKUP"
-		echo "Backup complete" 
-	fi
-else
-	echo "Please install Zip"
-	fi 
-fi
-}
+#######################WORKING############################
+
 sm_livebackup() {
-# WARNING! Live Backup make only a Backup of the Database! Because, some other dirs and files are in use
+# WARNING! Live Backup makes only a Backup of the Database! Because, some other dirs and files are in use
 if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
 then
 # Check to see if zip is installed, it isn't on most minimal server builds.

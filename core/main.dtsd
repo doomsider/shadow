@@ -6,10 +6,12 @@ DTSDHELP_start="\nStart usage: shadow.dtsd start\nStart the server\n"
 DTSDHELP_kill="\nKill usage: shadow.dtsd kill [player name]\nKills a player\n"
 DTSDHELP_download="\nDownload usage: shadow.dtsd download\nUsed to download and update Starmade to newest version\n"
 DTSDHELP_status="\nStatus usage: shadow.dtsd status\nCheck to see if server process is active\n"
-
+DTSDHELP_stop="\nStop usage: shadow.dtsd stop\nShutdown server with a warning message to players\n"
+DTSDHELP_universebackup="\nUniversebackup usage: shadow.dtsd universebackup\nBacks up just the universe of a running server\n"
+DTSDHELP_backup="\nBackup usage: shadow.dtsd backup\nBacks up the entire server\n"
 core_backup() {
 #Backups current Starmade directory into backupdir with the below backupname and a timestamp
-BACKUPNAME="Starmade_backup_"
+BACKUPNAME="starmade_backup_"
 BACKUPDIR=$CONFIGDTSD_INSTALLPATH/SMBACKUP
 if lib_check_server_running
 then
@@ -40,6 +42,7 @@ else
 fi
 }
 core_download() {
+# Download Starmade from scratch or update Starmade with this function
 if lib_check_server_running
 then
 	echo "$CONFIGDTSD_SERVICE is running! Will not start upgrade or install"
@@ -71,6 +74,7 @@ fi
 
 }
 core_help() {
+# Help display the help variables to users based upon their parameters 
 # Generate all the variables that match DTSDHELP into an array	
 	HELPCOMMANDS=( $(compgen -v | grep DTSDHELP_) )
 	HELPARRAY=0
@@ -105,6 +109,7 @@ core_help() {
 	unset MATCHHELP
 }
 core_kill() {
+# Kill server and all functions by closing their screens
 	echo "killing server"
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null
     then
@@ -123,6 +128,9 @@ core_kill() {
 	fi
 }
 core_start() {
+# Main script to start server.  Screens are created and then logged.  Starmade is started in a screen and the script commands run
+# in a second screen.  Mysql tables and columns are created/checked and Ranks is generated in pre-alpha before log collect is 
+# called to go through Starmade log
 	echo "starting server"
 	if lib_check_server_running
 	#	if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
@@ -151,6 +159,7 @@ core_start() {
 	fi  
 }
 core_status() {
+# Quick test to see if server appears to be running.  This will not detect a locked state for the server.
 	echo "Testing server status"
 	if lib_check_server_running
 	then 
@@ -160,6 +169,8 @@ core_status() {
 	fi
 }
 core_stop() {
+# Stops the server by letting player know server is going down and then attempts to close server more aggressively if it the
+# process does not end
 if lib_check_server_running
 then
 	echo "$SERVICE is running... stopping."
@@ -208,84 +219,72 @@ then
 		echo "$SERVICE not running"
   fi
 }
-
-
-#######################WORKING############################
-
-sm_livebackup() {
-# WARNING! Live Backup makes only a Backup of the Database! Because, some other dirs and files are in use
-if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+core_universebackup() {
+# Backs up just the universe of an running server
+# WARNING! Live universe backup makes only a Backup of the Database! Because, some other dirs and files are in use
+BACKUPNAME="starmade_universe_backup_"
+BACKUPDIR=$CONFIGDTSD_INSTALLPATH/SMBACKUP
+if lib_check_server_running
 then
 # Check to see if zip is installed, it isn't on most minimal server builds.
 	if command -v zip >/dev/null
 	then
 		if [ -d "$BACKUP" ]
 		then
-			cd $STARTERPATH
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/chat Starting live-backup\n'"
+			cd $CONFIGDTSD_INSTALLPATH
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Starting live-backup"
 			echo "Starting live-backup"
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/force_save\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
 			sleep 10
 # /delay_save prevents saving of the Server
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/delay_save 3600\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/delay_save 3600"
 			sleep 5
 # Create a zip of starmade with time stamp and put it in backup
-			as_user "zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade/server-database"
+			zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade/server-database
 			if [ "$?" == "0" ]
 			then
-				as_user "mv $BACKUPNAME*.zip $BACKUP"
-				as_user "screen -p 0 -S $SCREENID -X stuff $'/chat live-backup complete and successfull\n'"
-				echo "live-backup complete and successfull"
+				mv $BACKUPNAME*.zip $BACKUPDIR
+				lib_screensend $CONFIGDTSD_MAINSCREEN "/chat live-backup complete and successful"
+				echo "live-backup complete and successful"
 			else
-				as_user "screen -p 0 -S $SCREENID -X stuff $'/chat live-backup exited with error. Please contact the admins.\n'"
+				lib_screensend $CONFIGDTSD_MAINSCREEN "/chat live-backup exited with error. Please contact the admins"
 				echo "live-backup exited with error. Please check"
 			fi
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/delay_save 1\n'"
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/force_save\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/delay_save 1"
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
 		else
 			echo "Directory not found attempting to create"
-			cd $STARTERPATH
-			as_user "mkdir $BACKUP"
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/chat Starting live-backup\n'"
+			cd $CONFIGDTSD_INSTALLPATH
+			mkdir $BACKUPDIR
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Starting live-backup"
 			echo "Starting live-backup"
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/force_save\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
 			sleep 10
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/delay_save 3600\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/delay_save 3600"
 			sleep 5
-			as_user "zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade/server-database"
+			zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade/server-database
 			if [ "$?" == "0" ]
 			then
-				as_user "mv $BACKUPNAME*.zip $BACKUP"
-				as_user "screen -p 0 -S $SCREENID -X stuff $'/chat live-backup complete and successfull\n'"
-				echo "live-backup complete and successfull"
+				mv $BACKUPNAME*.zip $BACKUPDIR
+				lib_screensend $CONFIGDTSD_MAINSCREEN "/chat live-backup complete and successful"
+				echo "live-backup complete and successful"
 			else
-				as_user "screen -p 0 -S $SCREENID -X stuff $'/chat live-backup exited with error. Please contact the admins.\n'"
+				lib_screensend $CONFIGDTSD_MAINSCREEN "/chat live-backup exited with error. Please contact the admins"
 				echo "live-backup exited with error. Please check"
 			fi
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/delay_save 1\n'"
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/force_save\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/delay_save 1"
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
 		fi
 	else
 		echo "Please install Zip"
 	fi
 else
 	echo "$SERVICE isn't running, make a regular backup"
-	sm_backup
 fi
 }
 
-sm_upgrade() {
-if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
-then
-	echo "$SERVICE is running! Will not start Install"
-else
-	echo "Upgrading Starmade"
-	cd $STARTERPATH
-# Execute the starters update routine for a headless server
-	as_user "java -jar StarMade-Starter.jar -nogui"
-fi
-echo "Upgrade Complete"	
-}
+#######################WORKING############################
+
 
 sm_precheck() {
 # A big thanks to MichaelSeph for pointing out the code and Schema for writing it.  Without this help this feature

@@ -281,8 +281,6 @@ else
 	echo "$SERVICE isn't running, make a regular backup"
 fi
 }
-
-
 core_devcheck() {
 # A big thanks to MichaelSeph for pointing out the code and Schema for writing it.
 # Check for latest DEV version and install it 
@@ -354,8 +352,7 @@ else
 	echo "No new version detected"
 fi
 }
-
-sm_ebrake() {
+core_ebrake() {
 # Ebrake shuts down the server when it is locked up and makes a Java dump for error collecting
 if lib_check_server_running
 then
@@ -389,11 +386,6 @@ else
 	echo "$CONFIGDTSD_SERVICE not running"
 fi
 }
-
-
-#######################WORKING############################
-
-
 core_detect() {
 # Special thanks to Fire219 for providing the means to test this script.  Appreciation to Titansmasher for collaboration.
 if lib_check_server_running
@@ -406,82 +398,81 @@ then
 	else
 # Set the current to Unix time which is number of seconds since Unix was created.  Next send this as a PM to Unix time which will cause the console to error back Unix time.
 		CURRENTTIME=$(date +%s)
-		as_user "screen -p 0 -S $SCREENID -X stuff $'/pm $CURRENTTIME testing\n'"   
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $CURRENTTIME testing
 		echo "Unix time is $CURRENTTIME"
 		sleep 10
 # Check output.log to see if message was recieved by server.  The tail variable may need to be adjusted so that the
 # log does not generate more lines that it looks back into the log
-		if tac /dev/shm/output$PORT.log | grep -m 1 "$CURRENTTIME" >/dev/null
+		if tac $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log | grep -m 1 "$CURRENTTIME" >/dev/null
 		then
 			echo "Server is responding"
 			echo "Server time variable is $CURRENTTIME"
         else
 			echo "Server is not responding, shutting down and restarting"
-			sm_ebrake
-			sm_start
+			core_ebrake
+			core_start
 		fi
 	fi
 else
 	echo "Starmade is not running!"
-	sm_start
+	core_start
 fi
 }
-
-sm_say() {
+core_say() {
 # Check to see if server is running and if so pass the second argument as a chat command to server.  Use quotes if you use spaces.
-if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+if lib_check_server_running
 then
 	SAYSTRING=$(echo $@ | cut -d" " -f2- | tr -d '<>()!@#$%^&*/[]{},\\' | sed "s/'//g" | sed "s/\"//g")
-	as_user "screen -p 0 -S $SCREENID -X stuff $'/chat $SAYSTRING\n'"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /chat $SAYSTRING
 else
 	echo "Starmade is not running!"
 fi
 }
-
-sm_do() {
-if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+core_dosafe() {
+if lib_check_server_running
 # Check for starmade running the passes second argument as a command on server.  Use quotations if you have spaces in command.
 then
 	DOSTRING=$(echo $@ | cut -d" " -f2- | tr -d '<>()!@#$%^&*/[]{},\\' | sed "s/'//g" | sed "s/\"//g")
-	as_user "screen -p 0 -S $SCREENID -X stuff $'/$DOSTRING\n'"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /"$DOSTRING"
 else
 	echo "Starmade is not running!"
 fi
 }
-
-sm_setplayermax() {
+core_setplayermax() {
 # Get the current max player setting and format it by removing spaces
-CURRENTMAXPLAYER=$(grep MAX_CLIENTS $STARTERPATH/StarMade/server.cfg | tail -1 | cut -d = -f2 | cut -d / -f1 | tr -d ' ') 
+CURRENTMAXPLAYER=$(grep MAX_CLIENTS $CONFIGDTSD_INSTALLPATH/StarMade/server.cfg | tail -1 | cut -d = -f2 | cut -d / -f1 | tr -d ' ') 
 echo "Current value is $CURRENTMAXPLAYER"
 # Replace the current value with the one choosen by user
-as_user "sed -i 's/MAX_CLIENTS = $CURRENTMAXPLAYER/MAX_CLIENTS = $2/g' $STARTERPATH/StarMade/server.cfg"
+sed -i 's/MAX_CLIENTS = $CURRENTMAXPLAYER/MAX_CLIENTS = $2/g' $CONFIGDTSD_INSTALLPATH/StarMade/server.cfg
 echo "Max player value changed to $2"
 }
-sm_restore() {
+core_restore() {
+# This command needs to tell the difference between a complete backup or a universe backup andor univer backup command needs to put directory structure in the universe zip
 # Checks for server running and then restores the given backup zip file.  It pulls from the backup directory so no path is needed.
-if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+if lib_check_server_running
 then
 	echo "Starmade Server is running."
 	else
-	cd $BACKUP
-	as_user "unzip -o $2 -d $STARTERPATH"
+	cd $CONFIGDTSD_INSTALLPATH/SMBACKUP
+	unzip -o $2 -d $CONFIGDTSD_INSTALLPATH
 	echo "Server $2 is restored"
 fi
 }
-sm_ban() {
+core_banhammer() {
+# This command should check the database or current users to make sure name exists
 # Check to see if server is running and if so pass the second argument as a chat command to server.  Use quotes if you use spaces.
-if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+if lib_check_server_running
 then
 # Set bannarray to zero
 	BANARRAY=0
 # Get the banhammer name from the chat command
 	BANHAMMERNAME=$2
 	echo "$BANHAMMERNAME is getting banned"
-	as_user "screen -p 0 -S $SCREENID -X stuff $'/ban_name $BANHAMMERNAME\n'"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /ban_name $BANHAMMERNAME
 # Added a kick as requested by BDLS
-	as_user "screen -p 0 -S $SCREENID -X stuff $'/kick $BANHAMMERNAME\n'"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /kick $BANHAMMERNAME
 # Create the temporary file string
-	BANFILESTRING="$STARTERPATH/StarMade/server-database/ENTITY_PLAYERSTATE_player.ent"
+	BANFILESTRING="$CONFIGDTSD_INSTALLPATH/StarMade/server-database/ENTITY_PLAYERSTATE_player.ent"
 # Edit the file string with the playername to find the actual entity playerstate file
 	BANFILENAME=${BANFILESTRING/player/$BANHAMMERNAME}
 	echo "We are are looking for this player entity file $BANFILENAME"
@@ -500,7 +491,7 @@ then
 			BANNEDIP=${BANHAMMERIP[$BANARRAY]}
 			echo "Banning $BANNEDIP"
 # Ban that IP
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/ban_ip $BANNEDIP\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /ban_ip $BANNEDIP
 # Keep from spamming commands to fast to server
 			sleep 1
 # Add 1 to the array
@@ -514,12 +505,11 @@ else
 	echo "server not running"
 fi
 }
-
-sm_dump() {
-# Check to see if server is running and if so pass the second argument as a chat command to server.  Use quotes if you use spaces.
+core_dump() {
+# Do a java dump for bug hunting
 if command -v jstack >/dev/null
 then
-	if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+	if lib_check_server_running
 	then
 		if [ "$#" -ne "2" ] 
 		then
@@ -531,7 +521,7 @@ then
 		delay=$3
 		while [ $count -gt 0 ]
 		do
-			jstack $PID >> $STARTERPATH/logs/threaddump$(date +%H%M%S.%N).log
+			jstack $PID >> $CONFIGDTSD_INSTALLPATH/threaddump$(date +%H%M%S.%N).log
 			sleep $delay
 			let count--
 		done
@@ -542,25 +532,24 @@ else
 echo "Please install Java JDK (ie: openjdk-7-jdk) to make dumps"
 fi
 }
-
-sm_box() {
-PRECEIVE=$(ls $PLAYERFILE)
-#echo "Players $PRECEIVE"
-ISPLAYER=$3
+core_box() {
+# Usage: shadow.dtsd color player message || shadow.dtsd color message
+PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
+PLAYERLIST=($PLAYERLIST)
 #echo "Possible playername $ISPLAYER"
-if [[ $PRECEIVE =~ $ISPLAYER ]]
+if lib_arraycontains PLAYERLIST $3
 then
 	echo "player found"
 	MESSAGE=${@:4}
 	case "$2" in
 		*"green"*) 
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_to info $3 \'$MESSAGE\'\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_to info $3 \'$MESSAGE\'
 		;;
 		*"blue"*)
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_to warning $3 \'$MESSAGE\'\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_to warning $3 \'$MESSAGE\'
 		;;
 		*"red"*) 
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_to error $3 \'$MESSAGE\'\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_to error $3 \'$MESSAGE\'
 		;;
 		*) 
 		;;
@@ -570,17 +559,16 @@ else
 	MESSAGE=${@:3}
 	case "$2" in
 		*"green"*) 
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_broadcast info \'$MESSAGE\'\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast info $3 \'$MESSAGE\'
 		;;
 		*"blue"*)
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_broadcast warning \'$MESSAGE\'\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast warning $3 \'$MESSAGE\'
 		;;
 		*"red"*) 
-			as_user "screen -p 0 -S $SCREENID -X stuff $'/server_message_broadcast error \'$MESSAGE\'\n'"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast error $3 \'$MESSAGE\'
 		;;
 		*) 
 		;;
 	esac
 fi
 }
-

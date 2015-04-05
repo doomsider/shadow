@@ -112,7 +112,7 @@ while [ -n "${RETARRARY[$TEMPARRAY]+set}" ]
 #lib_myupdate PLAYERDB CREDITS $COLLECT_PLAYER_CREDITS NAME $COLLECT_PLAYER_NAME
 
 log_mysql_erase_TMPDB
-
+check_bankcommand $COLLECT_PLAYER_NAME
 }
 
 # INSERT OR IGNORE INTO EVENTTYPE (EventTypeName) VALUES 'ANI Received'

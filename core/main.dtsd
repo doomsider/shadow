@@ -533,9 +533,11 @@ echo "Please install Java JDK (ie: openjdk-7-jdk) to make dumps"
 fi
 }
 core_box() {
-# Usage: shadow.dtsd color player message || shadow.dtsd color message
+# Usage: shadow.dtsd box color player message || shadow.dtsd box color message
 PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
 PLAYERLIST=($PLAYERLIST)
+echo ${PLAYERLIST[@]}
+
 #echo "Possible playername $ISPLAYER"
 if lib_arraycontains PLAYERLIST $3
 then
@@ -559,13 +561,13 @@ else
 	MESSAGE=${@:3}
 	case "$2" in
 		*"green"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast info $3 \'$MESSAGE\'
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast info \'$MESSAGE\'
 		;;
 		*"blue"*)
-			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast warning $3 \'$MESSAGE\'
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast warning \'$MESSAGE\'
 		;;
 		*"red"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast error $3 \'$MESSAGE\'
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast error \'$MESSAGE\'
 		;;
 		*) 
 		;;

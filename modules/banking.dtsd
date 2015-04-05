@@ -30,13 +30,14 @@ check_bankcommand() {
 #					echo "new bank balance is $NEWBALANCE"
 					lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 -$BVALUE
 					lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
-					lib_myupdate PLAYERDB BANKCOMMAND none NAME $1
+					lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
 					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK You successfully deposited $2 credits
 					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK Your balance is now $NEWBALANCE
 					# as_user "echo '$1 deposited $2' >> $BANKLOG"
 			else
 					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK Insufficient money
- #					echo "not enough money"
+					lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
+					echo "not enough money"
 			fi
 		;;
 		*"none"*)   

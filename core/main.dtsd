@@ -151,7 +151,7 @@ core_start() {
 # lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar "$CONFIGDTSD_INSTALLPATH"StarMade/$CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 
 # Backgrounding runlog is disabled in testing so you can stop it and restart it from the dtsdscreen with logcollect
-#	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH core_logcollect
+#	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logcollect
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logcollect
@@ -193,7 +193,7 @@ then
 	if lib_check_server_running
     then
 		echo $CONFIGDTSD_SERVICE is taking too long to close and may be frozen. Forcing shut down
-		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')
+		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
 		kill $PID
 		for LOOPNO in {0..30}
 		do
@@ -208,15 +208,14 @@ then
 		done
 		if lib_check_server_running 
 		then
-			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')
-			kill -9 $PID
-# This was added in to troubleshoot freezes at the request of Schema			
+			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+			kill -9 $PID			
 			$CONFIGDTSD_SERVICE took too long to close. $CONFIGDTSD_SERVICE had to be killed
 			$CONFIGDTSD_SCRIPTPATH kill
 		fi
 	fi
 	else
-		echo "$SERVICE not running"
+		echo "$CONFIGDTSD_SERVICE not running"
   fi
 }
 core_universebackup() {
@@ -283,74 +282,73 @@ else
 fi
 }
 
-#######################WORKING############################
 
-
-sm_precheck() {
-# A big thanks to MichaelSeph for pointing out the code and Schema for writing it.  Without this help this feature
-# would have taken far longer to add.
-# Check for latest PRE version and install it 
-as_user "wget -q --user dev --password dev -O tmp.html http://files.star-made.org/build/pre/"
-RELEASE_URL=$(cat tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
-as_user "rm tmp.html"
-# echo $RELEASE_URL
-SNEWVERSION1=$(echo $RELEASE_URL | cut -d_ -f2)
-# echo $SNEWVERSION1
-SNEWVERSION2=$(echo $RELEASE_URL | cut -d_ -f3 | cut -d. -f1)
-# echo $SNEWVERSION2
-CURRENTVER=$(cat $STARTERPATH/StarMade/version.txt)
-# echo $CURRENTVER
-OLDSMVER1=$(echo $CURRENTVER | cut -d# -f2 | cut -d_ -f1)
-# echo $OLDSMVER1
-OLDSMVER2=$(echo $CURRENTVER | cut -d_ -f2)
-# echo $OLDSMVER2
-if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
-then 
-	echo "Newer Version Detected"
-	cd $STARTERPATH
+core_devcheck() {
+# A big thanks to MichaelSeph for pointing out the code and Schema for writing it.
+# Check for latest DEV version and install it 
+	cd $CONFIGDTSD_INSTALLPATH
+	as_user wget -q --user dev --password dev -O tmp.html http://files.star-made.org/build/dev/
+	RELEASE_URL=$(cat tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
+	rm tmp.html
+#	echo $RELEASE_URL
+	SNEWVERSION1=$(echo $RELEASE_URL | cut -d_ -f2)
+#	echo $SNEWVERSION1
+	SNEWVERSION2=$(echo $RELEASE_URL | cut -d_ -f3 | cut -d. -f1)
+#	echo $SNEWVERSION2
+	CURRENTVER=$(cat $STARTERPATH/StarMade/version.txt)
+#	echo $CURRENTVER
+	OLDSMVER1=$(echo $CURRENTVER | cut -d# -f2 | cut -d_ -f1)
+#	echo $OLDSMVER1
+	OLDSMVER2=$(echo $CURRENTVER | cut -d_ -f2)
+# 	echo $OLDSMVER2
+	if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
+	then 
+		echo "Newer Version Detected"
+		cd $CONFIGDTSD_INSTALLPATH
 # At this point the cronjobs and server will need to be stopped and a backup made just in case
-    as_user "screen -p 0 -S $SCREENID -X stuff $'/chat New version detected going down for backup and upgrade\n'"
-	sm_stop
-	sm_backup
-	as_user "wget --user dev --password dev http://files.star-made.org/build/pre/$RELEASE_URL"
-	as_user "unzip -o $RELEASE_URL -d $STARTERPATH/StarMade"
-	as_user "rm installed-version"
-	as_user "touch $STARTERPATH/installed-version"
-	echo $RELEASE_URL >> $STARTERPATH/installed-version
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat New version detected going down for backup and upgrade"
+		core_stop
+		core_backup
+	    wget --user dev --password dev http://files.star-made.org/build/pre/$RELEASE_URL
+		unzip -o $RELEASE_URL -d $CONFIGDTSD_INSTALLPATHN/StarMade
+		rm installed-version
+		touch $CONFIGDTSD_INSTALLPATH/installed-version
+		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version
 # At this point the server should started and cronjobs restored
-else
-	echo "No new version detected"
+	else
+		echo "No new version detected"
 fi
 }
-sm_check() {
-# Check for latest version and install it 
-as_user "wget -q -O tmp.html http://files.star-made.org/build/"
-RELEASE_URL=$(cat tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
-as_user "rm tmp.html"
-# echo $RELEASE_URL
-SNEWVERSION1=$(echo $RELEASE_URL | cut -d_ -f2)
-# echo $SNEWVERSION1
-SNEWVERSION2=$(echo $RELEASE_URL | cut -d_ -f3 | cut -d. -f1)
-# echo $SNEWVERSION2
-CURRENTVER=$(cat $STARTERPATH/StarMade/version.txt)
+core_check() {
+# Manually check for latest version and install it 
+	cd $CONFIGDTSD_INSTALLPATH
+	wget -q -O tmp.html http://files.star-made.org/build/
+	RELEASE_URL=$(cat tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
+	as_user "rm tmp.html"
+#	echo $RELEASE_URL
+	SNEWVERSION1=$(echo $RELEASE_URL | cut -d_ -f2)
+#	echo $SNEWVERSION1
+	SNEWVERSION2=$(echo $RELEASE_URL | cut -d_ -f3 | cut -d. -f1)
+#	echo $SNEWVERSION2
+	CURRENTVER=$(cat $STARTERPATH/StarMade/version.txt)
 # echo $CURRENTVER
-OLDSMVER1=$(echo $CURRENTVER | cut -d# -f2 | cut -d_ -f1)
+	OLDSMVER1=$(echo $CURRENTVER | cut -d# -f2 | cut -d_ -f1)
 # echo $OLDSMVER1
-OLDSMVER2=$(echo $CURRENTVER | cut -d_ -f2)
+	OLDSMVER2=$(echo $CURRENTVER | cut -d_ -f2)
 # echo $OLDSMVER2
-if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
-then 
-	echo "Newer Version Detected"
-	cd $STARTERPATH
+	if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
+	then 
+		echo "Newer Version Detected"
+		cd $CONFIGDTSD_INSTALLPATH
 # At this point the cronjobs and server will need to be stopped and a backup made just in case
-	as_user "screen -p 0 -S $SCREENID -X stuff $'/chat New version detected going down for backup and upgrade\n'"
-	sm_stop
-	sm_backup
-	as_user "wget http://files.star-made.org/build/$RELEASE_URL"
-	as_user "unzip -o $RELEASE_URL -d $STARTERPATH/StarMade"
-	as_user "rm installed-version"
-	as_user "touch $STARTERPATH/installed-version"
-	echo $RELEASE_URL >> $STARTERPATH/installed-version
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat New version detected going down for backup and upgrade"
+		core_stop
+		core_backup
+		wget http://files.star-made.org/build/$RELEASE_URL
+		unzip -o $RELEASE_URL -d $CONFIGDTSD_INSTALLPATH/StarMade
+		rm installed-version
+		touch CONFIGDTSD_INSTALLPATH/installed-version
+		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version
 # At this point the server should started and cronjobs restored
 else
 	echo "No new version detected"
@@ -358,46 +356,51 @@ fi
 }
 
 sm_ebrake() {
-if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+# Ebrake shuts down the server when it is locked up and makes a Java dump for error collecting
+if lib_check_server_running
 then
-	PID=$(ps aux | grep -v grep | grep $SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')    
-	jstack $PID >> $STARTERPATH/logs/threaddump.log
+	PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')    
+	jstack $PID >> $CONFIGDTSD_INSTALLPATH/threaddump.log
 	kill $PID
 # Give server a chance to gracefully shut down
 	for LOOPNO in {0..30}
 	do
-		if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+		if lib_check_server_running
 		then
 			sleep 1
 		else
-			echo $SERVICE closed after $LOOPNO seconds
-			as_user "screen -S $SCREENLOG -X quit"
+			echo $CONFIGDTSD_SERVICE closed after $LOOPNO seconds
+			$CONFIGDTSD_SCRIPTPATH kill
 			break
 		fi
 	done
 # Check to make sure server is shut down if not kill it with a seg fault.
-	if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+	if lib_check_server_running
 	then
-		PID=$(ps aux | grep -v grep | grep $SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')
+		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
 # This was added in to troubleshoot freezes at the request of Schema
-		jstack $PID >> $STARTERPATH/logs/threaddump.log  
+		jstack $PID >> $CONFIGDTSD_INSTALLPATH/threaddump.log 
 		kill -9 $PID
-		echo $SERVICE has to be forcibly closed. A thread dump has been taken and is saved at $STARTERPATH/logs/threaddump.log and should be sent to schema.
-		as_user "screen -S $SCREENLOG -X quit"
+		echo $CONFIGDTSD_SERVICE has to be forcibly closed. A thread dump has been taken and is saved at $CONFIGDTSD_INSTALLPATH/threaddump.log and should be sent to Schema.
+		$CONFIGDTSD_SCRIPTPATH kill
 		screen -wipe
 	fi
 else
-	echo "$SERVICE not running"
+	echo "$CONFIGDTSD_SERVICE not running"
 fi
 }
 
-sm_detect() {
+
+#######################WORKING############################
+
+
+core_detect() {
 # Special thanks to Fire219 for providing the means to test this script.  Appreciation to Titansmasher for collaboration.
-if ps aux | grep $SERVICE | grep -v grep | grep -v tee | grep port:$PORT >/dev/null
+if lib_check_server_running
 then
 # Add in a routine to check for STDERR: [SQL] Fetching connection 
 # Send the curent time as a serverwide message
-	if (tail -5 /dev/shm/output$PORT.log | grep "Fetching connection" >/dev/null)
+	if (tail -5 $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log | grep "Fetching connection" >/dev/null)
 	then 
 		echo "Database Repairing itself"
 	else
@@ -523,7 +526,7 @@ then
 			echo "Usage - smdump <amount of thread dumps> <amount of delay between dumps> smdump 2 10"
 			exit 
 		fi
-		PID=$(ps aux | grep -v grep | grep $SERVICE | grep -v tee | grep port:$PORT | awk '{print $2}')    
+		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')    
 		count=$2
 		delay=$3
 		while [ $count -gt 0 ]

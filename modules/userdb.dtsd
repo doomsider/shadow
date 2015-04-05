@@ -77,7 +77,6 @@ RETRIEVE=$(lib_mycolumnretrieve TMPDB TMPSTRING)
 echo $RETRIEVE
 # Set all player values to an array
 RETARRARY=($RETRIEVE)
-
 echo "Here is retrieve array zero ${RETARRARY[0]}"
 echo "Here is retrieve array one ${RETARRARY[1]}"
 echo "Here is retrieve array two ${RETARRARY[2]}"

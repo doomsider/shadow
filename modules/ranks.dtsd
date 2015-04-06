@@ -5,12 +5,15 @@ MYSQLDTSD_RANKLOG_COMMANDSALLOWED=TEXT
 MYSQLDTSD_RANKLOG_NAME="VARCHAR(25)"
 MYSQLALTER_RANKLOG_NAME="UNIQUE INDEX"
 
+DTSDHELP_changerank="\nChangerank usage: shadow.dtsd changerank player rank\nChanges the rank of a player\n"
+
 # Set the names for all the ranks
 COMMANDS_RANK1=Ensign
 COMMANDS_RANK2=Lieutenant
 COMMANDS_RANK3=Commander
 COMMANDS_RANK4=Captain
 COMMANDS_RANK5=Admiral
+
 
 
 check_player_rank_allowed() {

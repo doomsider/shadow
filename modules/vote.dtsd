@@ -1,0 +1,40 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Contains function for voting
+
+
+# }
+# chatcommand_VOTEBALANCE(){ 
+# #Tells you how many voting points you have saved up
+# #USAGE: !VOTEBALANCE
+	# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have $(grep "VotingPoints=" $PLAYERFILE/$1 | cut -d= -f2 | tr -d " " ) votes to spend!
+# }
+
+
+# chatcommand_VOTEEXCHANGE(){
+# #Converts the specified number of voting points into credits at the rate of 1,000,000 credits per vote
+# #USAGE: !VOTEEXCHANGE <Amount>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !VOTEEXCHANGE <Amount>
+	# else
+		# if [ $2 -gt 0 ] 2>/dev/null
+		# then
+			# BALANCECREDITS=$(grep CreditsInBank $PLAYERFILE/$1 | cut -d= -f2 | tr -d ' ')
+			# VOTEBALANCE=$(grep "VotingPoints=" $PLAYERFILE/$1 | cut -d= -f2)
+			# if [ $VOTEBALANCE -ge $2 ]
+			# then
+				# NEWVOTE=$(($VOTEBALANCE - $2))
+				# NEWCREDITS=$(($BALANCECREDITS + $CREDITSPERVOTE * $2))
+				# as_user "sed -i 's/CreditsInBank=.*/CreditsInBank=$NEWCREDITS/g' $PLAYERFILE/$1"
+				# as_user "sed -i 's/VotingPoints=.*/VotingPoints=$NEWVOTE/g' $PLAYERFILE/$1"
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You traded in $2 voting points for $(($BALANCECREDITS + $CREDITSPERVOTE * $2)) credits. The credits have been sent to your bank account.
+			# else
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You dont have enough voting points to do that! You only have $VOTEBALANCE voting points
+			# fi
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid amount entered. Please only use positive whole numbers.
+		# fi
+	# fi
+# }
+

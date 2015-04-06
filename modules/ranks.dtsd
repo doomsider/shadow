@@ -92,3 +92,80 @@ core_setranks() {
 set_ranks_database
 
 }
+
+
+# #Rank Commands
+# chatcommand_RANKME(){
+# #Tells you what your rank is and what commands are available to you
+# #USAGE: !RANKME
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKME
+	# else
+			# USERRANK=$(sed -n '3p' "$PLAYERFILE/$PLAYERCHATID" | cut -d" " -f2 | cut -d"[" -f2 | cut -d"]" -f1)
+			# USERCOMMANDS=$(grep $USERRANK $RANKCOMMANDS | cut -d" " -f2-)
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $1 rank is $USERRANK 
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Commands available are $USERCOMMANDS 
+	# fi
+# }
+# chatcommand_RANKLIST(){
+# #Lists all the available ranks
+# #USAGE: !RANKLIST
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKLIST
+	# else
+	    # LISTRANKS=( $(cut -d " " -f 1 $RANKCOMMANDS) )
+		# CHATLIST=${LISTRANKS[@]}	
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The Ranks are: $CHATLIST 
+	# fi
+# }
+# chatcommand_RANKSET(){
+# #Sets the rank of the player
+# #USAGE: !RANKSET <Player> <Rank>
+	# if [ "$#" -ne "3" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKSET <Name> <Rank>
+	# else
+		# if ! grep -q $3 $RANKCOMMANDS
+		# then
+			# if [ -e $PLAYERFILE/$2 ]
+			# then
+				# as_user "sed -i '3s/.*/Rank: \[$3\]/g' $PLAYERFILE/$2"
+			# else
+				# MakePlayerFile $2
+				# as_user "sed -i '3s/.*/Rank: \[$3\]/g' $PLAYERFILE/$2"
+			# fi
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 is now the rank $3
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 That rank does not exist
+		# fi
+	# fi
+# }
+# chatcommand_RANKUSER(){
+# #Finds out the rank of the given player
+# #USAGE: !RANKUSER <Player>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKUSER <Name>
+	# else
+		# if [ -e $PLAYERFILE/$2 ]
+		# then
+			# RANKUSERSTING=$(sed -n '3p' $PLAYERFILE/$2 | cut -d" " -f2)
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $RANKUSERSTING
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has no current Rank or does not exist
+		# fi
+	# fi
+# }
+# chatcommand_RANKCOMMAND(){
+# #Lists all commands available to you
+# #USAGE: !RANKCOMMAND
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKCOMMAND
+	# else		
+		# RANKUCOMMAND=$(grep $PLAYERRANK $RANKCOMMANDS | cut -d" " -f2-)
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Commands are $RANKUCOMMAND
+	# fi
+# }

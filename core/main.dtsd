@@ -1,14 +1,27 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
 # Contains the basic core commands for DTSD
-DTSDHELP_help="\nHelp usage:  shadow.dtsd help [command name] or [nothing] to display help text\nFind help for using core functions\n"
-DTSDHELP_start="\nStart usage: shadow.dtsd start\nStart the server\n"
-DTSDHELP_kill="\nKill usage: shadow.dtsd kill [player name]\nKills a player\n"
+
+DTSDHELP_backup="\nBackup usage: shadow.dtsd backup\nBacks up the entire server\n"
+DTSDHELP_banhammer="\nBanhammer usage: shadow.dtsd banhammer\nBans a player by name and IP\n"
+DTSDHELP_box="\nBox usage: shadow.dtsd box color player message or shadow.dtsd box color message\nSends a message in a color box to a player or to everyone\n"
+DTSDHELP_check="\nCheck usage: shadow.dtsd check\nChecks to see if server is the most current version\n"
+DTSDHELP_detect="\nDetect usage: shadow.dtsd detect\nDetect to see if server is running by sending a message to the server and checking the logs to see if it was received\n"
+DTSDHELP_devcheck="\nDevcheck usage: shadow.dtsd devcheck\nChecks to see if server is the most current development version\n"
+DTSDHELP_dosafe="\nDosafe usage: shadow.dtsd dosafe command\nSends a command that is formatted to prevent server errors\n"
 DTSDHELP_download="\nDownload usage: shadow.dtsd download\nUsed to download and update Starmade to newest version\n"
+DTSDHELP_dump="\nDump usage: shadow.dtsd dump\nDump creates a Java dump for bug hunting\n"
+DTSDHELP_ebrake="\nEbrake usage: shadow.dtsd ebrake\nShuts down server when it is locked up and creates a Java dump\n"
+DTSDHELP_help="\nHelp usage:  shadow.dtsd help [command name] or [nothing] to display help text\nFind help for using core functions\n"
+DTSDHELP_kill="\nKill usage: shadow.dtsd kill [player name]\nKills a player\n"
+DTSDHELP_restore="\nRestore usage: shadow.dtsd restore backupname\nRestores a zip of the complete server\n"
+DTSDHELP_say="\nSay usage: shadow.dtsd say message\nSends a message to everyone on the server\n"
+DTSDHELP_setplayermax="\nSetplayermax usage: shadow.dtsd setplayermax integer\nSet the max number of players, useful to set to zero when doing maintenance to keep people off\n"
+DTSDHELP_start="\nStart usage: shadow.dtsd start\nStart the server\n"
 DTSDHELP_status="\nStatus usage: shadow.dtsd status\nCheck to see if server process is active\n"
 DTSDHELP_stop="\nStop usage: shadow.dtsd stop\nShutdown server with a warning message to players\n"
 DTSDHELP_universebackup="\nUniversebackup usage: shadow.dtsd universebackup\nBacks up just the universe of a running server\n"
-DTSDHELP_backup="\nBackup usage: shadow.dtsd backup\nBacks up the entire server\n"
+
 core_backup() {
 #Backups current Starmade directory into backupdir with the below backupname and a timestamp
 BACKUPNAME="starmade_backup_"
@@ -39,6 +52,208 @@ then
 else
 	echo "Please install Zip"
 	fi 
+fi
+}
+core_banhammer() {
+# This command should check the database or current users to make sure name exists
+# Check to see if server is running and if so pass the second argument as a chat command to server.  Use quotes if you use spaces.
+if lib_check_server_running
+then
+# Set bannarray to zero
+	BANARRAY=0
+# Get the banhammer name from the chat command
+	BANHAMMERNAME=$2
+	echo "$BANHAMMERNAME is getting banned"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /ban_name $BANHAMMERNAME
+# Added a kick as requested by BDLS
+	lib_screensend $CONFIGDTSD_MAINSCREEN /kick $BANHAMMERNAME
+# Create the temporary file string
+	BANFILESTRING="$CONFIGDTSD_INSTALLPATH/StarMade/server-database/ENTITY_PLAYERSTATE_player.ent"
+# Edit the file string with the playername to find the actual entity playerstate file
+	BANFILENAME=${BANFILESTRING/player/$BANHAMMERNAME}
+	echo "We are are looking for this player entity file $BANFILENAME"
+# Grab all the Ip's for the banned player as an array
+	BANHAMMERIP=( $(cat $BANFILENAME | strings | grep -v null | grep \/ | cut -d\/ -f2) )
+# Calculate the array total for debugging purposes
+	BANIPTOTAL=$(( ${#BANHAMMERIP[@]} ))
+	echo "$BANIPTOTAL total IP addresses to ban"
+# Check for the filename
+	if  [ -e $BANFILENAME ]
+	then
+# While there is still a value in the array
+		while [ -n "${BANHAMMERIP[$BANARRAY]+set}" ]
+		do
+# Set the current IP to be banned to Bannedip
+			BANNEDIP=${BANHAMMERIP[$BANARRAY]}
+			echo "Banning $BANNEDIP"
+# Ban that IP
+			lib_screensend $CONFIGDTSD_MAINSCREEN /ban_ip $BANNEDIP
+# Keep from spamming commands to fast to server
+			sleep 1
+# Add 1 to the array
+			let BANARRAY++
+		done
+# If no file is found
+	else
+		echo "No player entity file found"
+	fi
+else 
+	echo "server not running"
+fi
+}
+core_box() {
+# Usage: shadow.dtsd box color player message || shadow.dtsd box color message
+PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
+PLAYERLIST=($PLAYERLIST)
+echo ${PLAYERLIST[@]}
+
+#echo "Possible playername $ISPLAYER"
+if lib_arraycontains PLAYERLIST $3
+then
+	echo "player found"
+	MESSAGE=${@:4}
+	case "$2" in
+		*"green"*) 
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_to info $3 \'$MESSAGE\'
+		;;
+		*"blue"*)
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_to warning $3 \'$MESSAGE\'
+		;;
+		*"red"*) 
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_to error $3 \'$MESSAGE\'
+		;;
+		*) 
+		;;
+	esac
+else
+	echo "No player found"
+	MESSAGE=${@:3}
+	case "$2" in
+		*"green"*) 
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast info \'$MESSAGE\'
+		;;
+		*"blue"*)
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast warning \'$MESSAGE\'
+		;;
+		*"red"*) 
+			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast error \'$MESSAGE\'
+		;;
+		*) 
+		;;
+	esac
+fi
+}
+core_check() {
+# Manually check for latest version and install it 
+	cd $CONFIGDTSD_INSTALLPATH
+	wget -q -O tmp.html http://files.star-made.org/build/
+	RELEASE_URL=$(cat tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
+	as_user "rm tmp.html"
+#	echo $RELEASE_URL
+	SNEWVERSION1=$(echo $RELEASE_URL | cut -d_ -f2)
+#	echo $SNEWVERSION1
+	SNEWVERSION2=$(echo $RELEASE_URL | cut -d_ -f3 | cut -d. -f1)
+#	echo $SNEWVERSION2
+	CURRENTVER=$(cat $STARTERPATH/StarMade/version.txt)
+# echo $CURRENTVER
+	OLDSMVER1=$(echo $CURRENTVER | cut -d# -f2 | cut -d_ -f1)
+# echo $OLDSMVER1
+	OLDSMVER2=$(echo $CURRENTVER | cut -d_ -f2)
+# echo $OLDSMVER2
+	if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
+	then 
+		echo "Newer Version Detected"
+		cd $CONFIGDTSD_INSTALLPATH
+# At this point the cronjobs and server will need to be stopped and a backup made just in case
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat New version detected going down for backup and upgrade"
+		core_stop
+		core_backup
+		wget http://files.star-made.org/build/$RELEASE_URL
+		unzip -o $RELEASE_URL -d $CONFIGDTSD_INSTALLPATH/StarMade
+		rm installed-version
+		touch CONFIGDTSD_INSTALLPATH/installed-version
+		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version
+# At this point the server should started and cronjobs restored
+else
+	echo "No new version detected"
+fi
+}
+core_detect() {
+# Special thanks to Fire219 for providing the means to test this script.  Appreciation to Titansmasher for collaboration.
+if lib_check_server_running
+then
+# Add in a routine to check for STDERR: [SQL] Fetching connection 
+# Send the curent time as a serverwide message
+	if (tail -5 $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log | grep "Fetching connection" >/dev/null)
+	then 
+		echo "Database Repairing itself"
+	else
+# Set the current to Unix time which is number of seconds since Unix was created.  Next send this as a PM to Unix time which will cause the console to error back Unix time.
+		CURRENTTIME=$(date +%s)
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $CURRENTTIME testing
+		echo "Unix time is $CURRENTTIME"
+		sleep 10
+# Check output.log to see if message was recieved by server.  The tail variable may need to be adjusted so that the
+# log does not generate more lines that it looks back into the log
+		if tac $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log | grep -m 1 "$CURRENTTIME" >/dev/null
+		then
+			echo "Server is responding"
+			echo "Server time variable is $CURRENTTIME"
+        else
+			echo "Server is not responding, shutting down and restarting"
+			core_ebrake
+			core_start
+		fi
+	fi
+else
+	echo "Starmade is not running!"
+	core_start
+fi
+}
+core_devcheck() {
+# A big thanks to MichaelSeph for pointing out the code and Schema for writing it.
+# Check for latest DEV version and install it 
+	cd $CONFIGDTSD_INSTALLPATH
+	as_user wget -q --user dev --password dev -O tmp.html http://files.star-made.org/build/dev/
+	RELEASE_URL=$(cat tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
+	rm tmp.html
+#	echo $RELEASE_URL
+	SNEWVERSION1=$(echo $RELEASE_URL | cut -d_ -f2)
+#	echo $SNEWVERSION1
+	SNEWVERSION2=$(echo $RELEASE_URL | cut -d_ -f3 | cut -d. -f1)
+#	echo $SNEWVERSION2
+	CURRENTVER=$(cat $STARTERPATH/StarMade/version.txt)
+#	echo $CURRENTVER
+	OLDSMVER1=$(echo $CURRENTVER | cut -d# -f2 | cut -d_ -f1)
+#	echo $OLDSMVER1
+	OLDSMVER2=$(echo $CURRENTVER | cut -d_ -f2)
+# 	echo $OLDSMVER2
+	if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
+	then 
+		echo "Newer Version Detected"
+		cd $CONFIGDTSD_INSTALLPATH
+# At this point the cronjobs and server will need to be stopped and a backup made just in case
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat New version detected going down for backup and upgrade"
+		core_stop
+		core_backup
+	    wget --user dev --password dev http://files.star-made.org/build/pre/$RELEASE_URL
+		unzip -o $RELEASE_URL -d $CONFIGDTSD_INSTALLPATHN/StarMade
+		rm installed-version
+		touch $CONFIGDTSD_INSTALLPATH/installed-version
+		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version
+# At this point the server should started and cronjobs restored
+	else
+		echo "No new version detected"
+fi
+}
+core_dosafe() {
+if lib_check_server_running
+# Check for starmade running the passes second argument as a command on server.  Use quotations if you have spaces in command.
+then
+	DOSTRING=$(echo $@ | cut -d" " -f2- | tr -d '<>()!@#$%^&*/[]{},\\' | sed "s/'//g" | sed "s/\"//g")
+	lib_screensend $CONFIGDTSD_MAINSCREEN /"$DOSTRING"
+else
+	echo "Starmade is not running!"
 fi
 }
 core_download() {
@@ -72,6 +287,67 @@ else
 	
 fi
 
+}
+core_dump() {
+# Do a java dump for bug hunting
+if command -v jstack >/dev/null
+then
+	if lib_check_server_running
+	then
+		if [ "$#" -ne "2" ] 
+		then
+			echo "Usage - smdump <amount of thread dumps> <amount of delay between dumps> smdump 2 10"
+			exit 
+		fi
+		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')    
+		count=$2
+		delay=$3
+		while [ $count -gt 0 ]
+		do
+			jstack $PID >> $CONFIGDTSD_INSTALLPATH/threaddump$(date +%H%M%S.%N).log
+			sleep $delay
+			let count--
+		done
+		else
+		echo "$SERVICE not running"
+	fi
+else
+echo "Please install Java JDK (ie: openjdk-7-jdk) to make dumps"
+fi
+}
+core_ebrake() {
+# Ebrake shuts down the server when it is locked up and makes a Java dump for error collecting
+if lib_check_server_running
+then
+	PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')    
+	jstack $PID >> $CONFIGDTSD_INSTALLPATH/threaddump.log
+	kill $PID
+# Give server a chance to gracefully shut down
+	for LOOPNO in {0..30}
+	do
+		if lib_check_server_running
+		then
+			sleep 1
+		else
+			echo $CONFIGDTSD_SERVICE closed after $LOOPNO seconds
+			$CONFIGDTSD_SCRIPTPATH kill
+			break
+		fi
+	done
+# Check to make sure server is shut down if not kill it with a seg fault.
+	if lib_check_server_running
+	then
+		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+# This was added in to troubleshoot freezes at the request of Schema
+		jstack $PID >> $CONFIGDTSD_INSTALLPATH/threaddump.log 
+		kill -9 $PID
+		echo $CONFIGDTSD_SERVICE has to be forcibly closed. A thread dump has been taken and is saved at $CONFIGDTSD_INSTALLPATH/threaddump.log and should be sent to Schema.
+		$CONFIGDTSD_SCRIPTPATH kill
+		screen -wipe
+	fi
+else
+	echo "$CONFIGDTSD_SERVICE not running"
+fi
 }
 core_help() {
 # Help display the help variables to users based upon their parameters 
@@ -126,6 +402,36 @@ core_kill() {
 	echo "Trying to kill these ${PIDS[@]}"		
 	kill ${PIDS[@]}
 	fi
+}
+core_restore() {
+# This command needs to tell the difference between a complete backup or a universe backup andor univer backup command needs to put directory structure in the universe zip
+# Checks for server running and then restores the given backup zip file.  It pulls from the backup directory so no path is needed.
+if lib_check_server_running
+then
+	echo "Starmade Server is running."
+	else
+	cd $CONFIGDTSD_INSTALLPATH/SMBACKUP
+	unzip -o $2 -d $CONFIGDTSD_INSTALLPATH
+	echo "Server $2 is restored"
+fi
+}
+core_say() {
+# Check to see if server is running and if so pass the second argument as a chat command to server.  Use quotes if you use spaces.
+if lib_check_server_running
+then
+	SAYSTRING=$(echo $@ | cut -d" " -f2- | tr -d '<>()!@#$%^&*/[]{},\\' | sed "s/'//g" | sed "s/\"//g")
+	lib_screensend $CONFIGDTSD_MAINSCREEN /chat $SAYSTRING
+else
+	echo "Starmade is not running!"
+fi
+}
+core_setplayermax() {
+# Get the current max player setting and format it by removing spaces
+CURRENTMAXPLAYER=$(grep MAX_CLIENTS $CONFIGDTSD_INSTALLPATH/StarMade/server.cfg | tail -1 | cut -d = -f2 | cut -d / -f1 | tr -d ' ') 
+echo "Current value is $CURRENTMAXPLAYER"
+# Replace the current value with the one choosen by user
+sed -i 's/MAX_CLIENTS = $CURRENTMAXPLAYER/MAX_CLIENTS = $2/g' $CONFIGDTSD_INSTALLPATH/StarMade/server.cfg
+echo "Max player value changed to $2"
 }
 core_start() {
 # Main script to start server.  Screens are created and then logged.  Starmade is started in a screen and the script commands run
@@ -279,298 +585,5 @@ then
 	fi
 else
 	echo "$SERVICE isn't running, make a regular backup"
-fi
-}
-core_devcheck() {
-# A big thanks to MichaelSeph for pointing out the code and Schema for writing it.
-# Check for latest DEV version and install it 
-	cd $CONFIGDTSD_INSTALLPATH
-	as_user wget -q --user dev --password dev -O tmp.html http://files.star-made.org/build/dev/
-	RELEASE_URL=$(cat tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
-	rm tmp.html
-#	echo $RELEASE_URL
-	SNEWVERSION1=$(echo $RELEASE_URL | cut -d_ -f2)
-#	echo $SNEWVERSION1
-	SNEWVERSION2=$(echo $RELEASE_URL | cut -d_ -f3 | cut -d. -f1)
-#	echo $SNEWVERSION2
-	CURRENTVER=$(cat $STARTERPATH/StarMade/version.txt)
-#	echo $CURRENTVER
-	OLDSMVER1=$(echo $CURRENTVER | cut -d# -f2 | cut -d_ -f1)
-#	echo $OLDSMVER1
-	OLDSMVER2=$(echo $CURRENTVER | cut -d_ -f2)
-# 	echo $OLDSMVER2
-	if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
-	then 
-		echo "Newer Version Detected"
-		cd $CONFIGDTSD_INSTALLPATH
-# At this point the cronjobs and server will need to be stopped and a backup made just in case
-		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat New version detected going down for backup and upgrade"
-		core_stop
-		core_backup
-	    wget --user dev --password dev http://files.star-made.org/build/pre/$RELEASE_URL
-		unzip -o $RELEASE_URL -d $CONFIGDTSD_INSTALLPATHN/StarMade
-		rm installed-version
-		touch $CONFIGDTSD_INSTALLPATH/installed-version
-		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version
-# At this point the server should started and cronjobs restored
-	else
-		echo "No new version detected"
-fi
-}
-core_check() {
-# Manually check for latest version and install it 
-	cd $CONFIGDTSD_INSTALLPATH
-	wget -q -O tmp.html http://files.star-made.org/build/
-	RELEASE_URL=$(cat tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
-	as_user "rm tmp.html"
-#	echo $RELEASE_URL
-	SNEWVERSION1=$(echo $RELEASE_URL | cut -d_ -f2)
-#	echo $SNEWVERSION1
-	SNEWVERSION2=$(echo $RELEASE_URL | cut -d_ -f3 | cut -d. -f1)
-#	echo $SNEWVERSION2
-	CURRENTVER=$(cat $STARTERPATH/StarMade/version.txt)
-# echo $CURRENTVER
-	OLDSMVER1=$(echo $CURRENTVER | cut -d# -f2 | cut -d_ -f1)
-# echo $OLDSMVER1
-	OLDSMVER2=$(echo $CURRENTVER | cut -d_ -f2)
-# echo $OLDSMVER2
-	if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
-	then 
-		echo "Newer Version Detected"
-		cd $CONFIGDTSD_INSTALLPATH
-# At this point the cronjobs and server will need to be stopped and a backup made just in case
-		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat New version detected going down for backup and upgrade"
-		core_stop
-		core_backup
-		wget http://files.star-made.org/build/$RELEASE_URL
-		unzip -o $RELEASE_URL -d $CONFIGDTSD_INSTALLPATH/StarMade
-		rm installed-version
-		touch CONFIGDTSD_INSTALLPATH/installed-version
-		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version
-# At this point the server should started and cronjobs restored
-else
-	echo "No new version detected"
-fi
-}
-core_ebrake() {
-# Ebrake shuts down the server when it is locked up and makes a Java dump for error collecting
-if lib_check_server_running
-then
-	PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')    
-	jstack $PID >> $CONFIGDTSD_INSTALLPATH/threaddump.log
-	kill $PID
-# Give server a chance to gracefully shut down
-	for LOOPNO in {0..30}
-	do
-		if lib_check_server_running
-		then
-			sleep 1
-		else
-			echo $CONFIGDTSD_SERVICE closed after $LOOPNO seconds
-			$CONFIGDTSD_SCRIPTPATH kill
-			break
-		fi
-	done
-# Check to make sure server is shut down if not kill it with a seg fault.
-	if lib_check_server_running
-	then
-		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
-# This was added in to troubleshoot freezes at the request of Schema
-		jstack $PID >> $CONFIGDTSD_INSTALLPATH/threaddump.log 
-		kill -9 $PID
-		echo $CONFIGDTSD_SERVICE has to be forcibly closed. A thread dump has been taken and is saved at $CONFIGDTSD_INSTALLPATH/threaddump.log and should be sent to Schema.
-		$CONFIGDTSD_SCRIPTPATH kill
-		screen -wipe
-	fi
-else
-	echo "$CONFIGDTSD_SERVICE not running"
-fi
-}
-core_detect() {
-# Special thanks to Fire219 for providing the means to test this script.  Appreciation to Titansmasher for collaboration.
-if lib_check_server_running
-then
-# Add in a routine to check for STDERR: [SQL] Fetching connection 
-# Send the curent time as a serverwide message
-	if (tail -5 $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log | grep "Fetching connection" >/dev/null)
-	then 
-		echo "Database Repairing itself"
-	else
-# Set the current to Unix time which is number of seconds since Unix was created.  Next send this as a PM to Unix time which will cause the console to error back Unix time.
-		CURRENTTIME=$(date +%s)
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $CURRENTTIME testing
-		echo "Unix time is $CURRENTTIME"
-		sleep 10
-# Check output.log to see if message was recieved by server.  The tail variable may need to be adjusted so that the
-# log does not generate more lines that it looks back into the log
-		if tac $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log | grep -m 1 "$CURRENTTIME" >/dev/null
-		then
-			echo "Server is responding"
-			echo "Server time variable is $CURRENTTIME"
-        else
-			echo "Server is not responding, shutting down and restarting"
-			core_ebrake
-			core_start
-		fi
-	fi
-else
-	echo "Starmade is not running!"
-	core_start
-fi
-}
-core_say() {
-# Check to see if server is running and if so pass the second argument as a chat command to server.  Use quotes if you use spaces.
-if lib_check_server_running
-then
-	SAYSTRING=$(echo $@ | cut -d" " -f2- | tr -d '<>()!@#$%^&*/[]{},\\' | sed "s/'//g" | sed "s/\"//g")
-	lib_screensend $CONFIGDTSD_MAINSCREEN /chat $SAYSTRING
-else
-	echo "Starmade is not running!"
-fi
-}
-core_dosafe() {
-if lib_check_server_running
-# Check for starmade running the passes second argument as a command on server.  Use quotations if you have spaces in command.
-then
-	DOSTRING=$(echo $@ | cut -d" " -f2- | tr -d '<>()!@#$%^&*/[]{},\\' | sed "s/'//g" | sed "s/\"//g")
-	lib_screensend $CONFIGDTSD_MAINSCREEN /"$DOSTRING"
-else
-	echo "Starmade is not running!"
-fi
-}
-core_setplayermax() {
-# Get the current max player setting and format it by removing spaces
-CURRENTMAXPLAYER=$(grep MAX_CLIENTS $CONFIGDTSD_INSTALLPATH/StarMade/server.cfg | tail -1 | cut -d = -f2 | cut -d / -f1 | tr -d ' ') 
-echo "Current value is $CURRENTMAXPLAYER"
-# Replace the current value with the one choosen by user
-sed -i 's/MAX_CLIENTS = $CURRENTMAXPLAYER/MAX_CLIENTS = $2/g' $CONFIGDTSD_INSTALLPATH/StarMade/server.cfg
-echo "Max player value changed to $2"
-}
-core_restore() {
-# This command needs to tell the difference between a complete backup or a universe backup andor univer backup command needs to put directory structure in the universe zip
-# Checks for server running and then restores the given backup zip file.  It pulls from the backup directory so no path is needed.
-if lib_check_server_running
-then
-	echo "Starmade Server is running."
-	else
-	cd $CONFIGDTSD_INSTALLPATH/SMBACKUP
-	unzip -o $2 -d $CONFIGDTSD_INSTALLPATH
-	echo "Server $2 is restored"
-fi
-}
-core_banhammer() {
-# This command should check the database or current users to make sure name exists
-# Check to see if server is running and if so pass the second argument as a chat command to server.  Use quotes if you use spaces.
-if lib_check_server_running
-then
-# Set bannarray to zero
-	BANARRAY=0
-# Get the banhammer name from the chat command
-	BANHAMMERNAME=$2
-	echo "$BANHAMMERNAME is getting banned"
-	lib_screensend $CONFIGDTSD_MAINSCREEN /ban_name $BANHAMMERNAME
-# Added a kick as requested by BDLS
-	lib_screensend $CONFIGDTSD_MAINSCREEN /kick $BANHAMMERNAME
-# Create the temporary file string
-	BANFILESTRING="$CONFIGDTSD_INSTALLPATH/StarMade/server-database/ENTITY_PLAYERSTATE_player.ent"
-# Edit the file string with the playername to find the actual entity playerstate file
-	BANFILENAME=${BANFILESTRING/player/$BANHAMMERNAME}
-	echo "We are are looking for this player entity file $BANFILENAME"
-# Grab all the Ip's for the banned player as an array
-	BANHAMMERIP=( $(cat $BANFILENAME | strings | grep -v null | grep \/ | cut -d\/ -f2) )
-# Calculate the array total for debugging purposes
-	BANIPTOTAL=$(( ${#BANHAMMERIP[@]} ))
-	echo "$BANIPTOTAL total IP addresses to ban"
-# Check for the filename
-	if  [ -e $BANFILENAME ]
-	then
-# While there is still a value in the array
-		while [ -n "${BANHAMMERIP[$BANARRAY]+set}" ]
-		do
-# Set the current IP to be banned to Bannedip
-			BANNEDIP=${BANHAMMERIP[$BANARRAY]}
-			echo "Banning $BANNEDIP"
-# Ban that IP
-			lib_screensend $CONFIGDTSD_MAINSCREEN /ban_ip $BANNEDIP
-# Keep from spamming commands to fast to server
-			sleep 1
-# Add 1 to the array
-			let BANARRAY++
-		done
-# If no file is found
-	else
-		echo "No player entity file found"
-	fi
-else 
-	echo "server not running"
-fi
-}
-core_dump() {
-# Do a java dump for bug hunting
-if command -v jstack >/dev/null
-then
-	if lib_check_server_running
-	then
-		if [ "$#" -ne "2" ] 
-		then
-			echo "Usage - smdump <amount of thread dumps> <amount of delay between dumps> smdump 2 10"
-			exit 
-		fi
-		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')    
-		count=$2
-		delay=$3
-		while [ $count -gt 0 ]
-		do
-			jstack $PID >> $CONFIGDTSD_INSTALLPATH/threaddump$(date +%H%M%S.%N).log
-			sleep $delay
-			let count--
-		done
-		else
-		echo "$SERVICE not running"
-	fi
-else
-echo "Please install Java JDK (ie: openjdk-7-jdk) to make dumps"
-fi
-}
-core_box() {
-# Usage: shadow.dtsd box color player message || shadow.dtsd box color message
-PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
-PLAYERLIST=($PLAYERLIST)
-echo ${PLAYERLIST[@]}
-
-#echo "Possible playername $ISPLAYER"
-if lib_arraycontains PLAYERLIST $3
-then
-	echo "player found"
-	MESSAGE=${@:4}
-	case "$2" in
-		*"green"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_to info $3 \'$MESSAGE\'
-		;;
-		*"blue"*)
-			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_to warning $3 \'$MESSAGE\'
-		;;
-		*"red"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_to error $3 \'$MESSAGE\'
-		;;
-		*) 
-		;;
-	esac
-else
-	echo "No player found"
-	MESSAGE=${@:3}
-	case "$2" in
-		*"green"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast info \'$MESSAGE\'
-		;;
-		*"blue"*)
-			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast warning \'$MESSAGE\'
-		;;
-		*"red"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /server_message_broadcast error \'$MESSAGE\'
-		;;
-		*) 
-		;;
-	esac
 fi
 }

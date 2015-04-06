@@ -44,6 +44,7 @@ lib_searchline() {
 		*"$SEARCHSTRING"*)   
 			echo "match found"
 			eval $SEARCHFUNCTION '$SEARCHCOMMAND' &
+# Not sure if there should be a break here, may save some time after a match has been found
 		;;
 		esac
 #	echo "Search function is $SEARCHFUNCTION"

@@ -2,10 +2,33 @@
 # Shadow .01 Based off of DTSD
 # Location of all the regular chat commands
 
-CHATHELP_HELP="[Display help for a chat command] Help usage: HELP chatcommand"
+CHATHELP_BANPLAYER="[Bans a player from the server] USAGE: !BANPLAYER <Player>"
+CHATHELP_BANSTOP="[Removes a player from the ban list] USAGE: !BANSTOP <Player>"
 CHATHELP_CORE="[Gives player a ship core, 10 minute cooldown] Core usage: CORE"
-CHATHELP_INVISION="[Makes your character invisible to everyone else] Usage: !INVISION	"
-
+CHATHELP_CLEAR="[Removes all items from your inventory] USAGE: !CLEAR"
+CHATHELP_CREDITS="[Gives credits to user or another player] USAGE: !CREDIT AMOUNT or !CREDIT PLAYER AMOUNT"
+CHATHELP_DESPAWN="[Destroys all ships with a specified name from the specified sector] USAGE: !DESPAWN <X> <Y> <Z> <Ship name>"
+CHATHELP_EXPORT="[Saves the specified sector to a file with a specified name] USAGE: !EXPORT <X> <Y> <Z> <Export name>"
+CHATHELP_GIVE="[Gives you, or another player the specified item ID with a specified quantity] USAGE: !GIVE <Player (optional)> <ID> <Amount>"
+CHATHELP_GIVESET="[Give complete build set of different hulls, ship internals, and decorations] USAGE: !GIVESET <Set name> <Set type (only used for normal or hard hull)> - Set names are grey, white, black, red, blue, yellow, green, brown, purple, glass, crystal, light, weapon, internal, decoration, terrain, plants"
+CHATHELP_GIVEMETA="[Gives you, or another player the specified meta item] USAGE: !GIVEMETA <Player (optional)> <METAUTEN>"
+CHATHELP_GODON="[Turns on god mode for your character] USAGE: !GODON"
+CHATHELP_GODOFF="[Turns off god mode for your character] USAGE: !GODOFF"
+CHATHELP_HELP="[Display help for a chat command] Help usage: HELP chatcommand"
+CHATHELP_IMPORT="[Imports an exported sector file to the sector specified (sector must be unloaded)] USAGE: !IMPORT <X> <Y> <Z> <Export name>"
+CHATHELP_INVISION="[Makes your character invisible to everyone else] Usage: !INVISION"
+CHATHELP_INVISIOFF="[Makes your character visible to everyone else] Usage: !INVISIOFF"
+CHATHELP_KICK="[Kicks the specified player from the server] USAGE: !KICK <Player>"
+CHATHELP_KILL="[Kills a player instantly] USAGE: !KILL <Player>"
+CHATHELP_LOADSHIP="[Spawns in the specified ship from the catalogue to the specified coords] USAGE: !LOADSHIP <Blueprint Name> <Entity Name> <X> <Y> <Z>"
+CHATHELP_PROTECTSTART="[Prevents damage to entities inside the specified sector] USAGE: !PROTECTSTART X Y Z"
+CHATHELP_PROTECTSTOP="[Enables damage to entities inside the specified sector] USAGE: !PROTECTSTOP X Y Z"
+CHATHELP_RESTART="[Shuts the server down and then starts it back up again] USAGE: !RESTART"
+CHATHELP_SHUTDOWN="[Shuts the server down] USAGE: !SHUTDOWN"
+CHATHELP_SPAWNSTART="[Allows enemies to spawn inside the specified sector] USAGE: !SPAWNSTART <X> <Y> <Z>"
+CHATHELP_SPAWNSTOP="[Stops enemies from spawning inside the specified sector] USAGE: !SPAWNSTOP <X> <Y> <Z>"
+CHATHELP_TELEPORT="[Teleports you and the entity you are controlling, or another player and the entity they are controlling to the specified sector] USAGE: !TELEPORT <Player (optional)> <X> <Y> <Z>"
+CHATHELP_WHITEADD="[Adds a player to the whitelist] USAGE: !WHITEADD <Player>"
 	
 #####################################USER COMMANDS#####################################
 chatcommand_CORE(){
@@ -28,7 +51,6 @@ chatcommand_CORE(){
 		fi
 	 fi
 }
-
 chatcommand_HELP() {
 	HELPCOMMANDS=( $(compgen -v | grep CHATHELP_) )
 	HELPARRAY=0
@@ -64,120 +86,7 @@ chatcommand_HELP() {
 
 
 }
-
 #####################################MODIFIED ADMIN COMMANDS#####################################
-
-chatcommand_INVISION(){
- #Makes your character invisible to everyone else
- #USAGE: !INVISIOn	
-	 if [ "$#" -ne "1" ]
-	 then
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !INVISION
-	 else	
-		 lib_screensend $CONFIGDTSD_MAINSCREEN/invisibility_mode $1 true
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are now invisible
-	 fi
- }
-chatcommand_INVISIOFF(){
-#Makes your character visible to everyone else again
-#USAGE: !INVISIOFF
-	if [ "$#" -ne "1" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !INVISIOFF
-	else	
-		lib_screensend $CONFIGDTSD_MAINSCREEN/invisibility_mode $1 false
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are no longer invisible
-	fi
-}
-chatcommand_KILL(){
-# Kills a player instantly
-# USAGE: !KILL <Player>
-	if [ "$#" -ne "2" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KILL Name
-	else
-		lib_screensend $CONFIGDTSD_MAINSCREEN /kill_character $2 
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 was killed
-	fi
-}
-chatcommand_PROTECT(){
-# Prevents damage to entities inside the specified sector
-# USAGE: !PROTECT <X> <Y> <Z>	
-	if [ "$#" -ne "4" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !PROTECT X Y Z
-	else		
-		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 + protected
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is now protected
-	fi
-}
-chatcommand_UNPROTECT(){
-# Allows damage to entities inside the specified sector
-# USAGE: !UNPROTECT <X> <Y> <Z>
-	if [ "$#" -ne "4" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !UNPROTECT X Y Z
-	else		
-		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 - protected
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is no longer protected
-	fi
-}
-chatcommand_SPAWNSTART(){
- Allows enemies to start attacking you inside the specified sector
-# USAGE: !SPAWNSTART <X> <Y> <Z>
-	if [ "$#" -ne "4" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTART X Y Z
-	else		
-		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 - peace
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is hostile again
-	fi
-}
-chatcommand_SPAWNSTOP(){
-# Prevents enemies from attacking you while insider the specified sector
-# USAGE: !SPAWNSTOP <X> <Y> <Z>
-	if [ "$#" -ne "4" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTOP X Y Z
-	else		
-		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 + peace
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is no longer hostile
-	fi
-}
-chatcommand_TELEPORT(){
-#Teleports you and the entity you are controlling, or another player and the entity they are controling to the specified sector
-#USAGE: !TELEPORT <Player (optional)> <X> <Y> <Z>
-	if [ "$#" -ne "4" ] && [ "$#" -ne "5" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN "/pm $1 Invalid parameters. Please use !TELEPORT <Player (optional)> <X> <Y> <Z>"
-	else	
-		if [ "$2" -eq "$2" ] 2>/dev/null
-		then
-			lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $1 $2 $3 $4
-			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have been teleported to $2,$3,$4
-		else
-			lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $2 $3 $4 $5
-			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has been teleported to $2,$3,$4
-		fi
-	fi
-}
-
-
-
-chatcommand_WHITEADD(){
-# Adds a player to the whitelist
-# USAGE: !WHITEADD <Player>
-	if [ "$#" -ne "2" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !WHITEADD Name
-	else
-		lib_screensend $CONFIGDTSD_MAINSCREEN /whitelist_name $2
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The name $2 has been whitelisted
-	fi
-}
-
-
-
 chatcommand_BANPLAYER(){
 # Bans a player from the server
 # USAGE: !BANPLAYER <Player>
@@ -189,7 +98,7 @@ chatcommand_BANPLAYER(){
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The name $2 is now banned from the server
 	fi
 }
-chatcommand_UNBAN(){
+chatcommand_BANSTOP(){
 # Removes a player from the ban list
 # USAGE: !UNBAN <Player>
 	if [ "$#" -ne "2" ]
@@ -200,15 +109,15 @@ chatcommand_UNBAN(){
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The name $2 is no longer banned
 	fi
 }
-chatcommand_SHUTDOWN(){
-# Shuts the server down
-# USAGE: !SHUTDOWN <Time Delay>
-	if [ "$#" -ne "2" ]
+chatcommand_CLEAR(){
+ # Removes all items from your inventory
+ # USAGE: !CLEAR
+	if [ "$" -ne "1" ]
 	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SHUTDOWN Time
-	else
-		lib_screensend $CONFIGDTSD_MAINSCREEN /shutdown $2
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The server will shut down in $2 seconds
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CLEAR
+	else	
+		lib_screensend $CONFIGDTSD_MAINSCREEN /give_all_items $1 -99999
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your inventory has been cleaned		
 	fi
 }
 chatcommand_CREDITS(){
@@ -228,28 +137,6 @@ chatcommand_CREDITS(){
 		fi
 	fi
 }
-chatcommand_IMPORT(){
-# Imports an exported sector file to the sector specified (sector must be unloaded)
-# USAGE: !IMPORT <X> <Y> <Z> <Export name>
-	if [ "$" -ne "5" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !IMPORT X Y Z Export_name
-	else
-		lib_screensend $CONFIGDTSD_MAINSCREEN /import_sector $2 $3 $4 $5
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Attempted to spawn the sector file $5 to sector $2,$3,$4. If there were players nearby the spawn will have failed
-	fi
- }
-chatcommand_EXPORT(){
-# Saves the specified sector to a file with a specified name
-# USAGE: !EXPORT <X> <Y> <Z> <Export name>
-	if [ "$" -ne "5" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !EXPORT X Y Z Export_name
-	else	
-		lib_screensend $CONFIGDTSD_MAINSCREEN /export_sector $2 $3 $4 $5
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The secotr $2,$3,$4 has been exported to a file called $5
-	fi
-}
 chatcommand_DESPAWN(){
 # Destroys all ships with a specified name from the specified sector
 # USAGE: !DESPAWN <X> <Y> <Z> <Ship name>
@@ -261,15 +148,15 @@ chatcommand_DESPAWN(){
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 All entities called $5 have been removed from sector $2,$3,$4
 	fi
 }
-chatcommand_LOADSHIP(){
-# Spawns in the specified ship from the catalogue to the specified coords
-# USAGE: !LOADSHIP <Blueprint Name> <Entity Name> <X> <Y> <Z>
-	if [ "$" -ne "6" ]
+chatcommand_EXPORT(){
+# Saves the specified sector to a file with a specified name
+# USAGE: !EXPORT <X> <Y> <Z> <Export name>
+	if [ "$" -ne "5" ]
 	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !LOADSHIP Blueprint_Name Entity_Name X Y Z
-	else
-		lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity $2 $3 $4 $5 $6 0 false
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The blueprint $2 has been spawned in sector $4,$5,$6 and is called $3
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !EXPORT X Y Z Export_name
+	else	
+		lib_screensend $CONFIGDTSD_MAINSCREEN /export_sector $2 $3 $4 $5
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The secotr $2,$3,$4 has been exported to a file called $5
 	fi
 }
 chatcommand_GIVE(){
@@ -666,30 +553,8 @@ chatcommand_GIVEMETA(){
 		fi
 	fi
 }
-chatcommand_CLEAR(){
- # Removes all items from your inventory
- # USAGE: !CLEAR
-	if [ "$" -ne "1" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CLEAR
-	else	
-		lib_screensend $CONFIGDTSD_MAINSCREEN /give_all_items $1 -99999
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your inventory has been cleaned		
-	fi
-}
-chatcommand_KICK(){
- # Kicks the specified player from the server
- # USAGE: !KICK <Player>
-	 if [ "$" -ne "2" ]
-	 then
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KICK Player
-	 else	
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /kick $2
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has been kicked from the server
-	 fi
-}
 chatcommand_GODON(){
- Turns on godmode, making your character immune to all forms of damage
+# Turns on godmode, making your character immune to all forms of damage
  USAGE: !GODON
 	 if [ "$" -ne "1" ]
 	 then
@@ -700,7 +565,7 @@ chatcommand_GODON(){
 	 fi
 }
 chatcommand_GODOFF(){
- Turns off godmode, making your character killable again
+# Turns off godmode, making your character killable again
  USAGE: !GODOFF
 	 if [ "$" -ne "1" ]
 	 then
@@ -709,6 +574,94 @@ chatcommand_GODOFF(){
 		 lib_screensend $CONFIGDTSD_MAINSCREEN/god_mode $1 false
 		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are no longer in god mode
 	 fi
+}
+chatcommand_IMPORT(){
+# Imports an exported sector file to the sector specified (sector must be unloaded)
+# USAGE: !IMPORT <X> <Y> <Z> <Export name>
+	if [ "$" -ne "5" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !IMPORT X Y Z Export_name
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /import_sector $2 $3 $4 $5
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Attempted to spawn the sector file $5 to sector $2,$3,$4. If there were players nearby the spawn will have failed
+	fi
+ }
+chatcommand_INVISION(){
+ #Makes your character invisible to everyone else
+ #USAGE: !INVISIOn	
+	 if [ "$#" -ne "1" ]
+	 then
+		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !INVISION
+	 else	
+		 lib_screensend $CONFIGDTSD_MAINSCREEN/invisibility_mode $1 true
+		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are now invisible
+	 fi
+ }
+chatcommand_INVISIOFF(){
+#Makes your character visible to everyone else again
+#USAGE: !INVISIOFF
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !INVISIOFF
+	else	
+		lib_screensend $CONFIGDTSD_MAINSCREEN/invisibility_mode $1 false
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are no longer invisible
+	fi
+}
+chatcommand_KICK(){
+# Kicks the specified player from the server
+# USAGE: !KICK <Player>
+	 if [ "$" -ne "2" ]
+	 then
+		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KICK Player
+	 else	
+		 lib_screensend $CONFIGDTSD_MAINSCREEN /kick $2
+		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has been kicked from the server
+	 fi
+}
+chatcommand_KILL(){
+# Kills a player instantly
+# USAGE: !KILL <Player>
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KILL Name
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /kill_character $2 
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 was killed
+	fi
+}
+chatcommand_LOADSHIP(){
+# Spawns in the specified ship from the catalogue to the specified coords
+# USAGE: !LOADSHIP <Blueprint Name> <Entity Name> <X> <Y> <Z>
+	if [ "$" -ne "6" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !LOADSHIP Blueprint_Name Entity_Name X Y Z
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity $2 $3 $4 $5 $6 0 false
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The blueprint $2 has been spawned in sector $4,$5,$6 and is called $3
+	fi
+}
+chatcommand_PROTECTSTART(){
+# Prevents damage to entities inside the specified sector
+# USAGE: !PROTECT <X> <Y> <Z>	
+	if [ "$#" -ne "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !PROTECT X Y Z
+	else		
+		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 + protected
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is now protected
+	fi
+}
+chatcommand_PROTECTSTOP(){
+# Allows damage to entities inside the specified sector
+# USAGE: !UNPROTECT <X> <Y> <Z>
+	if [ "$#" -ne "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !UNPROTECT X Y Z
+	else		
+		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 - protected
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is no longer protected
+	fi
 }
 chatcommand_RESTART(){
 # Shuts the server down and then starts it back up again
@@ -722,8 +675,67 @@ chatcommand_RESTART(){
 		core_start
 	fi
 }
-
-
+chatcommand_SHUTDOWN(){
+# Shuts the server down
+# USAGE: !SHUTDOWN <Time Delay>
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SHUTDOWN Time
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /shutdown $2
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The server will shut down in $2 seconds
+	fi
+}
+chatcommand_SPAWNSTART(){
+# Allows enemies to start attacking you inside the specified sector
+# USAGE: !SPAWNSTART <X> <Y> <Z>
+	if [ "$#" -ne "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTART X Y Z
+	else		
+		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 - peace
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is hostile again
+	fi
+}
+chatcommand_SPAWNSTOP(){
+# Prevents enemies from attacking you while insider the specified sector
+# USAGE: !SPAWNSTOP <X> <Y> <Z>
+	if [ "$#" -ne "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTOP X Y Z
+	else		
+		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 + peace
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is no longer hostile
+	fi
+}
+chatcommand_TELEPORT(){
+#Teleports you and the entity you are controlling, or another player and the entity they are controling to the specified sector
+#USAGE: !TELEPORT <Player (optional)> <X> <Y> <Z>
+	if [ "$#" -ne "4" ] && [ "$#" -ne "5" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/pm $1 Invalid parameters. Please use !TELEPORT <Player (optional)> <X> <Y> <Z>"
+	else	
+		if [ "$2" -eq "$2" ] 2>/dev/null
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $1 $2 $3 $4
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have been teleported to $2,$3,$4
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $2 $3 $4 $5
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has been teleported to $2,$3,$4
+		fi
+	fi
+}
+chatcommand_WHITEADD(){
+# Adds a player to the whitelist
+# USAGE: !WHITEADD <Player>
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !WHITEADD Name
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /whitelist_name $2
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The name $2 has been whitelisted
+	fi
+}
 #######################WORKING############################
 
 # #Functional Commands

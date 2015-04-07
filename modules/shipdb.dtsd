@@ -1,0 +1,11 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions and database for Ships
+
+# Strings to retrieve
+
+#Received after /sector_info
+#[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SHIP_space ship, sectorPos=(2, 2, 2), type=5, seed=0, lastModifier=, spawner=<admin>, realName=space ship, touched=true, faction=0, pos=(440.3829, 2.4231818, -369.9619), minPos=(-2, -1, -1), maxPos=(1, 0, 1), creatorID=0]
+
+
+

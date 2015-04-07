@@ -1,0 +1,9 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions and database for Sectors
+
+
+#String to collect
+
+#Sent after sector_info
+#[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](2, 2, 2); Protected: false; Peace: false; Seed: 0; Type: MAIN;

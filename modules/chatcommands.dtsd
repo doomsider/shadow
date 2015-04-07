@@ -112,7 +112,7 @@ chatcommand_BANSTOP(){
 chatcommand_CLEAR(){
  # Removes all items from your inventory
  # USAGE: !CLEAR
-	if [ "$" -ne "1" ]
+	if [ "$#" -ne "1" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CLEAR
 	else	
@@ -123,7 +123,7 @@ chatcommand_CLEAR(){
 chatcommand_CREDITS(){
  # Gives you, or another player the specified number of credits
  # USAGE: !CREDITS <Player (optional)> <Amount>
-	if [ "$" -ne "2" ] && [ "$" -ne "3" ]
+	if [ "$#" -ne "2" ] && [ "$#" -ne "3" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CREDITS Playername Amount or !CREDITS Amount
 	else
@@ -140,7 +140,7 @@ chatcommand_CREDITS(){
 chatcommand_DESPAWN(){
 # Destroys all ships with a specified name from the specified sector
 # USAGE: !DESPAWN <X> <Y> <Z> <Ship name>
-	if [ "$" -ne "5" ]
+	if [ "$#" -ne "5" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !DESPAWN X Y Z Ship_name
 	else
@@ -151,7 +151,7 @@ chatcommand_DESPAWN(){
 chatcommand_EXPORT(){
 # Saves the specified sector to a file with a specified name
 # USAGE: !EXPORT <X> <Y> <Z> <Export name>
-	if [ "$" -ne "5" ]
+	if [ "$#" -ne "5" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !EXPORT X Y Z Export_name
 	else	
@@ -162,7 +162,7 @@ chatcommand_EXPORT(){
 chatcommand_GIVE(){
 # Gives you, or another player the specified item ID with a specified quantity
 # USAGE: !GIVE <Player (optional)> <ID> <Amount>
-	if [ "$" -ne "3" ] && [ "$" -ne "4" ]
+	if [ "$#" -ne "3" ] && [ "$#" -ne "4" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVE Playername ID Amount or !GIVE ID Amount
 	 else
@@ -179,7 +179,7 @@ chatcommand_GIVE(){
 chatcommand_GIVESET() {
 # Give complete build set of different hulls, ship internals, and decorations
 # USAGE: !GIVESET <Set name> <Set type (only used for normal or hard hull)> - Set names are grey, white, black, red, blue, yellow, green, brown, purple, glass, crystal, light, weapon, internal, decoration, terrain, plants
- if [ "$" -ne "2" ] && [ "$" -ne "3" ]
+ if [ "$#" -ne "2" ] && [ "$#" -ne "3" ]
  then
 	 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVESET Set_name Set_type or !GIVESET Set_name - Set names are grey, white, black, red, blue, yellow, green, brown, purple, orange, glass, light, logic, weapon, internal, crystal, decoration, terrain, plants - Set types for hull only are hard and normal
  else
@@ -539,7 +539,7 @@ fi
 chatcommand_GIVEMETA(){ 
 # Gives you, or another player the specified meta item
 # USAGE: !GIVEMETA <Player (optional)> <METAUTEN>
-	if [ "$" -ne "2" ] && [ "$" -ne "3" ]
+	if [ "$#" -ne "2" ] && [ "$#" -ne "3" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVE Playername Metaitem or !GIVE Metaitem
 	else
@@ -556,7 +556,7 @@ chatcommand_GIVEMETA(){
 chatcommand_GODON(){
 # Turns on godmode, making your character immune to all forms of damage
  USAGE: !GODON
-	 if [ "$" -ne "1" ]
+	 if [ "$#" -ne "1" ]
 	 then
 		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GODON
 	 else
@@ -567,7 +567,7 @@ chatcommand_GODON(){
 chatcommand_GODOFF(){
 # Turns off godmode, making your character killable again
  USAGE: !GODOFF
-	 if [ "$" -ne "1" ]
+	 if [ "$#" -ne "1" ]
 	 then
 		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GODOFF
 	 else
@@ -578,7 +578,7 @@ chatcommand_GODOFF(){
 chatcommand_IMPORT(){
 # Imports an exported sector file to the sector specified (sector must be unloaded)
 # USAGE: !IMPORT <X> <Y> <Z> <Export name>
-	if [ "$" -ne "5" ]
+	if [ "$#" -ne "5" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !IMPORT X Y Z Export_name
 	else
@@ -611,7 +611,7 @@ chatcommand_INVISIOFF(){
 chatcommand_KICK(){
 # Kicks the specified player from the server
 # USAGE: !KICK <Player>
-	 if [ "$" -ne "2" ]
+	 if [ "$#" -ne "2" ]
 	 then
 		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KICK Player
 	 else	
@@ -633,7 +633,7 @@ chatcommand_KILL(){
 chatcommand_LOADSHIP(){
 # Spawns in the specified ship from the catalogue to the specified coords
 # USAGE: !LOADSHIP <Blueprint Name> <Entity Name> <X> <Y> <Z>
-	if [ "$" -ne "6" ]
+	if [ "$#" -ne "6" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !LOADSHIP Blueprint_Name Entity_Name X Y Z
 	else
@@ -664,6 +664,7 @@ chatcommand_PROTECTSTOP(){
 	fi
 }
 chatcommand_RESTART(){
+# This command needs to be re-written, it does not work correctly
 # Shuts the server down and then starts it back up again
 # USAGE: !RESTART
 	if [ "$#" -ne "1" ]

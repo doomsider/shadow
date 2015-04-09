@@ -4,45 +4,33 @@
 
 
 core_serverloop() {
-echo "Starting Severloop"
-rundetect=600
-runrestart=21600
-runservermessage=600
-
-rundetecttimer=0
-runrestarttimer=0
-runservermessagtimere=0
-while true
-do
-sleep 1
-
-let rundetecttimer++
-let runrestarttimer++
-let runservermessagtimer++
-
-
-if [ "$rundetecttimer" -gt "$rundetect" ]
-then
-rundetecttimer=0
-core_detect
-fi
-
-
-if [ "$runrestarttimer" -gt "$runrestart" ]
-then
-runrestarttimer=0
-core_sofstop
-fi
-
-if [ "$runservermessagtimer" -gt "$runservermessage" ]
-then
-runservermessagtimer=0
-lib_screensend $CONFIGDTSD_MAINSCREEN /chat Welcome to the Server!
-fi
-
-
-
-done
-
-
+    echo "Starting Severloop"
+    rundetect=600
+    runrestart=21600
+    runservermessage=600
+    rundetecttimer=0
+    runrestarttimer=0
+    runservermessagtimere=0
+    while true
+    do
+        sleep 1
+        let rundetecttimer++
+        let runrestarttimer++
+        let runservermessagtimer++
+        if [ "$rundetecttimer" -gt "$rundetect" ]
+        then
+            rundetecttimer=0
+            core_detect
+        fi
+        if [ "$runrestarttimer" -gt "$runrestart" ]
+        then
+            runrestarttimer=0
+            core_sofstop
+        fi
+        if [ "$runservermessagtimer" -gt "$runservermessage" ]
+        then
+            runservermessagtimer=0
+            lib_screensend $CONFIGDTSD_MAINSCREEN /chat Welcome to the Server!
+        fi
+    done  
 }

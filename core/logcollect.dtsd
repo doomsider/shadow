@@ -27,8 +27,8 @@ core_logcollect() {
 # If the number of lines read from the log file is greater than last line read + 1 from the log then feed more lines.
 		if [ "$NUMOFLINES" -gt "$LINESTART" ] 
 		then
-#	    		echo "$NUMOFLINES is the total lines of the log"
-#    			echo "$LINESTART is linestart"
+#	        echo "$NUMOFLINES is the total lines of the log"
+#    	    echo "$LINESTART is linestart"
 			let LINESTART++
 			OLD_IFS=$IFS
 # This sets the field seperator to use \n next line instead of next space.  This makes it so the array is a whole sentence not a word
@@ -56,7 +56,6 @@ core_logcollect() {
 }
 
 log_mysql_dtsd() {
-MYLOGDUMPCOMMAND="${@:1}"
-lib_myinsert DTSDLOG LOGSTRING $MYLOGDUMPCOMMAND
-
+    MYLOGDUMPCOMMAND="${@:1}"
+    lib_myinsert DTSDLOG LOGSTRING $MYLOGDUMPCOMMAND
 }

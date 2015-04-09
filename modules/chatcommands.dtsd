@@ -172,7 +172,7 @@ chatcommand_GIVE(){
 	if [ "$#" -ne "3" ] && [ "$#" -ne "4" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVE Playername ID Amount or !GIVE ID Amount
-	 else
+	else
 		 if [ "$2" -eq "$2" ] 2>/dev/null
 		 then
 			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 $2 $3
@@ -217,32 +217,32 @@ chatcommand_GIVEMETA(){
 			lib_screensend $CONFIGDTSD_MAINSCREEN /give_metaitem $1 $2
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You received $2
 		else
-			lib_screensend $CONFIGDTSD_MAINSCREEN/ give_metaitem $2 $3
+			lib_screensend $CONFIGDTSD_MAINSCREEN /give_metaitem $2 $3
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 received $3
 		fi
 	fi
 }
 chatcommand_GODON(){
 # Turns on godmode, making your character immune to all forms of damage
- USAGE: !GODON
-	 if [ "$#" -ne "1" ]
-	 then
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GODON
-	 else
-		 lib_screensend $CONFIGDTSD_MAINSCREEN/god_mode $1 true
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are now in god mode
-	 fi
+# USAGE: !GODON
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GODON
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /god_mode $1 true
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are now in god mode
+	fi
 }
 chatcommand_GODOFF(){
 # Turns off godmode, making your character killable again
- USAGE: !GODOFF
-	 if [ "$#" -ne "1" ]
-	 then
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GODOFF
-	 else
-		 lib_screensend $CONFIGDTSD_MAINSCREEN/god_mode $1 false
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are no longer in god mode
-	 fi
+# USAGE: !GODOFF
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GODOFF
+	else
+        lib_screensend $CONFIGDTSD_MAINSCREEN /god_mode $1 false
+        lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are no longer in god mode
+	fi
 }
 chatcommand_IMPORT(){
 # Imports an exported sector file to the sector specified (sector must be unloaded)
@@ -257,14 +257,14 @@ chatcommand_IMPORT(){
  }
 chatcommand_INVISION(){
  #Makes your character invisible to everyone else
- #USAGE: !INVISIOn	
-	 if [ "$#" -ne "1" ]
-	 then
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !INVISION
-	 else	
-		 lib_screensend $CONFIGDTSD_MAINSCREEN/invisibility_mode $1 true
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are now invisible
-	 fi
+ #USAGE: !INVISION	
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !INVISION
+	else	
+		lib_screensend $CONFIGDTSD_MAINSCREEN /invisibility_mode $1 true
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are now invisible
+	fi
  }
 chatcommand_INVISIOFF(){
 #Makes your character visible to everyone else again
@@ -273,20 +273,20 @@ chatcommand_INVISIOFF(){
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !INVISIOFF
 	else	
-		lib_screensend $CONFIGDTSD_MAINSCREEN/invisibility_mode $1 false
+		lib_screensend $CONFIGDTSD_MAINSCREEN /invisibility_mode $1 false
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are no longer invisible
 	fi
 }
 chatcommand_KICK(){
 # Kicks the specified player from the server
 # USAGE: !KICK <Player>
-	 if [ "$#" -ne "2" ]
-	 then
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KICK Player
-	 else	
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /kick $2
-		 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has been kicked from the server
-	 fi
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KICK Player
+	else	
+		lib_screensend $CONFIGDTSD_MAINSCREEN /kick $2
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has been kicked from the server
+	fi
 }
 chatcommand_KILL(){
 # Kills a player instantly

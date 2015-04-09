@@ -29,14 +29,14 @@ check_player_rank_allowed() {
 	then
 		echo "Player has authority to execute $1"
 		return 0
-		else
+	else
 		echo "Player does not have the rank to execute $1"
 		return 1
 	fi
 }
 
 core_checkrank() {
-check_player_rank_allowed "${@:2}"
+    check_player_rank_allowed "${@:2}"
 }
 
 
@@ -66,11 +66,11 @@ set_ranks_database() {
 		lib_myinsert RANKLOG NAME ${!RANKNAME}
 		lib_myupdate RANKLOG COMMANDSALLOWED "$CURRENTVALUE" NAME ${!RANKNAME}
 		let RANKARRAY++
-done
+    done
 }
 
 core_setranks() {
-set_ranks_database
+    set_ranks_database
 }
 
 core_changerank() {

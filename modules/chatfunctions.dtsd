@@ -17,7 +17,7 @@ LOGSEARCH_chat_log="[CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT]"
 LOGSEARCH_chat_commands="[CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT]"
 
 chat_log() {
-MYCHATSTRING="${@:1}"
+    MYCHATSTRING="${@:1}"
 # String manipulation with parameter expansion is used here to cut at the first = which reveals the sender 
 # followed by the rest of MYCHATSTRING	
 	CUTSTRING=${MYCHATSTRING#*=}
@@ -45,13 +45,13 @@ MYCHATSTRING="${@:1}"
 
 # [CHAT is error value for SENDERNAME
 	log_mysql_chat $MYCHATSTRING
-	}
+}
 	
 #	library_main.dtsd: eval: line 45: `chat_log [CHAT] Server(0) Doomsider: hey test'ng chat
 
 chat_commands() {
 
-MYCHATSTRING="${@:1}"
+    MYCHATSTRING="${@:1}"
 # String manipulation with parameter expansion is used here to cut at the first = which reveals the sender 
 # followed by the rest of MYCHATSTRING	
 	CUTSTRING=${MYCHATSTRING#*=}
@@ -90,24 +90,23 @@ MYCHATSTRING="${@:1}"
 		CHATCOMMANDARRAY=0
 		while [ -n "${CHATCOMMANDS[$CHATCOMMANDARRAY]+set}" ] 
 		do
-		CURRENTCHATCOMMAND=${CHATCOMMANDS[$CHATCOMMANDARRAY]}
+            CURRENTCHATCOMMAND=${CHATCOMMANDS[$CHATCOMMANDARRAY]}
 #		echo "This is the current Chat Command $CURRENTCHATCOMMAND"
-		CUTCHATCOMMAND=${CURRENTCHATCOMMAND#*_}
+            CUTCHATCOMMAND=${CURRENTCHATCOMMAND#*_}
 #		echo "This remove chatcommand to get only the command name $CUTCHATCOMMAND"
-		if [ "$CUTCHATCOMMAND" = "$USERCOMMAND" ]
-			then
-				echo "Chat Command found"				
-				if check_player_rank_allowed $USERCOMMAND $SENDERNAME
-				then
-				eval $CURRENTCHATCOMMAND "$SENDERNAME" $USERPARAMETERS
-				else
-				echo "Command not authorized"
-				fi
-				let CHATCOMMANDARRAY++
-			else
-				let CHATCOMMANDARRAY++
-			fi
-	
+            if [ "$CUTCHATCOMMAND" = "$USERCOMMAND" ]
+            then
+                echo "Chat Command found"				
+                if check_player_rank_allowed $USERCOMMAND $SENDERNAME
+                then
+                    eval $CURRENTCHATCOMMAND "$SENDERNAME" $USERPARAMETERS
+                else
+                    echo "Command not authorized"
+                fi
+                let CHATCOMMANDARRAY++
+            else
+                let CHATCOMMANDARRAY++
+            fi
 		done
 		
 	fi
@@ -115,7 +114,7 @@ MYCHATSTRING="${@:1}"
 }
 
 log_mysql_chat() {
-MYCHATDUMPCOMMAND="${@:1}"
-lib_myinsert CHATLOG LOGSTRING $MYCHATDUMPCOMMAND
+    MYCHATDUMPCOMMAND="${@:1}"
+    lib_myinsert CHATLOG LOGSTRING $MYCHATDUMPCOMMAND
 }
 

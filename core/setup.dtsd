@@ -56,102 +56,104 @@ core_setup() {
 	fi
 	read -p "Do you wish to have this script to setup Mysql user/pass and database or have you already done this? (requires root user for mysql) [No] / Yes : " INPUT
 	case $INPUT in
-		[YesyesYESYy]* ) echo "Setting up Mysql user and database"
-		MYSQLUSERDEFAULT=dtsduser
-		read -p "The user for the mysql database [$MYSQLUSERDEFAULT] : " INPUT
-		if [ -n "$INPUT" ]
-		then
-			CONFIGDTSD_MYSQLUSER=$INPUT
-		else
-			CONFIGDTSD_MYSQLUSER=$MYSQLUSERDEFAULT
-		fi
-		MYSQLUSERPASS=pass
-		read -p "The password for the user in the mysql database - do no leave this default [$MYSQLUSERPASS] : " INPUT
-		if [ -n "$INPUT" ]
-		then
-			CONFIGDTSD_MYSQLPASS=$INPUT
-		else
-		CONFIGDTSD_MYSQLPASS=$MYSQLUSERPASS
-		fi
-		MYSQLDBDEFAULT=dtsddb
-		read -p "The name for the mysql database [$MYSQLDBDEFAULT] : " INPUT
-		if [ -n "$INPUT" ]
-		then
-			CONFIGDTSD_MYSQLDB=$INPUT
-		else
-			CONFIGDTSD_MYSQLDB=$MYSQLDBDEFAULT
-		fi
-			echo "Testing user and database"
-# Stderr is redirected to stdout here to capture an error message from Mysql
-		if mysql -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "SHOW DATABASES;"  2>&1 | grep denied >/dev/null
-		then 
-			echo "It appears the user account is not setup"
-			USERFOUND=NO
-		else 
-			echo "Username exists checking for database"
-			USERFOUND=YES
-			if mysql -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "SHOW DATABASES;" | grep $CONFIGDTSD_MYSQLDB >/dev/null
-			then 
-				echo "Database found"
-				DBFOUND=YES
-			else
-				echo "No Database detected"
-				DBFOUND=NO
-			fi
-	
-		fi
-		if [[ $USERFOUND == YES ]] && [[ $DBFOUND == YES ]]
-		then
-			echo "User and database setup succesfully"
-		fi
-		if [[ $USERFOUND == NO ]] || [[ $DBFOUND == NO ]]
-		then
-			ADMINLOOP=YES
-			while [[ $ADMINLOOP == YES ]]
-			do
-				read -p "Do you wish to use administrative Mysql account to setup database/user? [No] / Yes : " INPUT	
-				case $INPUT in
-				[YesyesYESYy]* ) 
-					MYSQLROOTDEFAULT=root
-					read -p "The name for admin or root for mysql [$MYSQLROOTDEFAULT] : " INPUT
-					if [ -n "$INPUT" ]
-					then
-						MYSQLROOT=$INPUT
-					else
-						MYSQLROOT=$MYSQLROOTDEFAULT
-					fi
-					read -p "The password for the root mysql account : " INPUT
-					MYSQLROOTPASS=$INPUT
-					if mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "SHOW DATABASES;"  2>&1 | grep denied >/dev/null
-					then 
-						echo "Unable to verify administrator access"
-						ADMINLOOP=YES
-					else 
-						echo "Potential administrator user able to log in"
-						ADMINLOOP=NO
-						mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "CREATE DATABASE $CONFIGDTSD_MYSQLDB;" 
-						if mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "SHOW DATABASES;"  | grep $CONFIGDTSD_MYSQLDB >/dev/null
-						then
-							ADMINLOOP=NO
-							echo "Setting up user access to database"
-							mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "GRANT ALL PRIVILEGES ON $CONFIGDTSD_MYSQLDB.* TO $CONFIGDTSD_MYSQLUSER@localhost IDENTIFIED BY '$CONFIGDTSD_MYSQLPASS';"
-						else
-							echo "Unable to confirm administrator/root account"
-							ADMINLOOP=YES	
-						fi
-					fi
-				;;
-				* ) 
-					echo "Please setup a Mysql DB and user with full access to the target DB"
-					exit
-				;;
-				esac
-			done
-		fi
-	;;
-	* ) echo "Please create a database and user and give that user access to database IE: GRANT ALL PRIVILEGES ON dtsddb.* TO dtsduser@localhost IDENTIFIED BY 'pass';"
-	exit
-	;;
+		[YesyesYESYy]* ) 
+            echo "Setting up Mysql user and database"
+            MYSQLUSERDEFAULT=dtsduser
+            read -p "The user for the mysql database [$MYSQLUSERDEFAULT] : " INPUT
+            if [ -n "$INPUT" ]
+            then
+                CONFIGDTSD_MYSQLUSER=$INPUT
+            else
+                CONFIGDTSD_MYSQLUSER=$MYSQLUSERDEFAULT
+            fi
+            MYSQLUSERPASS=pass
+            read -p "The password for the user in the mysql database - do no leave this default [$MYSQLUSERPASS] : " INPUT
+            if [ -n "$INPUT" ]
+            then
+                CONFIGDTSD_MYSQLPASS=$INPUT
+            else
+                CONFIGDTSD_MYSQLPASS=$MYSQLUSERPASS
+            fi
+            MYSQLDBDEFAULT=dtsddb
+            read -p "The name for the mysql database [$MYSQLDBDEFAULT] : " INPUT
+            if [ -n "$INPUT" ]
+            then
+                CONFIGDTSD_MYSQLDB=$INPUT
+            else
+                CONFIGDTSD_MYSQLDB=$MYSQLDBDEFAULT
+            fi
+                echo "Testing user and database"
+    # Stderr is redirected to stdout here to capture an error message from Mysql
+            if mysql -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "SHOW DATABASES;"  2>&1 | grep denied >/dev/null
+            then 
+                echo "It appears the user account is not setup"
+                USERFOUND=NO
+            else 
+                echo "Username exists checking for database"
+                USERFOUND=YES
+                if mysql -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "SHOW DATABASES;" | grep $CONFIGDTSD_MYSQLDB >/dev/null
+                then 
+                    echo "Database found"
+                    DBFOUND=YES
+                else
+                    echo "No Database detected"
+                    DBFOUND=NO
+                fi
+        
+            fi
+            if [[ $USERFOUND == YES ]] && [[ $DBFOUND == YES ]]
+            then
+                echo "User and database setup succesfully"
+            fi
+            if [[ $USERFOUND == NO ]] || [[ $DBFOUND == NO ]]
+            then
+                ADMINLOOP=YES
+                while [[ $ADMINLOOP == YES ]]
+                do
+                    read -p "Do you wish to use administrative Mysql account to setup database/user? [No] / Yes : " INPUT	
+                    case $INPUT in
+                    [YesyesYESYy]* ) 
+                        MYSQLROOTDEFAULT=root
+                        read -p "The name for admin or root for mysql [$MYSQLROOTDEFAULT] : " INPUT
+                        if [ -n "$INPUT" ]
+                        then
+                            MYSQLROOT=$INPUT
+                        else
+                            MYSQLROOT=$MYSQLROOTDEFAULT
+                        fi
+                        read -p "The password for the root mysql account : " INPUT
+                        MYSQLROOTPASS=$INPUT
+                        if mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "SHOW DATABASES;"  2>&1 | grep denied >/dev/null
+                        then 
+                            echo "Unable to verify administrator access"
+                            ADMINLOOP=YES
+                        else 
+                            echo "Potential administrator user able to log in"
+                            ADMINLOOP=NO
+                            mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "CREATE DATABASE $CONFIGDTSD_MYSQLDB;" 
+                            if mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "SHOW DATABASES;"  | grep $CONFIGDTSD_MYSQLDB >/dev/null
+                            then
+                                ADMINLOOP=NO
+                                echo "Setting up user access to database"
+                                mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "GRANT ALL PRIVILEGES ON $CONFIGDTSD_MYSQLDB.* TO $CONFIGDTSD_MYSQLUSER@localhost IDENTIFIED BY '$CONFIGDTSD_MYSQLPASS';"
+                            else
+                                echo "Unable to confirm administrator/root account"
+                                ADMINLOOP=YES	
+                            fi
+                        fi
+                    ;;
+                    * ) 
+                        echo "Please setup a Mysql DB and user with full access to the target DB"
+                        exit
+                    ;;
+                    esac
+                done
+            fi
+        ;;
+        * ) 
+            echo "Please create a database and user and give that user access to database IE: GRANT ALL PRIVILEGES ON dtsddb.* TO dtsduser@localhost IDENTIFIED BY 'pass';"
+            exit
+        ;;
 	esac
 	CONFIGDTSD_INSTALLPATH=$SCRIPTDIR
     CONFIGDTSD_SCRIPTPATH=$SCRIPTPATH

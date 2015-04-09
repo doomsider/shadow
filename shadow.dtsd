@@ -72,7 +72,6 @@ else
 				let COREARRAY++
 			fi
 		done
-
 	else
 		echo "no command found"
 	fi

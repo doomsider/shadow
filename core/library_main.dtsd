@@ -12,22 +12,26 @@ lib_arraycontains() {
     }
     eval 'local values=("${'$1'[@]}")'
     local element
-    for element in "${values[@]}"; do
-        [[ "$element" == "$2" ]] && return 0
+    for element in "${values[@]}"
+    do
+        if [[ "$element" == "$2" ]]
+        then
+            return 0
+        fi
     done
     return 1
 }
 
 lib_check_server_running() {
-#Special thanks to tschaerni for a simplified search here
-if pgrep -a java | grep $CONFIGDTSD_SERVICE | grep port:$CONFIGDTSD_PORT > /dev/null
-then
-SERVERSTATUS=STOPPED
-return 0
-else
-SERVERSTATUS=RUNNING
-return 1 
-fi
+    #Special thanks to tschaerni for a simplified search here
+    if pgrep -a java | grep $CONFIGDTSD_SERVICE | grep port:$CONFIGDTSD_PORT > /dev/null
+    then
+        SERVERSTATUS=STOPPED
+        return 0
+    else
+        SERVERSTATUS=RUNNING
+        return 1 
+    fi
 }
 
 
@@ -44,11 +48,11 @@ lib_searchline() {
 		SEARCHCOMMAND="${@:1}"
 #		echo "here is the search command $SEARCHCOMMAND"
 		case "$SEARCHCOMMAND" in 
-		*"$SEARCHSTRING"*)   
-			echo "match found"
-			eval $SEARCHFUNCTION '$SEARCHCOMMAND' &
+            *"$SEARCHSTRING"*)   
+                echo "match found"
+                eval $SEARCHFUNCTION '$SEARCHCOMMAND' &
 # Not sure if there should be a break here, may save some time after a match has been found
-		;;
+            ;;
 		esac
 #	echo "Search function is $SEARCHFUNCTION"
 #	echo "Search string is ${!CURRENTSEARCH}"
@@ -112,10 +116,9 @@ core_screensendback() {
 
 
 core_do() {
-STUFFCOMMAND="${@:2}"
-echo "Sending command"
-lib_screensend $CONFIGDTSD_MAINSCREEN $STUFFCOMMAND
-
+    STUFFCOMMAND="${@:2}"
+    echo "Sending command"
+    lib_screensend $CONFIGDTSD_MAINSCREEN $STUFFCOMMAND
 }
 
 lib_pause() {
@@ -129,8 +132,8 @@ core_softstart() {
     then
 		echo "Screen(s) identified by $CONFIGDTSD_DTSDSCREEN detected and will be closed"
 		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN | awk '{print $2}') )   
-	echo "Trying to kill these ${PIDS[@]}"		
-	kill ${PIDS[@]}
+        echo "Trying to kill these ${PIDS[@]}"		
+        kill ${PIDS[@]}
 	fi
 	lib_screenadd $CONFIGDTSD_DTSDSCREEN
 	echo "re-starting server"
@@ -175,7 +178,7 @@ core_softstop() {
 				sleep 1
 			else
 				echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
-		break
+                break
 			fi
 		done
 		if lib_check_server_running
@@ -190,7 +193,7 @@ core_softstop() {
 					sleep 1
 				else
 					echo $CONFIGDTSD_SERVICE took $(($LOOPNO + 30)) seconds to close, and had to be force shut down
-			break
+                    break
 				fi
 			done
 		fi

@@ -42,7 +42,7 @@ lib_myupdate() {
 # This command replaces a value in a column in a row containing a value
 # Current limitation of this command is inserting a value with a space in it
 # eval string3="$3"
-UPDATESEARCHVALUE="${@:5}"
+    UPDATESEARCHVALUE="${@:5}"
 # Usage lib_myupdate [table] [column_alter] [value to insert]  [row to search] [search value]  
 # lib_myupdate PLAYERDB IP 192.168.1 NAME Doomsider
 #	echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
@@ -51,7 +51,7 @@ UPDATESEARCHVALUE="${@:5}"
 	
 
 core_myupdate() {
-echo "usage lib_myupdate table column_alter row_replace_value row_search_table row_search_value"
+    echo "usage lib_myupdate table column_alter row_replace_value row_search_table row_search_value"
 # This is a tempory core command for testing purposes
 	COREINSERTVALUE="${@:6}"
 	lib_myupdate $2 $3 $4 $5 $COREINSERTVALUE
@@ -101,7 +101,7 @@ lib_mycreate() {
 		let CREATEARRAY++
 	done
 	
-	}
+}
 
 core_mycreate() {
 # This is a tempory core command for testing purposes
@@ -111,20 +111,16 @@ core_mycreate() {
 
 lib_myvalueretrieve() {
 # Usage: lib_mysend [column to search] [table column is in] [value in column]
-MYVALUERETRIEVENAME="${@:3}"
+    MYVALUERETRIEVENAME="${@:3}"
 # echo "This is name $MYVALUERETRIEVENAME"
 
-mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where NAME='$MYVALUERETRIEVENAME'"
+    mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where NAME='$MYVALUERETRIEVENAME'"
 
 }
 
 core_valueretrieve() {
-
-
-MYVALUECOMMAND="${@:2}"
-
-lib_myvalueretrieve $MYVALUECOMMAND
-
+    MYVALUECOMMAND="${@:2}"
+    lib_myvalueretrieve $MYVALUECOMMAND
 }
 
 lib_mycolumnretrieve() {
@@ -140,7 +136,6 @@ lib_mycolumnretrieve() {
 }
 
 core_columnretrieve() {
-
 # Usage:  columnretrieve [table] [row]
 # ./shadow.dtsd retrieve TMPDB TMPSTRING	
 #		echo "core this is 1 parameter value $1"
@@ -150,30 +145,27 @@ core_columnretrieve() {
 #	echo "core this is 5 parameter value $5"
 	lib_mycolumnretrieve "${@:2}"
 	
-	}
+}
 
 lib_columnretrievesearch() {
 # Like myvalueretrieve only tries to grab all values from a column rather than just one from a column with a unique index
 # Usage: columnretrievesearch column_to_display table column_containing_search search_string
-
-searchval="${@:4}"
-echo "this is column to retrieve from $1 from this table $2 searching from this column $3 containing this string $searchval"
-
-mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where $3 like '%$searchval%'"
+    searchval="${@:4}"
+    echo "this is column to retrieve from $1 from this table $2 searching from this column $3 containing this string $searchval"
+    mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where $3 like '%$searchval%'"
 }
 	
 core_columnsearch() {
 # ./shadow.dtsd columnsearch IDNUMBER IDDB NAME ARMOR
-lib_columnretrievesearch "${@:2}"
+    lib_columnretrievesearch "${@:2}"
 }
 	
 log_myerasetable() { 
-lib_mysend "TRUNCATE TABLE $1"
+    lib_mysend "TRUNCATE TABLE $1"
 }
 
 core_erasetable() { 
-MYVALUECOMMAND="${@:2}"
-
-log_myerasetable $MYVALUECOMMAND
+    MYVALUECOMMAND="${@:2}"
+    log_myerasetable $MYVALUECOMMAND
 }
 

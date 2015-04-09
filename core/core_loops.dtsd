@@ -59,3 +59,61 @@ log_mysql_dtsd() {
     MYLOGDUMPCOMMAND="${@:1}"
     lib_myinsert DTSDLOG LOGSTRING $MYLOGDUMPCOMMAND
 }
+
+core_timedfuncs(){
+    #gather all the functions that are meant to be run at certain times
+    ONSTART=( $(compgen -A function | grep ONSTART_) )
+    ONINTERVAL=( $(compgen -A function | grep ONINTERVAL_) )
+    ONEND=( $(compgen -A function | grep ONEND_) )
+    #run all the functions that are meant to be run at startup
+    for func in ${ONSTART[@]}
+    do
+        $func
+    done
+    curtime=0
+    while lib_check_server_running
+    do
+        for func in ${ONINTERVAL[@]}
+        do
+            #the % operator returns the remainder of a division. when this remainder is 0, that means the time is a while multiple of the interval
+            #meaning the function should be ran
+            if [ $(( curtime%$(echo $func | cut -d"_" -f2))) -eq 0 ]
+            then
+                $func
+            fi
+        done
+        let curtime++
+        sleep 1
+    done
+    #once the server has closed, call any cleanup functions
+    for func in ${ONEND[@]}
+    do
+        $func
+    done
+}
+
+#These are just for testing. actual functions will be stored in the modules folder
+ONSTART_test(){
+echo "start test"
+}
+ONSTART_test1(){
+echo "start test1"
+}
+
+ONINTERVAL_10_test(){
+echo "time%10 = 0"
+}
+ONINTERVAL_13_test1(){
+echo "time%13 = 0"
+}
+ONINTERVAL_7_test2(){
+echo "time%7 = 0"
+}
+
+ONEND_test(){
+echo "end test"
+}
+
+ONEND_test1(){
+echo "end test1"
+}

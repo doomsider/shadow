@@ -1,0 +1,5 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Server loop script for running and maintenance of the server
+
+

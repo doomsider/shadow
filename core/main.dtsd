@@ -14,6 +14,7 @@ DTSDHELP_dump="\nDump usage: shadow.dtsd dump\nDump creates a Java dump for bug 
 DTSDHELP_ebrake="\nEbrake usage: shadow.dtsd ebrake\nShuts down server when it is locked up and creates a Java dump\n"
 DTSDHELP_help="\nHelp usage:  shadow.dtsd help [command name] or [nothing] to display help text\nFind help for using core functions\n"
 DTSDHELP_kill="\nKill usage: shadow.dtsd kill [player name]\nKills a player\n"
+DTSDHELP_restart="\nRestart usage: shadow.dtsd restart\nDo a hard reset for the server\n"
 DTSDHELP_restore="\nRestore usage: shadow.dtsd restore backupname\nRestores a zip of the complete server\n"
 DTSDHELP_say="\nSay usage: shadow.dtsd say message\nSends a message to everyone on the server\n"
 DTSDHELP_setplayermax="\nSetplayermax usage: shadow.dtsd setplayermax integer\nSet the max number of players, useful to set to zero when doing maintenance to keep people off\n"
@@ -403,6 +404,11 @@ core_kill() {
 	kill ${PIDS[@]}
 	fi
 }
+core_restart() {
+core_stop
+core_start
+}
+
 core_restore() {
 # This command needs to tell the difference between a complete backup or a universe backup andor univer backup command needs to put directory structure in the universe zip
 # Checks for server running and then restores the given backup zip file.  It pulls from the backup directory so no path is needed.
@@ -512,13 +518,13 @@ then
 				break
 			fi
 		done
-		if lib_check_server_running 
-		then
-			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
-			kill -9 $PID			
-			$CONFIGDTSD_SERVICE took too long to close. $CONFIGDTSD_SERVICE had to be killed
-			$CONFIGDTSD_SCRIPTPATH kill
-		fi
+	fi
+	if lib_check_server_running 
+	then
+		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+		kill -9 $PID			
+		$CONFIGDTSD_SERVICE took too long to close. $CONFIGDTSD_SERVICE had to be killed
+		$CONFIGDTSD_SCRIPTPATH kill
 	fi
 	else
 		echo "$CONFIGDTSD_SERVICE not running"

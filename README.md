@@ -23,6 +23,8 @@ Manual setup of mysql tables and columns is ./shadow.dtsd mycreate
 
 Manual setup for rank system is ./shadow.dtsd setranks
 
+Manusal setup for the ID system is ./shadow.dtsd parseblocks
+
 To set initial rank for a player ./shadow.dtsd changerank player rank (example: ./shadow.dtsd changerank Doomsider Admiral)
 
 Many of the commands are for debugging purposes right now and will be removed later after testing is complete 

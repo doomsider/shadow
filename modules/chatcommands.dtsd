@@ -63,6 +63,9 @@ chatcommand_HELP() {
 	if [ $# -eq 1 ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $CHATHELP_HELP
+		USERRANK=$(lib_myvalueretrieve RANK PLAYERDB $1)
+		USERCOMMANDS=$(lib_myvalueretrieve COMMANDSALLOWED RANKLOG $USERRANK)
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Commands available are $USERCOMMANDS 
 		MATCHHELP=GOOD
 	fi
 # If there is at least one parameter
@@ -338,8 +341,7 @@ chatcommand_RESTART(){
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RESTART
 	else
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The server will now restart
-		core_stop
-		core_start
+		core_softstop
 	fi
 }
 chatcommand_SHUTDOWN(){

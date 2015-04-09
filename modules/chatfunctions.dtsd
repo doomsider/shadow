@@ -90,9 +90,9 @@ MYCHATSTRING="${@:1}"
 		while [ -n "${CHATCOMMANDS[$CHATCOMMANDARRAY]+set}" ] 
 		do
 		CURRENTCHATCOMMAND=${CHATCOMMANDS[$CHATCOMMANDARRAY]}
-		echo "This is the current Chat Command $CURRENTCHATCOMMAND"
+#		echo "This is the current Chat Command $CURRENTCHATCOMMAND"
 		CUTCHATCOMMAND=${CURRENTCHATCOMMAND#*_}
-		echo "This remove chatcommand to get only the command name $CUTCHATCOMMAND"
+#		echo "This remove chatcommand to get only the command name $CUTCHATCOMMAND"
 		if [ "$CUTCHATCOMMAND" = "$USERCOMMAND" ]
 			then
 				echo "Chat Command found"				

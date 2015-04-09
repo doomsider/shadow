@@ -152,6 +152,21 @@ core_columnretrieve() {
 	
 	}
 
+lib_columnretrievesearch() {
+# Like myvalueretrieve only tries to grab all values from a column rather than just one from a column with a unique index
+# Usage: columnretrievesearch column_to_display table column_containing_search search_string
+
+searchval="${@:4}"
+echo "this is column to retrieve from $1 from this table $2 searching from this column $3 containing this string $searchval"
+
+mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where $3 like '%$searchval%'"
+}
+	
+core_columnsearch() {
+# ./shadow.dtsd columnsearch IDNUMBER IDDB NAME ARMOR
+lib_columnretrievesearch "${@:2}"
+}
+	
 log_myerasetable() { 
 lib_mysend "TRUNCATE TABLE $1"
 }

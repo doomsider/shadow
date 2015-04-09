@@ -6,7 +6,6 @@ MYSQLDTSD_IDDB_IDNUMBER="INT"
 
 core_parseblocks() {
     log_myerasetable IDDB
-#temporary usage shadow.dtsd parseblocks string_to_search
 	BLOCKCONFIGXML=$CONFIGDTSD_INSTALLPATH/StarMade/data/config/BlockConfig.xml
 	BLOCKPROPERTIES=$CONFIGDTSD_INSTALLPATH/StarMade/data/config/BlockTypes.properties
 #	echo $BLOCKCONFIGXML

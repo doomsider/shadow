@@ -10,7 +10,7 @@ CHATHELP_CREDITS="[Gives credits to user or another player] USAGE: !CREDIT AMOUN
 CHATHELP_DESPAWN="[Destroys all ships with a specified name from the specified sector] USAGE: !DESPAWN <X> <Y> <Z> <Ship name>"
 CHATHELP_EXPORT="[Saves the specified sector to a file with a specified name] USAGE: !EXPORT <X> <Y> <Z> <Export name>"
 CHATHELP_GIVE="[Gives you, or another player the specified item ID with a specified quantity] USAGE: !GIVE <Player (optional)> <ID> <Amount>"
-CHATHELP_GIVESET="[Give complete build set of different hulls, ship internals, and decorations] USAGE: !GIVESET <Set name> <Set type (only used for normal or hard hull)> - Set names are grey, white, black, red, blue, yellow, green, brown, purple, glass, crystal, light, weapon, internal, decoration, terrain, plants"
+CHATHELP_GIVENAME="[Gives you blocks by their given names.  This will string match so for instance red would give you all blocks with red in their name] USAGE: !GIVENAME <Set Amount> <Set type>"
 CHATHELP_GIVEMETA="[Gives you, or another player the specified meta item] USAGE: !GIVEMETA <Player (optional)> <METAUTEN>"
 CHATHELP_GODON="[Turns on god mode for your character] USAGE: !GODON"
 CHATHELP_GODOFF="[Turns off god mode for your character] USAGE: !GODOFF"
@@ -29,6 +29,10 @@ CHATHELP_SPAWNSTART="[Allows enemies to spawn inside the specified sector] USAGE
 CHATHELP_SPAWNSTOP="[Stops enemies from spawning inside the specified sector] USAGE: !SPAWNSTOP <X> <Y> <Z>"
 CHATHELP_TELEPORT="[Teleports you and the entity you are controlling, or another player and the entity they are controlling to the specified sector] USAGE: !TELEPORT <Player (optional)> <X> <Y> <Z>"
 CHATHELP_WHITEADD="[Adds a player to the whitelist] USAGE: !WHITEADD <Player>"
+
+
+# Gives you blocks by their given names.  This will string match so for instance red would give you all blocks with red in their name
+# USAGE: !GIVENAME amount name_of_block
 	
 #####################################USER COMMANDS#####################################
 chatcommand_CORE(){
@@ -176,366 +180,28 @@ chatcommand_GIVE(){
 		fi
 	fi
 }
-chatcommand_GIVESET() {
-# Give complete build set of different hulls, ship internals, and decorations
-# USAGE: !GIVESET <Set name> <Set type (only used for normal or hard hull)> - Set names are grey, white, black, red, blue, yellow, green, brown, purple, glass, crystal, light, weapon, internal, decoration, terrain, plants
- if [ "$#" -ne "2" ] && [ "$#" -ne "3" ]
- then
-	 lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVESET Set_name Set_type or !GIVESET Set_name - Set names are grey, white, black, red, blue, yellow, green, brown, purple, orange, glass, light, logic, weapon, internal, crystal, decoration, terrain, plants - Set types for hull only are hard and normal
- else
-	 case "$2" in
-		*"glass"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 63 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 329 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 330 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 368 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 367 10000
-		;;
-		*"crystal"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 452 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 453 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 454 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 455 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 456 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 457 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 458 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 459 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 444 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 286 10000
-		;;
-		*"light"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 65 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 62 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 282 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 283 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 284 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 285 10000
-		;;
-		*"logic"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 405 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 406 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 407 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 408 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 409 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 410 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 411 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 412 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 413 10000
-		;;
-		*"weapon"*)
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 6 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 16 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 4 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 24 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 39 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 30 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 38 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 32 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 344 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 345 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 14 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 334 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 335 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 332 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 333 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 414 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 415 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 416 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 417 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 418 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 419 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 420 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 421 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 422 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 423 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 424 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 425 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 460 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 461 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 462 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 463 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 464 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 465 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 466 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 467 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 344 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 345 10000	
-		;;
-		*"terrain"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 64 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 80 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 138 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 139 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 140 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 141 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 73 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 74 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 82 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 83 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 86 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 87 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 90 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 91 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 93 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 95 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 107 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 275 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 278 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 279 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 280 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 281 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 274 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 275 10000
-		;;
-		*"plant"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 84 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 85 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 89 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 92 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 96 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 97 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 98 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 99 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 100 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 101 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 102 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 103 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 104 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 105 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 106 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 108 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 276 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 277 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 287 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 288 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 109 10000
-		;;
-		*"decoration"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 340 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 336 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 337 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 338 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 339 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 272 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 273 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 445 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 446 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 447 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 448 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 449 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 450 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 451 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 436 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 437 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 438 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 439 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 440 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 441 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 442 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 443 10000
-		;;
-		*"internal"*) 
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 1 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 2 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 3 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 8 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 331 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 289 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 290 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 7 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 88 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 15 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 22 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 56 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 47 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 120 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 121 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 122 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 123 10000	
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 94 10000	
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 113 10000	
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 291 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 292 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 346 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 347 10000
-			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 347 10000
-		;;
-		*"grey"*) 
-			if [ "$3" = "normal" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 5 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 293 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 302 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 348 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 357 10000
-			elif [ "$3" = "hard" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 311 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 320 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 263 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 401 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 402 10000
-			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET color_of_hull normal_or_hard
-			fi
-		;;
-		*"white"*) 
-			if [ "$3" = "normal" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 81 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 301 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 310 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 400 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 392 10000
-			elif [ "$3" = "hard" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 319 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 328 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 384 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 376 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 271 10000
-			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET GIVESET color_of_hull normal_or_hard
-			fi
-		;;
-		*"black"*) 
-			if [ "$3" = "normal" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 75 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 296 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 305 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 393 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 385 10000
-			elif [ "$3" = "hard" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 264 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 312 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 321 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 377 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 369 10000
-			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET color_of_hull normal_or_hard
-			fi
-		;;
-		*"red"*) 
-			if [ "$3" = "normal" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 76 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 297 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 306 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 394 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 386 10000
-			elif [ "$3" = "hard" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 265 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 313 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 322 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 378 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 370 10000
-			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET color_of_hull normal_or_hard
-			fi
-		;;
-		*"yellow"*) 
-			if [ "$3" = "normal" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 79 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 300 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 309 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 398 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 391 10000
-			elif [ "$3" = "hard" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 270 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 318 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 327 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 383 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 375 10000
-			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET color_of_hull normal_or_hard
-			fi
-		;;
-		*"green"*) 
-			if [ "$3" = "normal" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 79 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 299 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 308 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 397 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 389 10000
-			elif [ "$3" = "hard" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 268 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 316 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 325 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 381 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 373 10000
-			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET color_of_hull normal_or_hard
-			fi
-		;;
-		*"brown"*) 
-			if [ "$3" = "normal" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 70 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 295 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 304 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 404 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 403 10000
-			elif [ "$3" = "hard" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 269 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 317 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 326 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 382 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 374 10000
-			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET color_of_hull normal_or_hard
-			fi
-		;;
-		*"purple"*) 
-			if [ "$3" = "normal" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 69 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 294 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 303 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 395 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 387 10000
-			elif [ "$3" = "hard" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 266 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 314 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 323 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 379 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 371 10000
-			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET color_of_hull normal_or_hard
-			fi
-		;;
-		*"orange"*) 
-			if [ "$3" = "normal" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 426 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 427 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 428 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 429 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 430 10000
-			elif [ "$3" = "hard" ]
-			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 431 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 432 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 433 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 434 10000
-				lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 435 10000
-			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use normal or hard for example GIVESET color_of_hull normal_or_hard
-			fi
-		;;
-		*) 
-		;;
-	esac
-fi
+chatcommand_GIVENAME() {
+# Gives you blocks by their given names.  This will string match so for instance red would give you all blocks with red in their name
+# USAGE: !GIVENAME amount name_of_block
+	lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Attemping to get a block by names
+	SEARCHVAL="${@:3}"
+# echo "Search value $SEARCHVAL"
+	if [ "$#" -ge "3" ] 
+	then
+		SEARCHERESULTS=( $(lib_columnretrievesearch IDNUMBER IDDB NAME "$SEARCHVAL") )
+		RESULTARRAY=0
+		while [ -n "${SEARCHERESULTS[$RESULTARRAY]+set}" ]
+		do
+			CURRENTIDNUMBER=${SEARCHERESULTS[$RESULTARRAY]}
+			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 $CURRENTIDNUMBER $2
+			let RESULTARRAY++
+		done
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVENAME amount name_of_block
+	fi
+
 }
+
 chatcommand_GIVEMETA(){ 
 # Gives you, or another player the specified meta item
 # USAGE: !GIVEMETA <Player (optional)> <METAUTEN>

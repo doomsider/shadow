@@ -38,7 +38,7 @@ SOURCES=( $(ls *dtsd | grep -v shadow.dtsd) )
 for i in $(find ./core/* -type f) $(find ./modules/* -type f) $SOURCES
 do
 # The check below that is commented out is useful to troubleshoot what scripts are loading successfully
-	echo "loading module $i"	
+#	echo "loading module $i"	
 	source $i
 done
 

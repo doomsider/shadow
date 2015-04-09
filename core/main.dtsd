@@ -167,7 +167,49 @@ core_check() {
 		cd $CONFIGDTSD_INSTALLPATH
 # At this point the cronjobs and server will need to be stopped and a backup made just in case
 		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat New version detected going down for backup and upgrade"
-		core_stop
+		if lib_check_server_running
+		then
+			echo "$SERVICE is running... stopping."
+# Issue Chat and a command to the server to shutdown
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Server Going down be back in a bit."
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/shutdown 60"
+# Give the server a chance to gracefully shutdown if not kill it and then seg fault it if necessary
+			sleep 60
+			for LOOPNO in {0..30}
+			do
+				if lib_check_server_running
+				then
+					sleep 1
+				else
+					echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+				break
+				fi
+			done
+		fi
+		if lib_check_server_running
+		then
+			echo $CONFIGDTSD_SERVICE is taking too long to close and may be frozen. Forcing shut down
+			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+			kill $PID
+			for LOOPNO in {0..30}
+			do
+				if lib_check_server_running
+				then
+					sleep 1
+				else
+					echo $CONFIGDTSD_SERVICE took $(($LOOPNO + 30)) seconds to close, and had to be force shut down
+			break
+				fi
+			done
+		fi
+		if lib_check_server_running 
+		then
+			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+			kill -9 $PID			
+			$CONFIGDTSD_SERVICE took too long to close. $CONFIGDTSD_SERVICE had to be killed
+		else
+			echo "$CONFIGDTSD_SERVICE not running"
+		fi
 		core_backup
 		wget http://files.star-made.org/build/$RELEASE_URL
 		unzip -o $RELEASE_URL -d $CONFIGDTSD_INSTALLPATH/StarMade
@@ -175,9 +217,9 @@ core_check() {
 		touch CONFIGDTSD_INSTALLPATH/installed-version
 		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version
 # At this point the server should started and cronjobs restored
-else
-	echo "No new version detected"
-fi
+	else
+		echo "No new version detected"
+	fi
 }
 core_detect() {
 # Special thanks to Fire219 for providing the means to test this script.  Appreciation to Titansmasher for collaboration.
@@ -202,13 +244,12 @@ then
 			echo "Server time variable is $CURRENTTIME"
         else
 			echo "Server is not responding, shutting down and restarting"
-			core_ebrake
-			core_start
+			core_softstop
 		fi
 	fi
 else
 	echo "Starmade is not running!"
-	core_start
+	core_softstop
 fi
 }
 core_devcheck() {
@@ -235,7 +276,9 @@ core_devcheck() {
 		cd $CONFIGDTSD_INSTALLPATH
 # At this point the cronjobs and server will need to be stopped and a backup made just in case
 		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat New version detected going down for backup and upgrade"
-		core_stop
+		
+		
+		
 		core_backup
 	    wget --user dev --password dev http://files.star-made.org/build/pre/$RELEASE_URL
 		unzip -o $RELEASE_URL -d $CONFIGDTSD_INSTALLPATHN/StarMade

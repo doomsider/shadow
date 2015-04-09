@@ -1,0 +1,59 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# ID database 
+MYSQLDTSD_IDDB_NAME="VARCHAR(25)"
+MYSQLDTSD_IDDB_IDNUMBER="INT"
+
+core_parseblocks() {
+    log_myerasetable IDDB
+#temporary usage shadow.dtsd parseblocks string_to_search
+	BLOCKCONFIGXML=$CONFIGDTSD_INSTALLPATH/StarMade/data/config/BlockConfig.xml
+	BLOCKPROPERTIES=$CONFIGDTSD_INSTALLPATH/StarMade/data/config/BlockTypes.properties
+#	echo $BLOCKCONFIGXML
+#	echo $BLOCKPROPERTIES
+	NUMLINES=$(wc -l $BLOCKPROPERTIES | cut -d" " -f1)
+#	echo $NUMLINES
+	LINEST=1
+	OLD_IFS=$IFS
+	IFS=$'\n'
+	LINESTRNG=( $(awk "NR==$LINEST, NR==$NUMLINES" $BLOCKPROPERTIES) )
+	IFS=$OLD_IFS
+#	echo ${LINESTRNG[@]}
+#	echo ${#LINESTRNG[@]}
+#	echo ${LINESTRNG[1]}
+#	echo ${LINESTRNG[2]}
+	LINESTRNGARRAY=0
+	while [ -n "${LINESTRNG[$LINESTRNGARRAY]+set}" ]
+	do
+		CURSTRING=${LINESTRNG[$LINESTRNGARRAY]}
+#		echo $CURSTRING
+		if [[ $CURSTRING == *"="* ]]
+		then
+			STRINGIDNAME=${CURSTRING%=*}
+# Remove trailing space
+			STRINGIDNAME="${STRINGIDNAME%"${STRINGIDNAME##*[![:space:]]}"}"
+			STRINGIDNUMBER=${CURSTRING#*=}
+			STRINGIDNUMBER="${STRINGIDNUMBER#"${STRINGIDNUMBER%%[![:space:]]*}"}"
+			STRINGIDNUMBER="${STRINGIDNUMBER%"${STRINGIDNUMBER##*[![:space:]]}"}"
+#			echo $STRINGIDNUMBER
+#			echo ${#STRINGIDNUMBER}
+#			echo "Here is the name $STRINGIDNAME it is ${#STRINGIDNAME} long" 
+#			echo "Here is the idname $STRINGIDNUMBER it is ${#STRINGIDNUMBER} long"
+#			value=1
+#			echo $CURSTRING
+			MATCHSTRING=$(grep \<Block $BLOCKCONFIGXML | grep icon | grep $STRINGIDNAME )
+#			echo $MATCHSTRING
+			NAMEOFID=${MATCHSTRING#*=}; NAMEOFID=${NAMEOFID#*=}; NAMEOFID=${NAMEOFID#*\"}; NAMEOFID=${NAMEOFID%%\"*};  NAMEOFID=${NAMEOFID/\(/}; NAMEOFID=${NAMEOFID/\)/}
+			if [[ $NAMEOFID = *[!\ ]* ]]
+			then
+				echo "The ID is $STRINGIDNUMBER and the description is $NAMEOFID"
+				lib_myinsert IDDB IDNUMBER $STRINGIDNUMBER
+				lib_myupdate IDDB NAME "$NAMEOFID" IDNUMBER $STRINGIDNUMBER
+			fi
+		
+		fi
+		let LINESTRNGARRAY++
+	done
+}
+
+

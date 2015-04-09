@@ -1,0 +1,600 @@
+	
+598	Grey Hull	
+599	Grey Hull Wedge	
+600	Grey Hull Corner	
+602	Grey Hull Tetra	
+601	Grey Hull Hepta	
+608	White Hull	
+609	White Hull Wedge	
+610	White Hull Corner	
+612	White Hull Tetra	
+611	White Hull Hepta	
+603	Black Hull	
+604	Black Hull Wedge	
+605	Black Hull Corner	
+607	Black Hull Tetra	
+606	Black Hull Hepta	
+638	Red Hull	
+639	Red Hull Wedge	
+640	Red Hull Corner	
+642	Red Hull Tetra	
+641	Red Hull Hepta	
+618	Blue Hull	
+619	Blue Hull Wedge	
+620	Blue Hull Corner	
+622	Blue Hull Tetra	
+621	Blue Hull Hepta	
+628	Yellow Hull	
+629	Yellow Hull Wedge	
+630	Yellow Hull Corner	
+632	Yellow Hull Tetra	
+631	Yellow Hull Hepta	
+623	Green Hull	
+624	Green Hull Wedge	
+625	Green Hull Corner	
+627	Green Hull Tetra	
+626	Green Hull Hepta	
+643	Brown Hull	
+644	Brown Hull Wedge	
+645	Brown Hull Corner	
+647	Brown Hull Tetra	
+646	Brown Hull Hepta	
+613	Purple Hull	
+614	Purple Hull Wedge	
+615	Purple Hull Corner	
+617	Purple Hull Tetra	
+616	Purple Hull Hepta	
+633	Orange Hull	
+634	Orange Hull Wedge	
+635	Orange Hull Corner	
+637	Orange Hull Tetra	
+636	Orange Hull Hepta
+
+
+	
+5	Grey Standard Armor	
+293	Grey Standard Armor Wedge	
+302	Grey Standard Armor Corner	
+348	Grey Standard Armor Tetra	
+357	Grey Standard Armor Hepta	
+81	White Standard Armor	
+301	White Standard Armor Wedge	
+310	White Standard Armor Corner	
+400	White Standard Armor Tetra	
+392	White Standard Armor Hepta	
+75	Black Standard Armor	
+296	Black Standard Armor Wedge	
+305	Black Standard Armor Corner	
+393	Black Standard Armor Tetra	
+385	Black Standard Armor Hepta	
+76	Red Standard Armor	
+297	Red Standard Armor Wedge	
+306	Red Standard Armor Corner	
+394	Red Standard Armor Tetra	
+386	Red Standard Armor Hepta	
+77	Blue Standard Armor	
+298	Blue Standard Armor Wedge	
+307	Blue Standard Armor Corner	
+396	Blue Standard Armor Tetra	
+388	Blue Standard Armor Hepta	
+79	Yellow Standard Armor	
+300	Yellow Standard Armor Wedge	
+309	Yellow Standard Armor Corner	
+398	Yellow Standard Armor Tetra	
+391	Yellow Standard Armor Hepta	
+78	Green Standard Armor	
+299	Green Standard Armor Wedge	
+308	Green Standard Armor Corner	
+397	Green Standard Armor Tetra	
+389	Green Standard Armor Hepta	
+70	Brown Standard Armor	
+295	Brown Standard Armor Wedge	
+304	Brown Standard Armor Corner	
+404	Brown Standard Armor Tetra	
+403	Brown Standard Armor Hepta	
+69	Purple Standard Armor	
+294	Purple Standard Armor Wedge	
+303	Purple Standard Armor Corner	
+395	Purple Standard Armor Tetra	
+387	Purple Standard Armor Hepta	
+426	Orange Standard Armor	
+427	Orange Standard Armor Wedge	
+428	Orange Standard Armor Corner	
+430	Orange Standard Armor Tetra	
+429	Orange Standard Armor Hepta	
+263	Grey Advanced Armor	
+311	Grey Advanced Armor Wedge	
+320	Grey Advanced Armor Corner	
+402	Grey Advanced Armor Tetra	
+401	Grey Advanced Armor Hepta	
+271	White Advanced Armor Hull	
+319	White Advanced Armor Wedge	
+328	White Advanced Armor Corner	
+384	White Advanced Armor Tetra	
+376	White Advanced Armor Hepta	
+264	Black Advanced Armor	
+312	Black Advanced Armor Wedge	
+321	Black Advanced Armor Corner	
+377	Black Advanced Armor Tetra	
+369	Black Advanced Armor Hepta	
+265	Red Advanced Armor	
+313	Red Advanced Armor Wedge	
+322	Red Advanced Armor Corner	
+378	Red Advanced Armor Tetra	
+370	Red Advanced Armor Hepta	
+267	Blue Advanced Armor	
+315	Blue Advanced Armor Wedge	
+324	Blue Advanced Armor Corner	
+380	Blue Advanced Armor Tetra	
+372	Blue Advanced Armor Hepta	
+270	Yellow Advanced Armor	
+318	Yellow Advanced Armor Wedge	
+327	Yellow Advanced Armor Corner	
+383	Yellow Advanced Armor Tetra	
+375	Yellow Advanced Armor Hepta	
+268	Green Advanced Armor	
+316	Green Advanced Armor Wedge	
+325	Green Advanced Armor Corner	
+381	Green Advanced Armor Tetra	
+373	Green Advanced Armor Hepta	
+269	Brown Advanced Armor	
+317	Brown Advanced Armor Wedge	
+326	Brown Advanced Armor Corner	
+382	Brown Advanced Armor Tetra	
+374	Brown Advanced Armor Hepta	
+266	Purple Advanced Armor	
+314	Purple Advanced Armor Wedge	
+323	Purple Advanced Armor Corner	
+379	Purple Advanced Armor Tetra	
+371	Purple Advanced Armor Hepta	
+431	Orange Advanced Armor	
+432	Orange Advanced Armor Wedge	
+433	Orange Advanced Armor Corner	
+435	Orange Advanced Armor Tetra	
+434	Orange Advanced Armor Hepta	
+507	White Crystal Armor	
+508	White Crystal Armor Wedge	
+509	White Crystal Armor Corner	
+510	White Crystal Armor Hepta	
+511	White Crystal Armor Tetra	
+512	Red Crystal Armor	
+513	Red Crystal Armor Wedge	
+514	Red Crystal Armor Corner	
+515	Red Crystal Armor Hepta	
+516	Red Crystal Armor Tetra	
+517	Orange Crystal Armor	
+518	Orange Crystal Armor Wedge	
+519	Orange Crystal Armor Corner	
+520	Orange Crystal Armor Hepta	
+521	Orange Crystal Armor Tetra	
+522	Yellow Crystal Armor	
+523	Yellow Crystal Armor Wedge	
+524	Yellow Crystal Armor Corner	
+525	Yellow Crystal Armor Hepta	
+526	Yellow Crystal Armor Tetra	
+527	Green Crystal Armor	
+528	Green Crystal Armor Wedge	
+529	Green Crystal Armor Corner	
+530	Green Crystal Armor Hepta	
+531	Green Crystal Armor Tetra	
+532	Blue Crystal Armor	
+533	Blue Crystal Armor Wedge	
+534	Blue Crystal Armor Corner	
+535	Blue Crystal Armor Hepta	
+536	Blue Crystal Armor Tetra	
+537	Purple Crystal Armor	
+538	Purple Crystal Armor Wedge	
+539	Purple Crystal Armor Corner	
+540	Purple Crystal Armor Hepta	
+541	Purple Crystal Armor Tetra	
+593	Black Crystal Armor	
+594	Black Crystal Armor Wedge	
+595	Black Crystal Armor Corner	
+596	Black Crystal Armor Hepta	
+597	Black Crystal Armor Tetra	
+
+
+63	Glass	
+329	Glass Wedge	
+330	Glass Corner	
+367	Glass Hepta	
+368	Glass Tetra
+
+62	Beacon	
+503	Beacon Rod	
+55	White Light	
+282	Red Light	
+283	Blue Light	
+284	Green Light	
+285	Yellow Light	
+496	Purple Light	
+497	Orange Light	
+498	Black Light	
+340	Yellow Rod Light	
+499	White Rod Light	
+500	Black Rod Light	
+501	Red Rod Light	
+502	Orange Rod Light	
+504	Green Rod Light	
+505	Blue Rod Light	
+506	Purple Rod Light
+
+405	Activation Module	
+410	NOT-Signal	
+408	AND-Signal	
+409	OR-Signal	
+407	DELAY-Signal	
+406	DELAY-Signal NonRepeating	
+413	Trigger AreaController	
+411	Trigger Area	
+412	Trigger StepOn
+
+289	Docking Module	
+290	Docking Enhancer	
+7	Turret Docking Module	
+88	Turret Docking Enhancer
+
+479	Display Module	
+286	Ice Crystal	
+444	Ice Crystal Wedge	
+452	Rammet Crystal (Purple)	
+550	Rammet Crystal Wedge (Purple)	
+453	Nocx Crystal (Black)	
+548	Nocx Crystal Wedge (Black)	
+454	Parsen Crystal (White)	
+549	Parsen Crystal Wedge (White)	
+455	Hattel Crystal (Yellow)	
+553	Hattel Crystal Wedge (Yellow)	
+456	Mattise Crystal (Red)	
+555	Mattise Crystal Wedge (Red)	
+457	Sintyr Crystal (Orange)	
+554	Sintyr Crystal Wedge (Orange)	
+458	Bastyn Crystal (Green)	
+552	Bastyn Crystal Wedge (Green)	
+459	Varat Crystal (Blue)	
+551	Varat Crystal Wedge (Blue)	
+336	Decorative Switchboard	
+337	Decorative Server	
+338	Decorative Pipes	
+339	Decorative Panel	
+436	Yellow Hazard Armor	
+437	Yellow Hazard Armor Wedge	
+648	Yellow Hazard Armor Corner	
+649	Yellow Hazard Armor Hepta	
+650	Yellow Hazard Armor Tetra	
+438	Green Hazard Armor	
+439	Green Hazard Armor Wedge	
+651	Green Hazard Armor Corner	
+652	Green Hazard Armor Hepta	
+653	Green Hazard Armor Tetra	
+440	Alloyed Metal Mesh	
+441	Alloyed Metal Mesh (Wedge)	
+442	Metal Grill	
+443	Metal Grill (Wedge)	
+445	Medical Supplies	
+446	Medical Cabinet	
+447	Decorative Screen (Red)	
+448	Decorative Screen (Blue)	
+449	Decorative Screen (Green)	
+450	Decorative Screen (Orange)	
+451	Personal Computer (Blue)	
+656	Scaffold	
+657	Decorative Charts	
+658	Conduit (Blue)	
+468	Sertise Ingot (Purple)	
+558	Sertise Ingot Wedge (Purple)	
+469	Nacht Ingot (Black)	
+556	Nacht Ingot Wedge (Black)	
+470	Parstun Ingot (White)	
+557	Parstun Ingot Wedge (White)	
+471	Threns Ingot (Yellow)	
+561	Threns Ingot Wedge (Yellow)	
+472	Zercaner Ingot (Red)	
+563	Zercaner Ingot Wedge (Red)	
+473	Jisper Ingot (Orange)	
+562	Jisper Ingot Wedge (Orange)	
+474	Fertikeen Ingot (Green)	
+560	Fertikeen Ingot (Green)	
+475	Hital Ingot (Blue)	
+559	Hital Ingot Wedge (Blue)	
+223	Fertikeen Motherboard	
+576	Fertikeen Motherboard Wedge	
+229	Hital Motherboard	
+575	Hital Motherboard Wedge	
+247	Jisper Motherboard	
+578	Jisper Motherboard Wedge	
+254	Nacht Motherboard	
+572	Nacht Motherboard Wedge	
+232	Parstun Motherboard	
+573	Parstun Motherboard Wedge	
+250	Sertise Motherboard	
+574	Sertise Motherboard Wedge	
+235	Threns Motherboard	
+577	Threns Motherboard Wedge	
+226	Zercaner Motherboard	
+579	Zercaner Motherboard Wedge	
+253	Beacon Charged Circuit	
+224	Bastyn Circuit	
+568	Bastyn Circuit Wedge	
+225	Bastyn Charged Circuit	
+584	Bastyn Charged Circuit Wedge	
+220	Crystal Circuit	
+219	Crystal Composite Wedge	
+236	Hattel Circuit	
+569	Hattel Circuit Wedge	
+237	Hattel Charged Circuit	
+585	Hattel Charged Circuit Wedge	
+227	Mattise Circuit	
+571	Mattise Circuit Wedge	
+228	Mattise Charged Circuit	
+587	Mattise Charged Circuit Wedge	
+272	Nocx Circuit	
+564	Nocx Circuit Wedge	
+273	Nocx Charged Circuit	
+580	Nocx Charged Circuit Wedge	
+233	Parsen Circuit	
+565	Parsen Circuit Wedge	
+234	Parsen Charged Circuit	
+581	Parsen Charged Circuit Wedge	
+251	Rammet Circuit	
+566	Rammet Circuit Wedge	
+252	Rammet Charged Circuit	
+582	Rammet Charged Circuit Wedge	
+248	Sintyr Circuit	
+570	Sintyr Circuit Wedge	
+249	Sintyr Charged Circuit	
+586	Sintyr Charged Circuit Wedge	
+230	Varat Circuit	
+567	Varat Circuit Wedge	
+231	Varat Charged Circuit	
+583	Varat Charged Circuit Wedge
+
+1	Ship Core	
+123	Build Block	
+2	Power Reactor Module	
+331	Power Capacitor	
+3	Shield Capacitator	
+478	Shield Recharger	
+8	Hyperflux Coil Thruster	
+56	Gravity Unit	
+120	Storage	
+122	PlexDoor	
+588	PlexDoor Wedge	
+589	Glass Door	
+590	Glass Door Wedge	
+591	Blast Door	
+592	Blast Door Wedge	
+659	Forcefield (Red)	
+660	Forcefield (Blue)	
+661	Forcefield (Yellow)	
+291	Faction Module	
+292	Faction Hub	
+346	Faction Permission Module	
+347	Shop Module	
+15	RadarJammer	
+22	Cloaker	
+47	Camera	
+121	BOBBY AI Module	
+542	Warp Gate Computer	
+543	Warp Gate Module	
+544	Jump Drive Computer	
+545	Jump Drive Module	
+654	Scanner Computer	
+655	Scanner Antenna	
+113	Plex Lifter	
+94	Plex Undeathinator
+
+6	Cannon Computer	
+16	Cannon Barrel	
+414	Damage Beam Computer	
+415	Damage Beam Module	
+416	Damage Pulse Computer	
+417	Damage Pulse Module	
+38	Missile Computer	
+32	Missile Tube	
+344	Push Pulse Computer	
+345	Push Pulse Module	
+14	Warhead	
+4	Salvage Computer	
+24	Salvage Module	
+39	Astro Technician	
+30	Astro Technobeam	
+334	Powersupply Computer	
+335	Powersupply Beam	
+332	Powerdrain Computer	
+333	Powerdrain Beam	
+46	Shield Drain Beam Computer	
+40	Shield Drain Beam Module	
+54	Shield Supply Beam Computer	
+48	Shield Supply Beam Module
+
+418	Piercing Effect Computer	
+419	Piercing Effect Module	
+420	Explosive Effect Computer	
+421	Explosive Effect Module	
+424	EMP Effect Computer	
+425	EMP Effect Module	
+422	Punch-Through Effect Computer	
+423	Punch-Through Effect Module	
+460	Stop Effect Computer	
+461	Stop Effect Module	
+462	Push Effect Computer	
+463	Push Effect Module	
+464	Pull Effect Computer	
+465	Pull Effect Module	
+466	Ion Effect Computer	
+467	Ion Effect Module	
+476	Overdrive Effect Computer	
+477	Overdrive Effect Module
+
+128	Blue Dirt	
+142	Hital Capsule	
+143	Larimar	
+144	Larimar Capsule	
+145	Carved Larimar	
+129	Burnt Orange Dirt	
+146	Sintyr Capsule	
+147	Orange Lava	
+148	Orange Water	
+149	Orange Poison	
+130	Orange Dirt	
+150	Jisper Capsule	
+151	Chabaz	
+152	Chabaz Capsule	
+153	Carved Chabaz	
+131	Burnt Yellow Dirt	
+154	Threns Capsule	
+156	Lukrah Capsule	
+157	Carved Lukrah	
+132	White Dirt	
+158	Parstun Capsule	
+159	Dolom	
+160	Dolom Capsule	
+161	Carved Dolom	
+133	Purple Dirt	
+162	Sertise Capsule	
+163	Sugil	
+164	Sugil Capsule	
+165	Carved Sugil	
+134	Burnt White Dirt	
+166	Parsen Capsule	
+167	White Lava	
+168	White Water	
+169	White Poison	
+135	Red Dirt	
+170	Zercaner Capsule	
+171	Cinnabar	
+172	Cinnabar Capsule	
+173	Carved Cinnabar	
+136	Burnt Purple Dirt	
+174	Rammet Capsule	
+175	Purple Lava	
+176	Purple Water	
+177	Purple Poison	
+137	Green Dirt	
+178	Fertikeen Capsule	
+179	Varis	
+180	Varis Capsule	
+181	Carved Varis	
+206	Burnt Yellow Dirt	
+182	Hattel Capsule	
+183	Yellow Lava	
+184	Yellow Water	
+185	Yellow Poison	
+207	Burnt Green Dirt	
+186	Bastyn Capsule	
+187	Green Lava	
+188	Green Water	
+189	Green Poison	
+208	Burnt Blue Dirt	
+190	Varat Capsule	
+191	Blue Lava	
+192	Blue Water	
+193	Blue Poison	
+209	Burnt Red Dirt	
+194	Mattise Capsule	
+195	Red Lava	
+196	Red Water	
+197	Red Poison	
+210	Burnt Black Dirt	
+198	Nocx Capsule	
+199	Black Lava	
+200	Black Water	
+201	Black Poison	
+72	Black Dirt	
+202	Nacht Capsule	
+203	Tekt	
+204	Tekt Capsule	
+205	Carved Tekt	
+480	Hattel Shard Raw	
+481	Sintyr Shard Raw	
+482	Mattise Shard Raw	
+482	Mattise Shard Raw	
+483	Rammet Shard Raw	
+484	Varat Shard Raw	
+485	Bastyn Shard Raw	
+486	Parsen Shard Raw	
+487	Nocx Shard Raw	
+488	Threns Ore Raw	
+489	Jisper Ore Raw	
+490	Zercaner Ore Raw	
+491	Sertise Ore Raw	
+492	Hital Ore Raw	
+493	Fertikeen Ore Raw	
+494	Parstun Ore Raw	
+495	Nacht Ore Raw
+
+211	Basic Factory	
+217	Standard Factory	
+259	Advanced Factory	
+212	Factory Enhancer	
+213	Capsule Refinery	
+214	Capsule Refinery Enhancer	
+215	Micro Assembler	
+216	Micro Assembler Enhancer	
+218	PowerBlock Factory Enhancer	
+222	Particle Press	
+260	Schemadyne-2000	
+261	Schemadyne-3000	
+255	Schemadyne-10000	
+256	Schemadyne-20000	
+257	Schemadyne-30000	
+258	Schemadyne Advanced	
+262	Mineral Separator	
+546	Scrap Alloy	
+547	Scrap Composite	
+238	Orange Paint	
+239	Red Paint	
+240	Purple Paint	
+241	Brown Paint	
+242	Green Paint	
+243	Yellow Paint	
+244	Black Paint	
+245	White Paint	
+246	Blue Paint	
+341	Bronze Bar	
+342	Silver Bar	
+343	Gold Bar	
+
+80	Lava	
+86	Water	
+73	Rock	
+74	Sand	
+87	Soil	
+139	Red Rock	
+140	Red Dirt	
+90	Purple Stuff	
+91	Purple Rock	
+92	Purple Vine	
+138	Red Planet Terrain	
+141	Red Planet Rock	
+82	Grass Planet Dirt	
+83	Grass Planet Terrain	
+274	Ice Planet Surface	
+275	Ice Planet Rock	
+64	Ice	
+84	Wood	
+85	Foliage	
+276	Ice Wood	
+277	Ice Leaves	
+287	Redwood	
+288	Redwood Leaves	
+89	Cactus	
+93	Grass Patch	
+95	Brown Patch	
+96	Mars Tentacles	
+97	Alien Vines	
+98	Grass Flowers	
+99	Long Weed	
+100	Tall Mushroom	
+101	Purspire	
+102	Tall Grass Flowers	
+103	Mini Cactus	
+104	Red Mushroom	
+105	Purptacles	
+106	Tall Flowers	
+107	Rock	
+108	Alien Flowers	
+109	Yhole
+
+

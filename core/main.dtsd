@@ -522,53 +522,15 @@ core_status() {
 	fi
 }
 core_stop() {
-    # Stops the server by letting player know server is going down and then attempts to close server more aggressively if it the
-    # process does not end
-    if lib_check_server_running
+    if lib_softstop  
     then
-        echo "$SERVICE is running... stopping."
-    # Issue Chat and a command to the server to shutdown
-        lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Server Going down be back in a bit."
-        lib_screensend $CONFIGDTSD_MAINSCREEN "/shutdown 60"
-    # Give the server a chance to gracefully shutdown if not kill it and then seg fault it if necessary
-        sleep 60
-        for LOOPNO in {0..30}
-        do
-            if lib_check_server_running
-            then
-                sleep 1
-            else
-                echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
-                $CONFIGDTSD_SCRIPTPATH kill
-                break
-            fi
-        done
-        if lib_check_server_running
-        then
-            echo $CONFIGDTSD_SERVICE is taking too long to close and may be frozen. Forcing shut down
-            PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
-            kill $PID
-            for LOOPNO in {0..30}
-            do
-                if lib_check_server_running
-                then
-                    sleep 1
-                else
-                    echo $CONFIGDTSD_SERVICE took $(($LOOPNO + 30)) seconds to close, and had to be force shut down
-                    $CONFIGDTSD_SCRIPTPATH kill
-                    break
-                fi
-            done
-        fi
-        if lib_check_server_running 
-        then
-            PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
-            kill -9 $PID			
-            $CONFIGDTSD_SERVICE took too long to close. $CONFIGDTSD_SERVICE had to be killed
-            $CONFIGDTSD_SCRIPTPATH kill
-        fi
-    else
-        echo "$CONFIGDTSD_SERVICE not running"
+        $CONFIGDTSD_SCRIPTPATH kill
+    elif lib_hardstop
+    then
+        $CONFIGDTSD_SCRIPTPATH kill
+    else 
+        lib_forcestop
+        $CONFIGDTSD_SCRIPTPATH kill
     fi
 }
 core_universebackup() {

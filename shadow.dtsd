@@ -35,11 +35,12 @@ fi
 SOURCES=( $(ls *dtsd | grep -v shadow.dtsd) )
 # echo ${SOURCES[@]}
 # Go through the sources array and then source each .dtsd file to load all the related scripts
-for i in $(find ./core/* -type f) $(find ./modules/* -type f) $SOURCES
+for MODULE in $(find ./core/*.dtsd -type f) $(find ./modules/*.dtsd -type f) $SOURCES
 do
 # The check below that is commented out is useful to troubleshoot what scripts are loading successfully
-#	echo "loading module $i"	
-	source $i
+#	echo "loading module $MODULE"	
+    dos2unix $MODULE
+	source $MODULE
 done
 
 CORECOMMANDS=( $(compgen -A function | grep core_) )

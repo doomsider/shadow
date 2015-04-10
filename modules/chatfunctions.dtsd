@@ -80,6 +80,7 @@ chat_commands() {
 # Feed the message string into an array so we can work with it as commands		
 		COMMANDARRAY=($MESSAGECUT)
 		USERCOMMAND=${COMMANDARRAY[0]}
+		USERCOMMAND=${USERCOMMAND^^}
 		USERPARAMETERS=${COMMANDARRAY[@]:1}
 		echo "User is $SENDERNAME"
 		echo "Command is $USERCOMMAND"

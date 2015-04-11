@@ -102,6 +102,7 @@ chat_commands() {
                     eval $CURRENTCHATCOMMAND "$SENDERNAME" $USERPARAMETERS
                 else
                     echo "Command not authorized"
+                    lib_screensend $CONFIGDTSD_MAINSCREEN /pm $SENDERNAME "You do not have permission to use that command!"
                 fi
                 let CHATCOMMANDARRAY++
             else

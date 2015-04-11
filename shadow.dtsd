@@ -39,7 +39,7 @@ for MODULE in $(find ./core/*.dtsd -type f) $(find ./modules/*.dtsd -type f) $SO
 do
 # The check below that is commented out is useful to troubleshoot what scripts are loading successfully
 #	echo "loading module $MODULE"	
-    dos2unix $MODULE
+    dos2unix -q $MODULE
 	source $MODULE
 done
 

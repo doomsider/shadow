@@ -1,9 +1,10 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
 # This is the setup function used to determine dependencies and setup the game server config file and database
+
 core_setup() {
-	echo "Press enter to accept default answer in brackets or type in your setting. Note: running this will overwrite existing configuration"
-	read -p "Do you wish to setup DTSD? [No] / Yes : " INPUT
+	echo "Press enter to accept default answer (capitalised) or type in your setting. Note: running this will overwrite existing configuration"
+	read -p "Do you wish to setup DTSD? [y/N] : " INPUT
 	case $INPUT in
 		[YesyesYESYy]* ) 
 			echo "Setting up config file"
@@ -54,7 +55,7 @@ core_setup() {
 		fi
 		exit
 	fi
-	read -p "Do you wish to have this script to setup Mysql user/pass and database or have you already done this? (requires root user for mysql) [No] / Yes : " INPUT
+	read -p "Do you wish to have this script to setup Mysql user/pass and database or have you already done this? (requires root user for mysql) [y/N] : " INPUT
 	case $INPUT in
 		[YesyesYESYy]* ) 
             echo "Setting up Mysql user and database"
@@ -110,7 +111,7 @@ core_setup() {
                 ADMINLOOP=YES
                 while [[ $ADMINLOOP == YES ]]
                 do
-                    read -p "Do you wish to use administrative Mysql account to setup database/user? [No] / Yes : " INPUT	
+                    read -p "Do you wish to use administrative Mysql account to setup database/user? [y/N] : " INPUT	
                     case $INPUT in
                     [YesyesYESYy]* ) 
                         MYSQLROOTDEFAULT=root
@@ -215,6 +216,11 @@ core_setup() {
 	else
 		CONFIGDTSD_DTSDSCREEN=$DTSDSCREENDEFAULT
 	fi
+    SETUPFUNCS=( $(compgen -A function | grep SETUP_) )
+    for func in ${SETUPFUNCS[@]}
+    do
+        $func
+    done
 	if [ -e $CONFIGDTSD_INSTALLPATH/core/config.dtsd ]
 	then
 		echo "Config file found - removing"

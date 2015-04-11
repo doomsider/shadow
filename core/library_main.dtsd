@@ -24,12 +24,14 @@ lib_arraycontains() {
 
 lib_check_server_running() {
     #Special thanks to tschaerni for a simplified search here
-    if pgrep -a java | grep $CONFIGDTSD_SERVICE | grep port:$CONFIGDTSD_PORT > /dev/null
+    if pgrep java | grep $CONFIGDTSD_SERVICE | grep port:$CONFIGDTSD_PORT > /dev/null
     then
         SERVERSTATUS=STOPPED
+        #echo stopped
         return 0
     else
         SERVERSTATUS=RUNNING
+        #echo running
         return 1 
     fi
 }
@@ -206,11 +208,11 @@ core_softstart() {
 		lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 # 	lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar "$CONFIGDTSD_INSTALLPATH"StarMade/$CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 
-# Backgrounding runlog is disabled in testing so you can stop it and restart it from the dtsdscreen with logcollect
-#		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logcollect
+# Backgrounding runlog is disabled in testing so you can stop it and restart it from the dtsdscreen with mainloop
+#		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mainloop
 #		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
 #		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
-		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logcollect
+		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mainloop
 	fi  
 
 }

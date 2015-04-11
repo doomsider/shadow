@@ -2,6 +2,8 @@
 # Shadow .01 Based off of DTSD
 # Contains function for voting
 
+MYSQLDTSD_PLAYERDB_CURRENTVOTE="INT DEFAULT '0'"
+MYSQLDTSD_PLAYERDB_TOTALVOTE="INT DEFAULT '0'"
 
 # }
 # chatcommand_VOTEBALANCE(){ 
@@ -38,3 +40,67 @@
 	# fi
 # }
 
+ONINTERVAL_60_VOTECHECK(){
+    if [[ $CONFIGDTSD_VOTING -eq true ]]
+    then
+        KEYURL="http://starmade-servers.com/api/?object=servers&element=voters&key=$CONFIGDTSD_VOTEKEY&month=current&format=xml"
+        ALLVOTES="$(wget -q -O - $KEYURL)"
+        #echo all the voting data $ALLVOTES
+        VOTERS=$(echo $ALLVOTES | cut -d">" -f12- | rev | cut -d"<" -f3- | rev)
+        #echo these are the voters $VOTERS
+        NUMOFVOTERS=$(( $(echo $VOTERS | grep -o '/' | wc -l) / 3 ))
+        #echo this is the number of voters $NUMOFVOTERS
+        if [ $NUMOFVOTERS -gt 0 ]
+        then
+            curvoter=1
+            while [ $curvoter -le $NUMOFVOTERS ]
+            do
+                VOTER=$(echo $VOTERS | cut -d">" -f$(($curvoter * 6 - 5))-$(($curvoter * 6)))
+                #echo this is the voter being processed $VOTER
+                VOTERNAME=$(echo $VOTER | cut -d">" -f3 | cut -d"<" -f1)
+                VOTERVOTES=$(echo $VOTER | cut -d">" -f5 | cut -d"<" -f1)
+                #echo this is the voter name and the voters vote count for this month $VOTERNAME $VOTERVOTES
+                CURVOTES=$(lib_myvalueretrieve CURRENTVOTE PLAYERDB $VOTERNAME)
+                TOTALVOTES=$(lib_myvalueretrieve TOTALVOTE PLAYERDB $VOTERNAME)
+                #echo this is the voters current votes for this month $CURVOTES
+                #echo this is the total votes of all time $TOTALVOTES
+                if [ ! -z "$CURVOTES" ]
+                then
+                    if [ $VOTERVOTES -gt $CURVOTES ]
+                    then
+                        TOTALVOTES=$(( $TOTALVOTES + $VOTERVOTES - $CURVOTES ))
+                    elif [ $VOTERVOTES -lt $CURVOTES ]
+                        TOTALVOTES=$(( $TOTALVOTES + $VOTERVOTES ))
+                    else
+                        continue
+                    fi
+                    echo this is the new total $TOTALVOTES
+                    lib_myupdate PLAYERDB CURRENTVOTE $VOTERVOTES NAME $VOTERNAME
+                    lib_myupdate PLAYERDB TOTALVOTE $TOTALVOTES NAME $VOTERNAME
+                    lib_screensend $CONFIGDTSD_MAINSCREEN /chat $VOTERNAME just voted for the server and has recieved voting points as a reward!
+                fi
+                let curvoter++
+            done
+        fi
+    fi
+}
+
+SETUP_VOTING(){
+    read -p "Do you wish to set up voting rewards? [y/N] : " INPUT
+	case $INPUT in
+		[YesyesYESYy]* ) 
+			CONFIGDTSD_VOTING=true
+            read -p "The server key for accessing votes on starmade-servers.com : " INPUT
+            if [ -n "$INPUT" ]
+            then
+                CONFIGDTSD_VOTEKEY=$INPUT
+            else
+                CONFIGDTSD_VOTEKEY=false
+                CONFIGDTSD_VOTING=false
+            fi
+		;;
+		* ) 
+			CONFIGDTSD_VOTING=false
+		;;
+	esac
+}

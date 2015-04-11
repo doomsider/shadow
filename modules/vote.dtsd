@@ -70,6 +70,7 @@ ONINTERVAL_60_VOTECHECK(){
                     then
                         TOTALVOTES=$(( $TOTALVOTES + $VOTERVOTES - $CURVOTES ))
                     elif [ $VOTERVOTES -lt $CURVOTES ]
+                    then
                         TOTALVOTES=$(( $TOTALVOTES + $VOTERVOTES ))
                     else
                         continue

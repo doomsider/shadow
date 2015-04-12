@@ -1,7 +1,7 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
 # ID database 
-MYSQLDTSD_IDDB_NAME="VARCHAR(25)"
+MYSQLDTSD_IDDB_NAME="VARCHAR(50)"
 MYSQLDTSD_IDDB_IDNUMBER="INT"
 
 core_parseblocks() {

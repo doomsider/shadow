@@ -91,7 +91,7 @@ core_screenadd() {
 lib_screensend() {
 # usage lib_screensend screen command
 	STUFFCOMMAND="${@:2}"
-	echo "trying to send this command $STUFFCOMMAND to the screen $1"
+#	echo "trying to send this command $STUFFCOMMAND to the screen $1"
 	screen -p 0 -S $1 -X stuff "$STUFFCOMMAND"$(printf \\r)
 }
 

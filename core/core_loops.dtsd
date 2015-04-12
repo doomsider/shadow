@@ -64,9 +64,12 @@ core_mainloop() {
 #			echo "Current Line in Array $LINENUMBER"
 			CURRENTSTRING=${LINESTRING[$LINENUMBER]}
 # Add the search string function here
-			log_mysql_dtsd $CURRENTSTRING &
+# Are we sure backgrounding lib_searchline is the behaviour we want?
 			lib_searchline $CURRENTSTRING &
-			
+# Temporary solution to fixing mysql errors because of quotes
+			CURRENTSTRING=${CURRENTSTRING/\"/}
+			CURRENTSTRING=${CURRENTSTRING/\"/}
+			log_mysql_dtsd $CURRENTSTRING &
 			let LINENUMBER++
 		done
 	done

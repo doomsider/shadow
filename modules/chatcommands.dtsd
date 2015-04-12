@@ -75,7 +75,8 @@ chatcommand_HELP() {
 		do	
 			CURRENTHELP=${HELPCOMMANDS[$HELPARRAY]}	
 			MATCHCOMMAND=${CURRENTHELP#*_}
-			if [ "$MATCHCOMMAND" = "$2" ] 
+			SEARCHHELP=${2^^}
+			if [ "$MATCHCOMMAND" = "$SEARCHHELP" ] 
 			then
 				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 ${!CURRENTHELP}
 				MATCHHELP=GOOD

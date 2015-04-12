@@ -40,6 +40,60 @@ MYSQLDTSD_PLAYERDB_TOTALVOTE="INT DEFAULT '0'"
 	# fi
 # }
 
+chatcommand_VOTEPOINTS(){
+    #used to tellt eh suer how many voting points they have
+    #usage: !VOTEPOINTS
+    if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Invalid parameters. Please use !VOTEPOINTS"
+	else
+        PLAYERVOTES=$(lib_myvalueretrieve TOTALVOTE PLAYERDB $1)
+        lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "You have $PLAYERVOTES voting point(s) to spend"
+    fi
+}
+
+chatcommand_VOTEEXCHANGE(){
+    #Used to buy a certain voting reward package from the server
+    #USAGE: !VOTEEXCHANGE <Package>
+    if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Invalid parameters. Please use !VOTEEXCHANGE <Package>"
+	else
+        if lib_function_exists "VOTEREWARD_$(echo $2 | tr 'a-z' 'A-Z')"
+        then
+            VOTEREWARD_$(echo $2 | tr 'a-z' 'A-Z') $1
+        else
+            lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "The package $2 doesnt exist"
+        fi
+    fi
+}
+
+VOTEREWARD_CREDITS(){
+    #usage:
+    #VOTEREWARD_CREDITS PlayerName
+    if $(votes_deduct $1 1)
+    then
+        lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 1000000
+        lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "You have converted 1 voting point into 1 million credits. Enjoy!"
+    else
+        lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Insufficent voting points to claim this reward. You require 1 point"
+    fi
+}
+
+votes_deduct(){
+    #usage:
+    #votes_deduct PlayerName Amount
+    #Returns True/False
+    PLAYERVOTES=$(lib_myvalueretrieve TOTALVOTE PLAYERDB $1)
+    if [ $(($PLAYERVOTES - $2)) -ge 0 ]
+    then
+        lib_myupdate PLAYERDB TOTALVOTE $(($PLAYERVOTES - $2)) NAME $1
+        return 0
+    else
+        return 1
+    fi
+}
+
 ONINTERVAL_60_VOTECHECK(){
     if [[ $CONFIGDTSD_VOTING -eq true ]]
     then

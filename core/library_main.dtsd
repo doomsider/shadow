@@ -236,17 +236,10 @@ core_softstop() {
 	lib_screensend $CONFIGDTSD_MAINSCREEN $CONFIGDTSD_SCRIPTPATH softstart
 }
 
-
-#function_exists(){
-#	if declare -f -F $1 > /dev/null 2>&1
-#	then
-#		return 0
-#	else 
-#		return 1
-#	fi
-#
-#FUNCTIONEXISTS=$?
-#}
+lib_function_exists(){
+    declare -f -F $1 > /dev/null 2>&1
+    return $?
+}
 
 # Create an array with the indirect reference of the current rankcommand and the values command list contains
 #	eval COMMANDLIST=\( \${${CURRENTARRAY}[@]} \)

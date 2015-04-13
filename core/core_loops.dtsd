@@ -5,6 +5,8 @@
 MYSQLDTSD_DTSDLOG_LOGSTRING=TEXT
 MYSQLDTSD_DTSDLOG_LOGDATE=TIMESTAMP
 MYSQLDTSD_TESTLOG_LOGSTRING="TEXT NOT NULL"
+MYSQLDTSD_SEARCHDB_SEARCHSTRING="TEXT NOT NULL"
+MYSQLDTSD_SEARCHDB_SEARCHFUNCTION="VARCHAR(25)"
 
 # Test logging script.  This function goes through the log from script by following the number of lines the log has and then
 # loading new lines as they are read into an array.  This array is fed into lib_searchline which will match it to any functions
@@ -81,14 +83,32 @@ core_mainloop() {
     done
 }
 
+core_makesearchdb() {
+	log_myerasetable SEARCHDB
+	SEARCHVAR=( $(compgen -v | grep LOGSEARCH_ ) )
+	SEARCHARRAY=0
+	while [ -n "${SEARCHVAR[$SEARCHARRAY]+set}" ]
+	do
+		
+		CURRENTSEARCH=${SEARCHVAR[$SEARCHARRAY]}
+		CURRENTSEARCHSTRING=${!CURRENTSEARCH}
+		CURRENTSEARCHFUNCTION=${CURRENTSEARCH#*_}
+		lib_myinsert SEARCHDB SEARCHFUNCTION "$CURRENTSEARCHFUNCTION"
+		lib_myupdate SEARCHDB SEARCHSTRING "$CURRENTSEARCHSTRING" SEARCHFUNCTION $CURRENTSEARCHFUNCTION
+#	echo "Search function is $SEARCHFUNCTION"
+#	echo "Search string is ${!CURRENTSEARCH}"
+		let SEARCHARRAY++
+	done
+}
 
 core_testloop() {
 # This function is testing a solution to the sluggishness of the current_core loop.  Currently it inserts lines into the database while they are received from a log file.
+	log_myerasetable TESTLOG
 	testloop=0
 	LINEARRAY=0
  while true
 	do 
-	NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log | cut -d" " -f1)
+	NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 | cut -d" " -f1)
 # In case Linestart does not have a value give it an interger value of 1.  The prevents a startup error on the script.
 	if [ -z "$LINESTART" ]
 		then
@@ -101,22 +121,39 @@ core_testloop() {
 #	        echo "$NUMOFLINES is the total lines of the log"
 #    	    echo "$LINESTART is linestart"
 			let LINESTART++
-			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log > $CONFIGDTSD_INSTALLPATH/TESTLOG.txt
+# Use sed to gather the current selection of lines
+			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 > $CONFIGDTSD_INSTALLPATH/SEDSELECT.txt
+# Remove all occurrences of quotes with a in-line edit 
+			sed -i 's/\"//g' $CONFIGDTSD_INSTALLPATH/SEDSELECT.txt
+# Surround every line with a quote for Mysql data entry
+			awk '{ print "\""$0"\""}' $CONFIGDTSD_INSTALLPATH/SEDSELECT.txt > $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt
+# Replace all new lines with a left bracket for lines terminated setting in mysqlimport.  Since the log does not use this character and neither does Mysql it seems to work for now.
+			awk '{printf("%s{",$0)}' $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt > $CONFIGDTSD_INSTALLPATH/TESTLOG.txt	
+
+
+
+			
+			# Surround every line with a quote for Mysql data entry
+#			awk '{ print "\""$0"\""}' $CONFIGDTSD_INSTALLPATH/SEDSELECT.txt > $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt
+#			 sed 's/^.*$/"&"/g' $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt
+#			cat $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt
+# Replace all new lines with a left bracket for lines terminated setting
+#			awk '{printf("%s{",$0)}' $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt > $CONFIGDTSD_INSTALLPATH/TESTLOG.txt
+#
 #			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log >> sedoutput.txt		
 			mysqlimport \
 			--user=$CONFIGDTSD_MYSQLUSER \
 			--password=$CONFIGDTSD_MYSQLPASS \
 			--columns=LOGSTRING \
-			--fields-optionally-enclosed-by='"' \
-			--fields-escaped-by='' \
-			--lines-terminated-by='\n' \
+			--fields-enclosed-by='"' \
+			--lines-terminated-by='{' \
 			--local \
-			--verbose \
 			dtsddb $CONFIGDTSD_INSTALLPATH/TESTLOG.txt
 			LINESTART=$NUMOFLINES
 		fi
 done		
 }
+
 
 
 log_mysql_dtsd() {

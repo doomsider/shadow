@@ -2,21 +2,33 @@
 # Shadow .01 Based off of DTSD
 # Script that follows the log and feeds the log into the search functions and database
 
-MYSQLDTSD_DTSDLOG_LOGSTRING=TEXT
-MYSQLDTSD_DTSDLOG_LOGDATE=TIMESTAMP
-MYSQLDTSD_TESTLOG_LOGSTRING="TEXT NOT NULL"
+MYSQLDTSD_LOGLOOP_LOGSTRING="TEXT NOT NULL"
 MYSQLDTSD_SEARCHDB_SEARCHSTRING="VARCHAR(255)"
 #MYSQLALTER_SEARCHDB_SEARCHSTRING="UNIQUE INDEX"
 MYSQLDTSD_SEARCHDB_SEARCHFUNCTION="VARCHAR(25)"
 MYSQLDTSD_SEARCHRESULT_RESULTSTRING="TEXT NOT NULL"
 MYSQLDTSD_SEARCHRESULT_RESULTFUNCTION="TEXT NOT NULL"
 
-# Test logging script.  This function goes through the log from script by following the number of lines the log has and then
-# loading new lines as they are read into an array.  This array is fed into lib_searchline which will match it to any functions
-# that need returns from the log
+# The current logging script works by feeding the current starmade log into the database and then searching the database to find matches with search
+# strings and their associated functions
+ONSTART_RUN() {
+	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
+	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
+	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
+	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
+	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH resultloop
+	echo "On start executed"
+}
+
+ONINTERVAL_60_announce() {
+	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Welcome to the server"
+}
+
+ONEND_goodbye() {
+echo "Server stopped"
+
+}
 core_mainloop() {
-	testloop=0
-	LINEARRAY=0
     ONSTART=( $(compgen -A function | grep ONSTART_) )
     ONINTERVAL=( $(compgen -A function | grep ONINTERVAL_) )
     ONEND=( $(compgen -A function | grep ONEND_) )
@@ -29,11 +41,13 @@ core_mainloop() {
 	do
         for func in ${ONINTERVAL[@]}
         do
-            #the % operator returns the remainder of a division. when this remainder is 0, that means the time is a while multiple of the interval
+#			echo "Checking on interval functions"
+			#the % operator returns the remainder of a division. when this remainder is 0, that means the time is a while multiple of the interval
             #meaning the function should be ran
             if [ $(( curtime%$(($(echo $func | cut -d"_" -f2)*10)))) -eq 0 ]
             then
-                $func &
+#			echo "executing interval function"
+				$func &
             fi
         done
         let curtime++
@@ -41,44 +55,6 @@ core_mainloop() {
 # A tiny sleep to prevent cpu burning overhead
 		sleep 0.1
 # Uses Cat to calculate the number of lines in the log file
-		NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log | cut -d" " -f1)
-# In case Linestart does not have a value give it an interger value of 1.  The prevents a startup error on the script.
-		if [ -z "$LINESTART" ]
-		then
-			LINESTART=$NUMOFLINES
-#			echo "Start at line $LINESTART"
-		fi
-# If the number of lines read from the log file is greater than last line read + 1 from the log then feed more lines.
-		if [ "$NUMOFLINES" -gt "$LINESTART" ] 
-		then
-#	        echo "$NUMOFLINES is the total lines of the log"
-#    	    echo "$LINESTART is linestart"
-			let LINESTART++
-			OLD_IFS=$IFS
-# This sets the field seperator to use \n next line instead of next space.  This makes it so the array is a whole sentence not a word
-			IFS=$'\n'
-# Linestring is stored as an array of every line in the log
-			LINESTRING=( $(awk "NR==$LINESTART, NR==$NUMOFLINES" $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log) )
-			IFS=$OLD_IFS
-			LINESTART=$NUMOFLINES
-#			echo "$LINESTART is adjusted linestart"
-		else
-			LINESTRING=()
-		fi
-		LINENUMBER=0
-		while [ -n "${LINESTRING[$LINENUMBER]+set}" ] 
-		do
-#			echo "Current Line in Array $LINENUMBER"
-			CURRENTSTRING=${LINESTRING[$LINENUMBER]}
-# Add the search string function here
-# Are we sure backgrounding lib_searchline is the behaviour we want?
-			lib_searchline $CURRENTSTRING &
-# Temporary solution to fixing mysql errors because of quotes
-			CURRENTSTRING=${CURRENTSTRING/\"/}
-			CURRENTSTRING=${CURRENTSTRING/\"/}
-			log_mysql_dtsd $CURRENTSTRING &
-			let LINENUMBER++
-		done
 	done
     for func in ${ONEND[@]}
     do
@@ -87,27 +63,24 @@ core_mainloop() {
 }
 
 core_makesearchdb() {
+# Make the search database whish contains all the search strings and their related functions
 	log_myerasetable SEARCHDB
 	SEARCHVAR=( $(compgen -v | grep LOGSEARCH_ ) )
 	SEARCHARRAY=0
 	while [ -n "${SEARCHVAR[$SEARCHARRAY]+set}" ]
 	do
-		
 		CURRENTSEARCH=${SEARCHVAR[$SEARCHARRAY]}
 		CURRENTSEARCHSTRING=${!CURRENTSEARCH}
 		CURRENTSEARCHFUNCTION=${CURRENTSEARCH#*_}
-	#	lib_myinsert SEARCHDB SEARCHSTRING "$CURRENTSEARCHSTRING"
 		lib_myinsert SEARCHDB SEARCHFUNCTION "$CURRENTSEARCHFUNCTION"
 		lib_myupdate SEARCHDB SEARCHSTRING "$CURRENTSEARCHSTRING" SEARCHFUNCTION $CURRENTSEARCHFUNCTION
-#	echo "Search function is $SEARCHFUNCTION"
-#	echo "Search string is ${!CURRENTSEARCH}"
 		let SEARCHARRAY++
 	done
 }
 
-core_testloop() {
+core_logloop() {
 # This function is testing a solution to the sluggishness of the current_core loop.  Currently it inserts lines into the database while they are received from a log file.
-	log_myerasetable TESTLOG
+	log_myerasetable LOGLOOP
 	log_myerasetable SEARCHRESULT
 	testloop=0
 	LINEARRAY=0
@@ -133,50 +106,54 @@ core_testloop() {
 # Surround every line with a quote for Mysql data entry
 			awk '{ print "\""$0"\""}' $CONFIGDTSD_INSTALLPATH/SEDSELECT.txt > $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt
 # Replace all new lines with a left bracket for lines terminated setting in mysqlimport.  Since the log does not use this character and neither does Mysql it seems to work for now.
-			awk '{printf("%s{",$0)}' $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt > $CONFIGDTSD_INSTALLPATH/TESTLOG.txt	
+			awk '{printf("%s{",$0)}' $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt > $CONFIGDTSD_INSTALLPATH/LOGLOOP.txt	
 			mysqlimport \
 			--user=$CONFIGDTSD_MYSQLUSER \
 			--password=$CONFIGDTSD_MYSQLPASS \
 			--columns=LOGSTRING \
 			--fields-enclosed-by='"' \
 			--lines-terminated-by='{' \
+			--silent \
 			--local \
-			dtsddb $CONFIGDTSD_INSTALLPATH/TESTLOG.txt
-#			select LOGSTRING from TESTLOG inner join SEARCHDB on locate(SEARCHSTRING, LOGSTRING) > 0
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO SEARCHRESULT (RESULTSTRING, RESULTFUNCTION) SELECT TESTLOG.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM TESTLOG, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, TESTLOG.LOGSTRING) >0"
-			log_myerasetable TESTLOG		
+			dtsddb $CONFIGDTSD_INSTALLPATH/LOGLOOP.txt
+#			select LOGSTRING from LOGLOOP inner join SEARCHDB on locate(SEARCHSTRING, LOGSTRING) > 0
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO SEARCHRESULT (RESULTSTRING, RESULTFUNCTION) SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) >0"
+			log_myerasetable LOGLOOP		
 			LINESTART=$NUMOFLINES
 		fi
 done		
 }
 
-core_resultfeed() {
-
+core_resultloop() {
+# The result loop goes through the search results database line by line starting with the last entry
 	while true
 	do
+# Get the last line number of the search database
 		LASTLINESEARCH=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SEARCHRESULT ORDER BY line DESC LIMIT 1;")
+# Make sure line has a value if not the script effectively waits for searchresults to exist
 		if [ -n "$LASTLINESEARCH" ]
 			then
-		#	echo $LASTLINESEARCH
+#			echo $LASTLINESEARCH
+# Set linesearch to the most recent line if it doesn't exist yet
 			if [ -z "$LINESSEARCHSTART" ]
 			then
 				LINESSEARCHSTART=$LASTLINESEARCH
-		#		echo "Start at line $LINESSEARCHSTART"
+#				echo "Start at line $LINESSEARCHSTART"
 			fi	
 			if [ "$LASTLINESEARCH" -gt "$LINESSEARCHSTART" ] 
 			then
 				echo "Line is greater"
+# Get the current search string from the DB
 				COMMANDSEARCHSTRING=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select RESULTSTRING from SEARCHRESULT where line='$LINESSEARCHSTART'")
 				echo $COMMANDSEARCHSTRING
+# Get the current search function from the DB			
 				COMMANDFUNCTION=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select RESULTFUNCTION from SEARCHRESULT where line='$LINESSEARCHSTART'")
 				echo $COMMANDFUNCTION
 				if [ -n "$COMMANDSEARCHSTRING" ] && [ -n "$COMMANDFUNCTION" ]
 				then
 					eval $COMMANDFUNCTION '$COMMANDSEARCHSTRING' &
-					let LINESSEARCHSTART++
-				else
-					let LINESSEARCHSTART++
 				fi
+			let LINESSEARCHSTART++
 			fi
 		fi	
 	done

@@ -218,7 +218,8 @@ core_softstart() {
 }
 
 core_softstop() {
-    if ! lib_softstop
+# Brings server to a stop and then restarts it with softstart.   
+	if ! lib_softstop
     then
         if ! lib_hardstop
         then

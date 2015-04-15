@@ -5,8 +5,11 @@
 MYSQLDTSD_DTSDLOG_LOGSTRING=TEXT
 MYSQLDTSD_DTSDLOG_LOGDATE=TIMESTAMP
 MYSQLDTSD_TESTLOG_LOGSTRING="TEXT NOT NULL"
-MYSQLDTSD_SEARCHDB_SEARCHSTRING="TEXT NOT NULL"
+MYSQLDTSD_SEARCHDB_SEARCHSTRING="VARCHAR(255)"
+#MYSQLALTER_SEARCHDB_SEARCHSTRING="UNIQUE INDEX"
 MYSQLDTSD_SEARCHDB_SEARCHFUNCTION="VARCHAR(25)"
+MYSQLDTSD_SEARCHRESULT_RESULTSTRING="TEXT NOT NULL"
+MYSQLDTSD_SEARCHRESULT_RESULTFUNCTION="TEXT NOT NULL"
 
 # Test logging script.  This function goes through the log from script by following the number of lines the log has and then
 # loading new lines as they are read into an array.  This array is fed into lib_searchline which will match it to any functions
@@ -93,6 +96,7 @@ core_makesearchdb() {
 		CURRENTSEARCH=${SEARCHVAR[$SEARCHARRAY]}
 		CURRENTSEARCHSTRING=${!CURRENTSEARCH}
 		CURRENTSEARCHFUNCTION=${CURRENTSEARCH#*_}
+	#	lib_myinsert SEARCHDB SEARCHSTRING "$CURRENTSEARCHSTRING"
 		lib_myinsert SEARCHDB SEARCHFUNCTION "$CURRENTSEARCHFUNCTION"
 		lib_myupdate SEARCHDB SEARCHSTRING "$CURRENTSEARCHSTRING" SEARCHFUNCTION $CURRENTSEARCHFUNCTION
 #	echo "Search function is $SEARCHFUNCTION"
@@ -104,6 +108,7 @@ core_makesearchdb() {
 core_testloop() {
 # This function is testing a solution to the sluggishness of the current_core loop.  Currently it inserts lines into the database while they are received from a log file.
 	log_myerasetable TESTLOG
+	log_myerasetable SEARCHRESULT
 	testloop=0
 	LINEARRAY=0
  while true
@@ -129,18 +134,6 @@ core_testloop() {
 			awk '{ print "\""$0"\""}' $CONFIGDTSD_INSTALLPATH/SEDSELECT.txt > $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt
 # Replace all new lines with a left bracket for lines terminated setting in mysqlimport.  Since the log does not use this character and neither does Mysql it seems to work for now.
 			awk '{printf("%s{",$0)}' $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt > $CONFIGDTSD_INSTALLPATH/TESTLOG.txt	
-
-
-
-			
-			# Surround every line with a quote for Mysql data entry
-#			awk '{ print "\""$0"\""}' $CONFIGDTSD_INSTALLPATH/SEDSELECT.txt > $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt
-#			 sed 's/^.*$/"&"/g' $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt
-#			cat $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt
-# Replace all new lines with a left bracket for lines terminated setting
-#			awk '{printf("%s{",$0)}' $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt > $CONFIGDTSD_INSTALLPATH/TESTLOG.txt
-#
-#			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log >> sedoutput.txt		
 			mysqlimport \
 			--user=$CONFIGDTSD_MYSQLUSER \
 			--password=$CONFIGDTSD_MYSQLPASS \
@@ -149,14 +142,50 @@ core_testloop() {
 			--lines-terminated-by='{' \
 			--local \
 			dtsddb $CONFIGDTSD_INSTALLPATH/TESTLOG.txt
+#			select LOGSTRING from TESTLOG inner join SEARCHDB on locate(SEARCHSTRING, LOGSTRING) > 0
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO SEARCHRESULT (RESULTSTRING, RESULTFUNCTION) SELECT TESTLOG.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM TESTLOG, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, TESTLOG.LOGSTRING) >0"
+			log_myerasetable TESTLOG		
 			LINESTART=$NUMOFLINES
 		fi
 done		
 }
 
+core_resultfeed() {
 
+	while true
+	do
+		LASTLINESEARCH=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SEARCHRESULT ORDER BY line DESC LIMIT 1;")
+		if [ -n "$LASTLINESEARCH" ]
+			then
+		#	echo $LASTLINESEARCH
+			if [ -z "$LINESSEARCHSTART" ]
+			then
+				LINESSEARCHSTART=$LASTLINESEARCH
+		#		echo "Start at line $LINESSEARCHSTART"
+			fi	
+			if [ "$LASTLINESEARCH" -gt "$LINESSEARCHSTART" ] 
+			then
+				echo "Line is greater"
+				COMMANDSEARCHSTRING=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select RESULTSTRING from SEARCHRESULT where line='$LINESSEARCHSTART'")
+				echo $COMMANDSEARCHSTRING
+				COMMANDFUNCTION=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select RESULTFUNCTION from SEARCHRESULT where line='$LINESSEARCHSTART'")
+				echo $COMMANDFUNCTION
+				if [ -n "$COMMANDSEARCHSTRING" ] && [ -n "$COMMANDFUNCTION" ]
+				then
+					eval $COMMANDFUNCTION '$COMMANDSEARCHSTRING' &
+					let LINESSEARCHSTART++
+				else
+					let LINESSEARCHSTART++
+				fi
+			fi
+		fi	
+	done
+
+}
 
 log_mysql_dtsd() {
     MYLOGDUMPCOMMAND="${@:1}"
     lib_myinsert DTSDLOG LOGSTRING $MYLOGDUMPCOMMAND
 }
+
+ 

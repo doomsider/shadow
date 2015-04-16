@@ -231,4 +231,7 @@ core_setup() {
 	do 
 		printf "%s=%q\n" "$var" "${!var}" | grep CONFIGDTSD_ >> $SCRIPTDIR/core/config.dtsd
 	done	
+	echo "Building ID database this may take a minute"
+	lib_pause
+	core_parseblocks
 }

@@ -16,7 +16,7 @@ ONSTART_RUN() {
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
 	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
-	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH resultloop
+	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH resultloop
 	echo "On start executed"
 }
 
@@ -126,22 +126,27 @@ done
 
 core_resultloop() {
 # The result loop goes through the search results database line by line starting with the last entry
-	while true
+	echo "Starting result loop"
+	while ! lib_check_server_running
 	do
+	echo "result loop"
 # Get the last line number of the search database
 		LASTLINESEARCH=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SEARCHRESULT ORDER BY line DESC LIMIT 1;")
 # Make sure line has a value if not the script effectively waits for searchresults to exist
-		if [ -n "$LASTLINESEARCH" ]
-			then
+		if [ -z "$LASTLINESEARCH" ]
+		then
+			echo "no value found in DB waiting"
+			sleep 1
+		else
 #			echo $LASTLINESEARCH
 # Set linesearch to the most recent line if it doesn't exist yet
 			if [ -z "$LINESSEARCHSTART" ]
 			then
 				LINESSEARCHSTART=$LASTLINESEARCH
-#				echo "Start at line $LINESSEARCHSTART"
+	#			echo "Start at line $LINESSEARCHSTART"
 			fi	
-			if [ "$LASTLINESEARCH" -gt "$LINESSEARCHSTART" ] 
-			then
+			while [ "$LASTLINESEARCH" -gt "$LINESSEARCHSTART" ] 
+			do
 				echo "Line is greater"
 # Get the current search string from the DB
 				COMMANDSEARCHSTRING=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select RESULTSTRING from SEARCHRESULT where line='$LINESSEARCHSTART'")
@@ -154,8 +159,9 @@ core_resultloop() {
 					eval $COMMANDFUNCTION '$COMMANDSEARCHSTRING' &
 				fi
 			let LINESSEARCHSTART++
-			fi
-		fi	
+		
+			done	
+		fi
 	done
 
 }

@@ -71,6 +71,8 @@ chat_commands() {
 	MESSAGESTRING=${CUTSTRING%%]*}
 # Get the first letter of message string to test if it is a !
 	MESSAGEFIRSTLETTER=${MESSAGESTRING:0:1}
+# Add the playername into the database if it does not exist
+	lib_myinsert PLAYERDB NAME $SENDERNAME
 	if [ "$MESSAGEFIRSTLETTER" == "!" ]
 	then
 		echo "chat command triggered"

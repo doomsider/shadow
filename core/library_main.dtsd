@@ -23,15 +23,14 @@ lib_arraycontains() {
 }
 
 lib_check_server_running() {
-    #Special thanks to tschaerni for a simplified search here
-    if pgrep java | grep $CONFIGDTSD_SERVICE | grep port:$CONFIGDTSD_PORT > /dev/null
+    if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
     then
-        SERVERSTATUS=STOPPED
-        #echo stopped
+        SERVERSTATUS=RUNNING
+ #      echo running
         return 0
     else
-        SERVERSTATUS=RUNNING
-        #echo running
+        SERVERSTATUS=STOPPED
+#       echo stopped
         return 1 
     fi
 }
@@ -216,7 +215,36 @@ core_softstart() {
 	fi  
 
 }
-
+core_softreset() {
+	if lib_check_server_running
+	then
+# Issue Chat and a command to the server to shutdown
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Server Going down be back in a bit."
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/shutdown 60"
+# Give the server a chance to gracefully shutdown if not kill it and then seg fault it if necessary
+		sleep 60
+		for LOOPNO in {0..30}
+		do
+			if lib_check_server_running
+			then
+				sleep 1
+			else
+				echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+			fi
+		done			
+	fi
+# Main screen must be killed off to ensure no running process left
+	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null
+    then
+		echo "Screen(s) identified by $CONFIGDTSD_MAINSCREEN detected and will be closed"
+		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN | awk '{print $2}') )   
+		echo "Trying to kill these ${PIDS[@]}"		
+		kill ${PIDS[@]}
+	fi
+	lib_screenadd $CONFIGDTSD_MAINSCREEN
+	lib_screensend $CONFIGDTSD_MAINSCREEN $CONFIGDTSD_SCRIPTPATH softstart
+}
 core_softstop() {
 # Brings server to a stop and then restarts it with softstart.   
 	if ! lib_softstop

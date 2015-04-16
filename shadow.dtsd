@@ -22,7 +22,7 @@
 
 #This check was added to make sure the config file is in place
 SCRIPTPATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
-echo $SCRIPTPATH
+#echo $SCRIPTPATH
 SCRIPTDIR=${SCRIPTPATH%/*}
 #echo $SCRIPTDIR
 if [ ! -e "$SCRIPTDIR/core/config.dtsd" ]

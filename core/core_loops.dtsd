@@ -4,7 +4,6 @@
 
 MYSQLDTSD_LOGLOOP_LOGSTRING="TEXT NOT NULL"
 MYSQLDTSD_SEARCHDB_SEARCHSTRING="VARCHAR(255)"
-#MYSQLALTER_SEARCHDB_SEARCHSTRING="UNIQUE INDEX"
 MYSQLDTSD_SEARCHDB_SEARCHFUNCTION="VARCHAR(25)"
 MYSQLDTSD_SEARCHRESULT_RESULTSTRING="TEXT NOT NULL"
 MYSQLDTSD_SEARCHRESULT_RESULTFUNCTION="TEXT NOT NULL"
@@ -17,11 +16,10 @@ ONSTART_RUN() {
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
 	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH resultloop
-	echo "On start executed"
 }
 
-ONINTERVAL_60_announce() {
-	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Welcome to the server"
+ONINTERVAL_600_announce() {
+	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat This message brought to you by Shadow pre-alpha"
 }
 
 ONEND_goodbye() {
@@ -84,7 +82,7 @@ core_logloop() {
 	log_myerasetable SEARCHRESULT
 	testloop=0
 	LINEARRAY=0
- while true
+ while lib_check_server_running
 	do 
 	NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 | cut -d" " -f1)
 # In case Linestart does not have a value give it an interger value of 1.  The prevents a startup error on the script.
@@ -125,20 +123,42 @@ done
 }
 
 core_resultloop() {
+
+	while lib_check_server_running
+	do
+		LINESNATCH=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT * from SEARCHRESULT LIMIT 1")
+#		LINESNATCH=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT * from SEARCHRESULT HAVING RESULTSTRING NOT IN ('') limit 1")
+#		echo $LINESNATCH
+mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "delete from SEARCHRESULT LIMIT 1"
+		if [ -n "${LINESNATCH}" ]
+		then 
+#			echo "Line has value"
+			SNATCHARRAY=($LINESNATCH)
+			SNATCHFUNCTION=${SNATCHARRAY[1]}
+#			echo $SNATCHFUNCTION
+			SNATCHSTRING=${SNATCHARRAY[@]:2}
+#			echo $SNATCHFUNCTION
+#			echo $SNATCHSTRING
+			eval $SNATCHFUNCTION '$SNATCHSTRING' &
+		fi 
+	done
+}
+
+core_resultloopold() {
 # The result loop goes through the search results database line by line starting with the last entry
-#	echo "Starting result loop"
+	echo "Starting result loop"
 	while ! lib_check_server_running
 	do
-#	echo "result loop"
+	echo "result loop"
 # Get the last line number of the search database
 		LASTLINESEARCH=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SEARCHRESULT ORDER BY line DESC LIMIT 1;")
 # Make sure line has a value if not the script effectively waits for searchresults to exist
 		if [ -z "$LASTLINESEARCH" ]
 		then
-#			echo "no value found in DB waiting"
+			echo "no value found in DB waiting"
 			sleep 1
 		else
-#			echo "this is the last line search $LASTLINESEARCH"
+			echo "this is the last line search $LASTLINESEARCH"
 # Set linesearch to the most recent line if it doesn't exist yet
 			if [ -z "$LINESSEARCHSTART" ]
 			then

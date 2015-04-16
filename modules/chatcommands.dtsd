@@ -342,7 +342,7 @@ chatcommand_RESTART(){
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RESTART
 	else
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The server will now restart
-		core_softstop
+		core_softreset
 	fi
 }
 chatcommand_SHUTDOWN(){

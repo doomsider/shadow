@@ -14,7 +14,6 @@ ONSTART_RUN() {
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
-	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mainloop
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
 #	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH resultloop
 }
@@ -83,11 +82,12 @@ core_logloop() {
 #	log_myerasetable SEARCHRESULT
 	testloop=0
 	LINEARRAY=0
+	sleep 5
 	while lib_check_server_running
 	do 
-	NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 | cut -d" " -f1)
+		NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 | cut -d" " -f1)
 # In case Linestart does not have a value give it an interger value of 1.  The prevents a startup error on the script.
-	if [ -z "$LINESTART" ]
+		if [ -z "$LINESTART" ]
 		then
 			LINESTART=$NUMOFLINES
 #			echo "Start at line $LINESTART"
@@ -95,8 +95,8 @@ core_logloop() {
 # If the number of lines read from the log file is greater than last line read + 1 from the log then feed more lines.
 		if [ "$NUMOFLINES" -gt "$LINESTART" ] 
 		then
-#	        echo "$NUMOFLINES is the total lines of the log"
-#    	    echo "$LINESTART is linestart"
+#			echo "$NUMOFLINES is the total lines of the log"
+#   		echo "$LINESTART is linestart"
 			let LINESTART++
 # Use sed to gather the current selection of lines
 			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 > $CONFIGDTSD_INSTALLPATH/SEDSELECT.txt
@@ -127,9 +127,9 @@ core_logloop() {
 			lib_resultloop RESULTARRAY[@] &
 			log_myerasetable LOGLOOP		
 			LINESTART=$NUMOFLINES
-#			echo ${RESULTARRAY[0]}			
-		fi
-	done		
+#		echo ${RESULTARRAY[0]}			
+		fi		
+	done
 }
 
 

@@ -14,8 +14,9 @@ ONSTART_RUN() {
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
-	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
-	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH resultloop
+	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mainloop
+	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
+#	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH resultloop
 }
 
 ONINTERVAL_600_announce() {
@@ -35,7 +36,7 @@ core_mainloop() {
         $func &
     done
     curtime=0
-	while ! lib_check_server_running
+	while lib_check_server_running
 	do
         for func in ${ONINTERVAL[@]}
         do
@@ -79,10 +80,10 @@ core_makesearchdb() {
 core_logloop() {
 # This function is testing a solution to the sluggishness of the current_core loop.  Currently it inserts lines into the database while they are received from a log file.
 	log_myerasetable LOGLOOP
-	log_myerasetable SEARCHRESULT
+#	log_myerasetable SEARCHRESULT
 	testloop=0
 	LINEARRAY=0
- while lib_check_server_running
+	while lib_check_server_running
 	do 
 	NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 | cut -d" " -f1)
 # In case Linestart does not have a value give it an interger value of 1.  The prevents a startup error on the script.
@@ -115,21 +116,57 @@ core_logloop() {
 			--local \
 			dtsddb $CONFIGDTSD_INSTALLPATH/LOGLOOP.txt
 #			select LOGSTRING from LOGLOOP inner join SEARCHDB on locate(SEARCHSTRING, LOGSTRING) > 0
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO SEARCHRESULT (RESULTSTRING, RESULTFUNCTION) SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) >0"
+#			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO SEARCHRESULT (RESULTSTRING, RESULTFUNCTION) SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) >0"
+#			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe  "SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) >0"			
+			OLD_IFS=$IFS
+# This sets the field seperator to use \n next line instead of next space.  This makes it so the array is a whole sentence not a word
+			IFS=$'\n'
+			RESULTARRAY=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe  "SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) >0" ) )
+			IFS=$OLD_IFS			
+# Send the array to the lib_resultloop function
+			lib_resultloop RESULTARRAY[@] &
 			log_myerasetable LOGLOOP		
 			LINESTART=$NUMOFLINES
+#			echo ${RESULTARRAY[0]}			
 		fi
-done		
+	done		
 }
 
-core_resultloop() {
+
+lib_resultloop() {
+# Declare an array of the passed array placeholder
+declare -a PASSEDARRAY=("${!1}")
+ARRAYVALUE=0
+			while [ -n "${PASSEDARRAY[$ARRAYVALUE]+set}" ]
+			do
+				CURRENTRESULTLINE=${PASSEDARRAY[$ARRAYVALUE]}
+				CURRENTARRAY=($CURRENTRESULTLINE)
+				MAXARRAYPOSITION=${#CURRENTARRAY[@]}
+				let "FUNCTIONPOSITION = $MAXARRAYPOSITION - 1"
+				CURENTFUNCTION=${CURRENTARRAY[$FUNCTIONPOSITION]}
+				unset CURRENTARRAY[0]
+				unset CURRENTARRAY[1]
+				unset CURRENTARRAY[$MAXARRAYPOSITION]
+				unset CURRENTARRAY[$FUNCTIONPOSITION]
+				CURRENTSTRING=${CURRENTARRAY[@]}
+				eval $CURENTFUNCTION '$CURRENTSTRING' &
+#			echo $CURRENTRESULTLINE
+#			echo "this is the max of the array $MAXARRAYPOSITION"
+#			echo "this is the function $CURENTFUNCTION"
+#			echo "this is just the string $CURRENTSTRING"
+			let ARRAYVALUE++
+			done
+			
+}
+
+core_resultloopold() {
 
 	while lib_check_server_running
 	do
 		LINESNATCH=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT * from SEARCHRESULT LIMIT 1")
 #		LINESNATCH=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT * from SEARCHRESULT HAVING RESULTSTRING NOT IN ('') limit 1")
 #		echo $LINESNATCH
-mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "delete from SEARCHRESULT LIMIT 1"
+# mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "delete from SEARCHRESULT LIMIT 1"
 		if [ -n "${LINESNATCH}" ]
 		then 
 #			echo "Line has value"
@@ -139,12 +176,12 @@ mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -s
 			SNATCHSTRING=${SNATCHARRAY[@]:2}
 #			echo $SNATCHFUNCTION
 #			echo $SNATCHSTRING
-			eval $SNATCHFUNCTION '$SNATCHSTRING' &
+#			eval $SNATCHFUNCTION '$SNATCHSTRING' &
 		fi 
 	done
 }
 
-core_resultloopold() {
+core_resultloopolder() {
 # The result loop goes through the search results database line by line starting with the last entry
 	echo "Starting result loop"
 	while ! lib_check_server_running

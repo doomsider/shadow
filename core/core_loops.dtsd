@@ -86,6 +86,14 @@ core_logloop() {
 	while lib_check_server_running
 	do 
 		NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 | cut -d" " -f1)
+# Special thanks to LordDragon for helping trouble shoot this
+# Since the Starmade log file rolls after 4mb the Linestart must be reset back to something reasonable when this happens or the script will hang
+		let "CHECKSCRIPTRESET = $LINESTART - 5000"
+	    if [ "$CHECKSCRIPTRESET" -gt "$NUMOFLINES" ]
+		then
+		echo "Script has reset"
+		LINESTART=$NUMOFLINES
+		fi
 # In case Linestart does not have a value give it an interger value of 1.  The prevents a startup error on the script.
 		if [ -z "$LINESTART" ]
 		then

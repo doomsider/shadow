@@ -230,7 +230,11 @@ core_setup() {
 	compgen -v | while read var
 	do 
 		printf "%s=%q\n" "$var" "${!var}" | grep CONFIGDTSD_ >> $SCRIPTDIR/core/config.dtsd
-	done	
+	done
+	echo "Setting up tables and columns, ranks, and search"
+	core_mycreate
+	core_setranks
+	core_makesearchdb
 	echo "Building ID database this may take a minute"
 	lib_pause
 	core_parseblocks

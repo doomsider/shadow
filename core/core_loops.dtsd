@@ -107,13 +107,13 @@ core_logloop() {
 #   		echo "$LINESTART is linestart"
 			let LINESTART++
 # Use sed to gather the current selection of lines
-			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 > $CONFIGDTSD_INSTALLPATH/SEDSELECT.txt
+			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 > /dev/shm/SEDSELECT.txt
 # Remove all occurrences of quotes with a in-line edit 
-			sed -i 's/\"//g' $CONFIGDTSD_INSTALLPATH/SEDSELECT.txt
+			sed -i 's/\"//g' /dev/shm/SEDSELECT.txt
 # Surround every line with a quote for Mysql data entry
-			awk '{ print "\""$0"\""}' $CONFIGDTSD_INSTALLPATH/SEDSELECT.txt > $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt
+			awk '{ print "\""$0"\""}' /dev/shm/SEDSELECT.txt > /dev/shm/MYSQLFORMAT.txt
 # Replace all new lines with a left bracket for lines terminated setting in mysqlimport.  Since the log does not use this character and neither does Mysql it seems to work for now.
-			awk '{printf("%s{",$0)}' $CONFIGDTSD_INSTALLPATH/MYSQLFORMAT.txt > $CONFIGDTSD_INSTALLPATH/LOGLOOP.txt	
+			awk '{printf("%s{",$0)}' /dev/shm/MYSQLFORMAT.txt > /dev/shm/LOGLOOP.txt	
 			mysqlimport \
 			--user=$CONFIGDTSD_MYSQLUSER \
 			--password=$CONFIGDTSD_MYSQLPASS \
@@ -122,7 +122,7 @@ core_logloop() {
 			--lines-terminated-by='{' \
 			--silent \
 			--local \
-			dtsddb $CONFIGDTSD_INSTALLPATH/LOGLOOP.txt
+			dtsddb /dev/shm/LOGLOOP.txt
 #			select LOGSTRING from LOGLOOP inner join SEARCHDB on locate(SEARCHSTRING, LOGSTRING) > 0
 #			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO SEARCHRESULT (RESULTSTRING, RESULTFUNCTION) SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) >0"
 #			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe  "SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) >0"			
@@ -135,8 +135,9 @@ core_logloop() {
 			lib_resultloop RESULTARRAY[@] &
 			log_myerasetable LOGLOOP		
 			LINESTART=$NUMOFLINES
-#		echo ${RESULTARRAY[0]}			
+#			echo ${RESULTARRAY[0]}				
 		fi		
+	sleep 1
 	done
 }
 

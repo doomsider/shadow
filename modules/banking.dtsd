@@ -88,7 +88,7 @@ chatcommand_WITHDRAW(){
 			then
 				NEWBALANCE=$(( $BALANCECREDITS - $2 ))
 # 				echo "new balance for bank account is $NEWBALANCE"
-				lib_screensend $CONFIGDTSD_MAINSCREEN/give_credits $1 $2
+				lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 $2
 				lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
 				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK You successfully withdrawn $2 credits
 			else

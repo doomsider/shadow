@@ -25,6 +25,8 @@ Manual setup for rank system is ./shadow.dtsd setranks
 
 Manusal setup for the ID system is ./shadow.dtsd parseblocks
 
+Manual setup for the search table is ./shadow.dtsd makesearchdb
+
 To set initial rank for a player ./shadow.dtsd changerank player rank (example: ./shadow.dtsd changerank Doomsider Admiral)
 
 Many of the commands are for debugging purposes right now and will be removed later after testing is complete 

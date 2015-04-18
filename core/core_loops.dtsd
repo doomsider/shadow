@@ -42,16 +42,16 @@ core_mainloop() {
 #			echo "Checking on interval functions"
 			#the % operator returns the remainder of a division. when this remainder is 0, that means the time is a while multiple of the interval
             #meaning the function should be ran
-            if [ $(( curtime%$(($(echo $func | cut -d"_" -f2)*10)))) -eq 0 ]
+            if [ $(( curtime%$(($(echo $func | cut -d"_" -f2))))) -eq 0 ]
             then
-#			echo "executing interval function"
+                echo "executing interval function $func" 
 				$func &
             fi
         done
         let curtime++
 #		echo "started loop"
 # A tiny sleep to prevent cpu burning overhead
-		sleep 0.1
+		sleep 1
 # Uses Cat to calculate the number of lines in the log file
 	done
     for func in ${ONEND[@]}

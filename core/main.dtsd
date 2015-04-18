@@ -296,7 +296,8 @@ core_dosafe() {
     else
         echo "Starmade is not running!"
     fi
-    }
+}
+
     core_download() {
     # Download Starmade from scratch or update Starmade with this function
     if lib_check_server_running
@@ -373,6 +374,7 @@ core_ebrake() {
                 echo $CONFIGDTSD_SERVICE closed after $LOOPNO seconds
                 $CONFIGDTSD_SCRIPTPATH kill
                 break
+                core_cleanup
             fi
         done
     # Check to make sure server is shut down if not kill it with a seg fault.
@@ -385,6 +387,7 @@ core_ebrake() {
             echo $CONFIGDTSD_SERVICE has to be forcibly closed. A thread dump has been taken and is saved at $CONFIGDTSD_INSTALLPATH/threaddump.log and should be sent to Schema.
             $CONFIGDTSD_SCRIPTPATH kill
             screen -wipe
+            core_cleanup
         fi
     else
         echo "$CONFIGDTSD_SERVICE not running"
@@ -442,6 +445,7 @@ core_kill() {
 		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN | awk '{print $2}') )   
 	echo "Trying to kill these ${PIDS[@]}"		
 	kill ${PIDS[@]}
+    core_cleanup
 	fi
 }
 core_restart() {
@@ -531,6 +535,7 @@ core_stop() {
         lib_forcestop
         $CONFIGDTSD_SCRIPTPATH kill
     fi
+    core_cleanup
 }
 core_universebackup() {
     # Backs up just the universe of an running server
@@ -594,4 +599,16 @@ core_universebackup() {
     else
         echo "$SERVICE isn't running, make a regular backup"
     fi
+}
+
+core_cleanup(){
+    processes=( $(ps aux | grep "shadow.dtsd" | awk '{print $2}') )
+    for pid in ${processes[@]}
+    do
+        if [ $pid -ne $$ ]
+        then
+            kill $pid 2>/dev/null
+            wait $pid 2>/dev/null
+        fi
+    done
 }

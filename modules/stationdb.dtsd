@@ -4,3 +4,10 @@
 
 
 #String to collect
+#Sent after ship_info_name
+#[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SPACESTATION_test station, sectorPos=(2, 2, 2), type=2, seed=0, lastModifier=, spawner=, realName=test station, touched=true, faction=0, pos=(-1137.333, -14.878429, -3.0632164), minPos=(-4, -4, -4), maxPos=(4, 4, 4), creatorID=1]
+
+
+MYSQLDTSD_STATIONDB_NAME="VARCHAR(50)"
+MYSQLALTER_STATIONDB_NAME="UNIQUE INDEX"
+

@@ -4,16 +4,24 @@
 
 core_setup() {
 	echo "Press enter to accept default answer (capitalised) or type in your setting. Note: running this will overwrite existing configuration"
-	read -p "Do you wish to setup DTSD? [y/N] : " INPUT
+	read -p "Do you wish to setup Shadow? [y/N] : " INPUT
 	case $INPUT in
 		[YesyesYESYy]* ) 
-			echo "Setting up config file"
+			echo "Checking for requirements"
 		;;
 		* ) 
 			echo "exiting setup"
 			exit
 		;;
 	esac
+	echo "Doing basic test to see if Starmade is present"	
+	if [ -f "$SCRIPTDIR/StarMade/data/config/BlockConfig.xml" ]
+	then 
+		echo "Starmade appears to be installed (found block xml file)"
+		FOUNDSTARMADE=YES
+	else
+		FOUNDSTARMADE=NO
+	fi
 	echo "Doing basic test for Java installation.  Note:  This does not check for version compatibility"
 	if command -v java >/dev/null
 	then
@@ -38,9 +46,20 @@ core_setup() {
 	else
 		FOUNDSCREEN=NO
 	fi
-
-	if [[ $FOUNDSCREEN == NO ]] || [[ $FOUNDMYSQL == NO ]] || [[ $FOUNDJAVA == NO ]]
+	echo "Doing basic test for Zip installation."
+	if command -v zip >/dev/null
 	then
+		echo "Zip was found"
+		FOUNDZIP=YES
+	else
+		FOUNDZIP=NO
+	fi
+	if [[ $FOUNDSCREEN == NO ]] || [[ $FOUNDMYSQL == NO ]] || [[ $FOUNDJAVA == NO ]] || [[ $FOUNDZIP == NO ]] || [[ $FOUNDSTARMADE == NO ]]
+	then
+		if [[ $FOUNDSTARMADE == NO ]]
+		then
+			echo "Please install starmade.  IE with Shadow type - ./shadow.dtsd download"
+		fi
 		if [[ $FOUNDSCREEN == NO ]]
 		then
 			echo "Please install screen.  IE: for Ubuntu type - sudo apt-get install screen"
@@ -52,6 +71,10 @@ core_setup() {
 		if [[ $FOUNDJAVA == NO ]]
 		then
 			echo "Please install java.  IE: for Ubuntu type - sudo apt-get install default-jre"
+		fi
+		if [[ $FOUNDZIP == NO ]]
+		then
+			echo "Please install Zip.  IE: for Ubuntu type - sudo apt-get install zip"
 		fi
 		exit
 	fi
@@ -185,7 +208,7 @@ core_setup() {
 		CONFIGDTSD_MAXMEM=$MAXMEMDEFAULT
 	fi
 	MINMEMDEFAULT=256m
-	read -p "The default maximum memory java can use [$MINMEMDEFAULT] : " INPUT
+	read -p "The default minimum memory java can use [$MINMEMDEFAULT] : " INPUT
 	if [ -n "$INPUT" ]
 	then
 		CONFIGDTSD_MINMEM=$INPUT

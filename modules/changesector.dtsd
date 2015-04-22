@@ -1,0 +1,63 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions when change sector is detected
+
+# Strings to retrieve
+
+#		SEARCHCHANGE="has players attached. Doing Sector Change for PlS"
+
+# [SERVER] Ship[test ship](132) has players attached. Doing Sector Change for PlS[testdude ; id(3)(1)f(0)]: Sector[4](2, 2, 2) -> Sector[9](1, 2, 2)
+
+# [SERVER] PlayerCharacter[(ENTITY_PLAYERCHARACTER_testdude)(131)] has players attached. Doing Sector Change for PlS[testdude ; id(3)(1)f(0)]: Sector[9](1, 2, 2) -> Sector[4](2, 2, 2)
+
+#string="[SERVER] Ship[test ship](132) has players attached. Doing Sector Change for PlS[testdude ; id(3)(1)f(0)]: Sector[4](2, 2, 2) -> Sector[9](1, 2, 2)"; string=${string#*]}; string=${string%%[*}; string="${string#"${string%%[![:space:]]*}"}"; echo ${#string}; echo $string
+
+
+
+
+LOGSEARCH_player_changesector="has players attached. Doing Sector Change for PlS"
+
+player_changesector() {
+	echo "Change sector detected for player"
+	SECTORSTRING="${@:1}"
+	CUTSTRING=${SECTORSTRING#*]}
+	CUTSTRING=${CUTSTRING%%[*}
+	CHANGESECTORCONTROL="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	case "$CHANGESECTORCONTROL" in
+	*"Ship"*) 
+		echo "Ship changed sector with player"
+		CUTSTRING=${SECTORSTRING#*[}
+		CUTSTRING=${CUTSTRING#*[}
+		CHANGESHIPNAME=${CUTSTRING%%]*}
+		echo "this is the shipname $CHANGESHIPNAME"
+		CUTSTRING=${SECTORSTRING%;*}
+		CUTSTRING=${CUTSTRING##*[}
+		CHANGEPLAYERNAME="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+		echo "this is the playername $CHANGEPLAYERNAME"
+		CUTSTRING=${SECTORSTRING%\)*}
+		SECTORSTRING=${CUTSTRING##*\(}
+		CHANGESECTORX=${SECTORSTRING%%,*}
+		echo "sector x $CHANGESECTORX"
+		CUTSTRING=${SECTORSTRING%,*}
+		CUTSTRING=${CUTSTRING#*,}
+		CHANGESECTORY="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+		echo "sector y $CHANGESECTORY"
+		CUTSTRING=${SECTORSTRING##*,}
+		CHANGESECTORZ="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+		echo "sector z $CHANGESECTORZ"
+		CURRENTCHANGESECTOR="$CHANGESECTORX"_"$CHANGESECTORY"_"$CHANGESECTORZ"
+		lib_myinsert SECTORDB NAME $CURRENTCHANGESECTOR
+		lib_myinsert SHIPDB NAME $CHANGESHIPNAME
+		lib_myupdate PLAYERDB CURRENTSECTOR $CURRENTCHANGESECTOR NAME $CHANGEPLAYERNAME
+		lib_myupdate SHIPDB CURRENTSECTOR $CURRENTCHANGESECTOR NAME $CHANGESHIPNAME
+		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_info $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ
+	;;
+	*"SpaceStation"*) 
+		echo "Station changed sector with player"
+	;;
+	*"PlayerCharacter"*)
+		echo "Player changed sector"
+	;;
+	esac
+
+}

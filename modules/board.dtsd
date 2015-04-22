@@ -3,61 +3,49 @@
 # Function for boarding
 
 #		SEARCHBOARD="[CONTROLLER][ADD-UNIT]"
-
-LOGSEARCH_player_boarding="[CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT]"
-
-player_boarding() {
-
-BOARDSTRING="${@:1}"
-
 # [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: Ship[test ship](132)
 # [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: PlayerCharacter[(ENTITY_PLAYERCHARACTER_testdude)(131)]
 # [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: SpaceStation[ENTITY_SPACESTATION_test station(151)]
 
-CUTSTRING=${BOARDSTRING%%;*}
-CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
-PLAYERBOARDING=${CUTSTRING##*[}
+LOGSEARCH_player_boarding="[CONTROLLER][ADD-UNIT] (Server(0)): PlS"
 
-CUTSTRING=${BOARDSTRING##*:}
-CONTROLLER=${CUTSTRING%[*}
-
-lib_myinsert PLAYERDB NAME $PLAYERBOARDING
-CONTROLTYPE
-
-case "$CONTROLLER" in
-*"Ship"*) 
-CUTSTRING=${BOARDSTRING##*[}
-BOARDSHIPNAME=${CUTSTRING%]*}
-lib_myinsert SHIPDB NAME $BOARDSHIPNAME
-lib_myupdate PLAYERDB CONTROLLING $BOARDSHIPNAME NAME $PLAYERBOARDING
-lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
-lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSHIPNAME\"
-echo "Ship boarding detected"
-
-;;
-*"SpaceStation"*) 
-CUTSTRING=${BOARDSTRING%(*}
-BOARDSTATIONNAME=${CUTSTRING##*_}
-lib_myinsert STATIONDB NAME $BOARDSTATIONNAME
-ib_myupdate PLAYERDB CONTROLLING $BOARDSTATIONNAME NAME $PLAYERBOARDING
-lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
-lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSTATIONNAME\"
-echo "Station boarding detected"
-
-;;
-*"PlayerCharacter"*)
-
-lib_myupdate PLAYERDB CONTROLLING Spacesuit NAME $PLAYERBOARDING
-lib_myupdate PLAYERDB CONTROLTYPE Self NAME $PLAYERBOARDING
-
-echo "Exiting object detected"
-;;
-
-
-
-esac
-
-
-
-
+player_boarding() {
+	echo "Boarding detected"
+	BOARDSTRING="${@:1}"
+	CUTSTRING=${BOARDSTRING%%;*}
+	CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+	PLAYERBOARDING=${CUTSTRING##*[}
+	CUTSTRING=${BOARDSTRING##*:}
+	CONTROLLER=${CUTSTRING%[*}
+	lib_myinsert PLAYERDB NAME $PLAYERBOARDING
+	case "$CONTROLLER" in
+	*"Ship"*) 
+		echo "Ship boarding detected"
+		echo "Player boarding $PLAYERBOARDING"
+		echo "Player controlling a $CONTROLLER"
+		CUTSTRING=${BOARDSTRING##*[}
+		CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+		BOARDSHIPNAME=${CUTSTRING%]*}
+		echo "Player boarding ship $BOARDSHIPNAME"
+		lib_myinsert SHIPDB NAME $BOARDSHIPNAME
+		lib_myupdate PLAYERDB CONTROLLING "$BOARDSHIPNAME" NAME $PLAYERBOARDING
+		lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
+		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSHIPNAME\"
+	;;
+	*"SpaceStation"*)
+		echo "Station boarding detected"
+		CUTSTRING=${BOARDSTRING%(*}
+		BOARDSTATIONNAME=${CUTSTRING##*_}
+		echo "Station boarded is $BOARDSTATIONNAME"
+		lib_myinsert STATIONDB NAME $BOARDSTATIONNAME
+		lib_myupdate PLAYERDB CONTROLLING $BOARDSTATIONNAME NAME $PLAYERBOARDING
+		lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
+		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSTATIONNAME\"		
+	;;
+	*"PlayerCharacter"*)
+		echo "Exiting object detected"
+		lib_myupdate PLAYERDB CONTROLLING Spacesuit NAME $PLAYERBOARDING
+		lib_myupdate PLAYERDB CONTROLTYPE Self NAME $PLAYERBOARDING
+	;;
+	esac
 }

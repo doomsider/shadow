@@ -45,7 +45,7 @@ player_boarding() {
 	*"PlayerCharacter"*)
 		echo "Exiting object detected"
 		lib_myupdate PLAYERDB CONTROLLING Spacesuit NAME $PLAYERBOARDING
-		lib_myupdate PLAYERDB CONTROLTYPE Self NAME $PLAYERBOARDING
+		lib_myupdate PLAYERDB CONTROLTYPE Astronaut NAME $PLAYERBOARDING
 	;;
 	esac
 }

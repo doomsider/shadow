@@ -4,14 +4,129 @@
 
 # Strings to retrieve
 
-#Received after /sector_info
+#Received after /sector_info not loaded
 #[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SHIP_space ship, sectorPos=(2, 2, 2), type=5, seed=0, lastModifier=, spawner=<admin>, realName=space ship, touched=true, faction=0, pos=(440.3829, 2.4231818, -369.9619), minPos=(-2, -1, -1), maxPos=(1, 0, 1), creatorID=0]
-#Received after /ship_info_name
+#Received after /ship_info_name not loaded
 #[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SHIP_test ship, sectorPos=(1, 2, 2), type=5, seed=0, lastModifier=, spawner=ENTITY_PLAYERSTATE_testdude, realName=test ship, touched=true, faction=0, pos=(691.1531, -15.3399725, 0.22808628), minPos=(-2, -2, -2), maxPos=(2, 2, 2), creatorID=0]
-
+#Received after /ship_info_name loaded
+#[SERVER-LOCAL-ADMIN] [INFO] new ship found in loaded objects 
+#[SERVER-LOCAL-ADMIN] Attached: [PlS[harry_dude ; id(284)(3)f(0)]] 
+#[SERVER-LOCAL-ADMIN] DockedUIDs:  
+#[SERVER-LOCAL-ADMIN] Blocks: 1
+#[SERVER-LOCAL-ADMIN] Mass: 0.1 
+#[SERVER-LOCAL-ADMIN] LastModified: 
+#[SERVER-LOCAL-ADMIN] Creator: ENTITY_PLAYERSTATE_harry_dude 
+#[SERVER-LOCAL-ADMIN] Sector: 150 -> Sector[150](2, 2, 2) 
+#[SERVER-LOCAL-ADMIN] Name: new ship 
+#[SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_new ship 
+#[SERVER-LOCAL-ADMIN] MinBB(chunks): (-2, -2, -2) 
+#[SERVER-LOCAL-ADMIN] MaxBB(chunks): (2, 2, 2)
+#[SERVER-LOCAL-ADMIN] Blocks: 1 
+#[SERVER-LOCAL-ADMIN] Local-Pos: (8.301939, -3.4012308, -16.057693) 
+#[SERVER-LOCAL-ADMIN] Orientation: (0.0, -0.70710677, 0.0, 0.70710677) 
+#[SERVER-LOCAL-ADMIN] Ship
 
 
 MYSQLDTSD_SHIPDB_NAME="VARCHAR(50)"
 MYSQLDTSD_SHIPDB_CURRENTSECTOR="VARCHAR(8)"
+MYSQLDTSD_SHIPDB_ATTACHED="VARCHAR(50)"
+MYSQLDTSD_SHIPDB_DOCKED="VARCHAR(50)"
+MYSQLDTSD_SHIPDB_BLOCK="INT"
+MYSQLDTSD_SHIPDB_MASS="INT"
+MYSQLDTSD_SHIPDB_CREATOR="VARCHAR(50)"
 MYSQLALTER_SHIPDB_NAME="UNIQUE INDEX"
+
+LOGSEARCH_collect_ship_ATTACHED="[SERVER-LOCAL-ADMIN] Attached:"
+LOGSEARCH_collect_ship_DOCKED="[SERVER-LOCAL-ADMIN] DockedUIDs:"
+LOGSEARCH_collect_ship_BLOCKS="[SERVER-LOCAL-ADMIN] Blocks:"
+LOGSEARCH_collect_ship_MASS="[SERVER-LOCAL-ADMIN] Mass:"
+#LOGSEARCH_collect_ship_LASTMODIFY="[SERVER-LOCAL-ADMIN] LastModified:"
+LOGSEARCH_collect_ship_CREATOR="[SERVER-LOCAL-ADMIN] Creator:"
+LOGSEARCH_collect_ship_CURRENTSECTOR="[SERVER-LOCAL-ADMIN] Sector:"
+LOGSEARCH_collect_ship_NAME="[SERVER-LOCAL-ADMIN] UID:"
+
+
+
+collect_ship_ATTACHED() {
+	
+#	[SERVER-LOCAL-ADMIN] Attached: [PlS[harry_dude ; id(6)(1)f(0)]]
+	
+	SHIPATTACHEDSTRING="${@:1}"
+	FIRSTCUT=${SHIPATTACHEDSTRING#*:}
+	if [ -n "${FIRSTCUT}" ] 
+	then
+		CUTSTRING=${SHIPATTACHEDSTRING%%;*}
+		CUTSTRING=${CUTSTRING##*[}
+		COLLECT_SHIP_ATTACHED="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+		echo "this is the attached player $COLLECT_SHIP_ATTACHED"
+	else
+		echo "nothing attached to this ship"
+	fi
+
+#    log_mysql_write_TMPDB COLLECT_PLAYER_CREDITS=$COLLECT_PLAYER_CREDITS
+	
+}
+collect_ship_DOCKED() {
+# [SERVER-LOCAL-ADMIN] DockedUIDs
+	SHIPDOCKEDSTRING="${@:1}"
+	FIRSTCUT=${SHIPDOCKEDSTRIN#*:}
+	if [ -n "${FIRSTCUT}" ] 
+	then
+		CUTSTRING=${SHIPDOCKEDSTRING%%;*}
+		CUTSTRING=${CUTSTRING##*[}
+		COLLECT_SHIP_DOCKED="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+		echo "this is docked $COLLECT_SHIP_DOCKED"
+	else
+		echo "nothing attached to this ship"
+	fi
+}
+collect_ship_BLOCKS() {
+	SHIPBLOCKSSTRING="${@:1}"
+#	string="[SEND][SERVERMESSAGE] Blocks: 1 to RegisteredClient: harry_dude (2) connected: true"; string=${string#*:}; string=${string%%t*}; string="${string%"${string##*[![:space:]]}"}"; string="${string#"${string%%[![:space:]]*}"}";echo ""; echo $string; echo ${#string}; echo ""
+	CUTSTRING=${SHIPBLOCKSSTRING#*:}
+	CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+	COLLECT_SHIP_BLOCK="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	echo "this is the ships blocks $COLLECT_SHIP_BLOCK"
+}
+collect_ship_MASS() {
+	SHIPMASSSTRING="${@:1}"
+	CUTSTRING=${SHIPMASSSTRING#*:}
+	CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+	COLLECT_SHIP_MASS="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	echo "this is the ships mass $COLLECT_SHIP_MASS"
+}
+#collect_ship_LASTMODIFY() {
+#	SHIPLASTMODIFYSTRING="${@:1}"
+#}
+collect_ship_CREATOR() {
+# string="[SEND][SERVERMESSAGE] Creator: ENTITY_PLAYERSTATE_harry_dude to RegisteredClient: harry_dude (3) connected: true"; echo ""; string=${string#*_};  string=${string#*_}; string=${string%%t*}; string="${string%"${string##*[![:space:]]}"}"; echo $string; echo ${#string}; echo ""
+
+	SHIPCREATORSTRING="${@:1}"
+	CUTSTRING=${SHIPCREATORSTRING#*_}
+	CUTSTRING=${CUTSTRING#*_}
+	COLLECT_SHIP_CREATOR="${CUTSTRING%"$CUTSTRING##*[![:space:]]}"}"
+	echo "this is the ships creator $COLLECT_SHIP_CREATOR"
+}
+collect_ship_CURRENTSECTOR() {
+	COLLECTSHIPSECTORSTRING="${@:1}"
+	CUTSTRING=${COLLECTSHIPSECTORSTRING#*\(}
+	CUTSTRING=${CUTSTRING%\)*}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z"
+	
+}
+collect_ship_NAME() {
+	SHIPNAMESTRING="${@:1}"
+#	[SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_new ship 
+	FIRSTUNDERCUTSTRING=${SHIPNAMESTRING#*_}
+	COLLECTENTITYTYPE=${FIRSTUNDERCUTSTRING%%_*}
+	COLLECT_SHIP_NAME=${FIRSTUNDERCUTSTRING#*_}
+	echo "This is entity type $COLLECTENTITYTYPE"
+	echo "This is ship name $COLLECT_SHIP_NAME"
+	
+}
 

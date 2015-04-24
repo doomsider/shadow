@@ -8,5 +8,82 @@
 #Sent after sector_info
 #[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](2, 2, 2); Protected: false; Peace: false; Seed: 0; Type: MAIN;
 
+MYSQLDTSD_SECTORDB_PEACE="VARCHAR(5)"
+MYSQLDTSD_SECTORDB_PROTECTED="VARCHAR(5)"
+MYSQLDTSD_SECTORDB_TYPE="VARCHAR(25)"
 MYSQLDTSD_SECTORDB_NAME="VARCHAR(8)"
 MYSQLALTER_SECTORDB_NAME="UNIQUE INDEX"
+
+LOGSEARCH_sector_collectinfo="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector"
+LOGSEARCH_sector_entityinfo="[SERVER-LOCAL-ADMIN] LoadedEntity [uid="
+
+#[ADMIN COMMAND] SECTOR_INFO from org.schema.schine.network.server.AdminLocalClient@614b3189 params: [3, -1, 3]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLAYERCHARACTER_harry, type=Astronaut]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SHIP_ship test, type=Ship, seed=0, lastModifier=, spawner=ENTITY_PLAYERSTATE_harry, realName=ship test, touched=true, faction=0, pos=(56.865887, 910.5996, 5.6264873), minPos=(-2, -2, -2), maxPos=(2, 2, 2), creatorID=0]
+#[SERVER-LOCAL-ADMIN] LOADED SECTOR INFO: Sector[7](3, -1, 3); Protected: false; Peace: false; Seed: -4196432438942463595; Type: VOID;
+
+sector_entityinfo () {
+echo "Entity info detected"
+ENTITYINFOSTRING="${@:1}"
+
+# string="[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLAYERCHARACTER_harry, type=Astronaut]"; string=${string#*=};  string=${string#*_};  string=${string#*_};  string=${string%%,*}; echo ""; echo $string; echo ""
+	FIRSTEQUALCUT=${ENTITYINFOSTRING#*=}
+	CUTSTRING=${FIRSTEQUALCUT#*_}
+	CUTSTRING=${CUTSTRING#*_}
+	ENTITYNAME=${CUTSTRING%%,*}
+	echo "Entity name is $ENTITYNAME"
+	
+	SECONDEQUALCUT=${FIRSTEQUALCUT#*=}
+	CUTSTRING=${SECONDEQUALCUT%%]*}
+	ENTITYTYPE=${CUTSTRING%%,*}
+	echo "Entity type is $ENTITYTYPE"	
+
+	case "$ENTITYTYPE" in
+	*"Ship"*) 
+	
+		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$ENTITYNAME\"
+		;;
+		
+	esac
+}
+
+
+sector_collectinfo () {
+
+# string="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](1, 2, 3); Protected: false; Peace: false; Seed: 0; Type: MAIN"; echo ""; string=${string#*\(}; string=${string%\)*}; string=${string//,/}; array=($string); echo $string; echo ""; echo ${array[1]}; echo ${#array[1]}
+
+	echo "Sector info detected"
+	SECTORINFOSTRING="${@:1}"
+	
+	CUTSTRING=${SECTORINFOSTRING#*\(}
+	CUTSTRING=${CUTSTRING%\)*}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z"
+# string="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](1, 2, 3); Protected: false; Peace: false; Seed: 0; Type: MAIN"; string=${string#*\;}; string=${string#*:}; string=${string%%\;*}; string="${string#"${string%%[![:space:]]*}"}"; echo ""; echo $string; echo ${#string}; echo ""
+	CUTFIRSTSEMISTRING=${SECTORINFOSTRING#*\;}
+	CUTSTRING=${CUTFIRSTSEMISTRING#*:}
+	CUTSTRING=${CUTSTRING%%\;*}
+	COLLECTPROTECTEDSTATUS="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	echo "This is the protect status $COLLECTPROTECTEDSTATUS"
+	CUTSECONDSEMISTRING=${CUTFIRSTSEMISTRING#*\;}
+	CUTSTRING=${CUTSECONDSEMISTRING#*:}
+	CUTSTRING=${CUTSTRING%%\;*}
+	COLLECTPEACESTATUS="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	echo "This is the peace status $COLLECTPEACESTATUS"
+	CUTTHIRDSEMISTRING=${CUTSECONDSEMISTRING#*\;}
+	CUTSTRING=${CUTTHIRDSEMISTRING#*:}
+	CUTSTRING=${CUTSTRING%%\;*}
+	COLLECTSEED="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	echo "This is the seed $COLLECTSEED"
+	CUTFOURTHSEMISTRING=${CUTTHIRDSEMISTRING#*\;}
+	CUTSTRING=${CUTFOURTHSEMISTRING#*:}
+	CUTSTRING=${CUTSTRING%%\;*}
+	COLLECTTYPE="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	echo "This is the type $COLLECTTYPE"
+	
+	
+}

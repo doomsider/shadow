@@ -1,0 +1,6 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Database to store request for info from entities
+
+MYSQLDTSD_REQUESTINFODB_NAME="VARCHAR(50)"
+MYSQLDTSD_REQUESTINFODB_TYPE="VARCHAR(50)"

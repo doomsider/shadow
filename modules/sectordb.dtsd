@@ -14,7 +14,7 @@ MYSQLDTSD_SECTORDB_TYPE="VARCHAR(25)"
 MYSQLDTSD_SECTORDB_NAME="VARCHAR(8)"
 MYSQLALTER_SECTORDB_NAME="UNIQUE INDEX"
 
-LOGSEARCH_sector_collectinfo="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector"
+LOGSEARCH_sector_collectinfo="[SERVER-LOCAL-ADMIN] LOADED SECTOR INFO: Sector"
 LOGSEARCH_sector_entityinfo="[SERVER-LOCAL-ADMIN] LoadedEntity [uid="
 
 #[ADMIN COMMAND] SECTOR_INFO from org.schema.schine.network.server.AdminLocalClient@614b3189 params: [3, -1, 3]
@@ -40,8 +40,11 @@ ENTITYINFOSTRING="${@:1}"
 
 	case "$ENTITYTYPE" in
 	*"Ship"*) 
-	
+		lib_myinsert REQUESTINFODB NAME $ENTITYNAME
+		lib_myupdate REQUESTINFODB TYPE $ENTITYTYPE NAME $ENTITYNAME
 		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$ENTITYNAME\"
+		
+		
 		;;
 		
 	esac
@@ -62,17 +65,24 @@ sector_collectinfo () {
 	COLLECTX=${COLLECTSECTORARRAY[0]}
 	COLLECTY=${COLLECTSECTORARRAY[1]}
 	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+	echo "here is sector name $SECTORNAME"
+	lib_myinsert SECTORDB NAME $SECTORNAME
+	
+		
 	echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z"
 # string="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](1, 2, 3); Protected: false; Peace: false; Seed: 0; Type: MAIN"; string=${string#*\;}; string=${string#*:}; string=${string%%\;*}; string="${string#"${string%%[![:space:]]*}"}"; echo ""; echo $string; echo ${#string}; echo ""
 	CUTFIRSTSEMISTRING=${SECTORINFOSTRING#*\;}
 	CUTSTRING=${CUTFIRSTSEMISTRING#*:}
 	CUTSTRING=${CUTSTRING%%\;*}
 	COLLECTPROTECTEDSTATUS="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	lib_myupdate SECTORDB PROTECTED $COLLECTPROTECTEDSTATUS NAME $SECTORNAME
 	echo "This is the protect status $COLLECTPROTECTEDSTATUS"
 	CUTSECONDSEMISTRING=${CUTFIRSTSEMISTRING#*\;}
 	CUTSTRING=${CUTSECONDSEMISTRING#*:}
 	CUTSTRING=${CUTSTRING%%\;*}
 	COLLECTPEACESTATUS="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	lib_myupdate SECTORDB PEACE $COLLECTPEACESTATUS NAME $SECTORNAME
 	echo "This is the peace status $COLLECTPEACESTATUS"
 	CUTTHIRDSEMISTRING=${CUTSECONDSEMISTRING#*\;}
 	CUTSTRING=${CUTTHIRDSEMISTRING#*:}
@@ -83,6 +93,7 @@ sector_collectinfo () {
 	CUTSTRING=${CUTFOURTHSEMISTRING#*:}
 	CUTSTRING=${CUTSTRING%%\;*}
 	COLLECTTYPE="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	lib_myupdate SECTORDB TYPE $COLLECTTYPE NAME $SECTORNAME
 	echo "This is the type $COLLECTTYPE"
 	
 	

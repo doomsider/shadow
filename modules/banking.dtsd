@@ -1,6 +1,8 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
 # Banking related functions 
+CREDITLIMITON=no #Change to "Yes" to use the credit cap on banking. This means a player can deposit credits into the bank until they hit the number specified below.
+CREDITLIMIT=1000000 #Change this number to the number you wish to have the bank limit the credits at.
 
 MYSQLDTSD_PLAYERDB_BANKCREDITS="BIGINT DEFAULT '0'"
 MYSQLDTSD_PLAYERDB_BANKCOMMAND="VARCHAR(25)  DEFAULT 'none' "
@@ -25,7 +27,7 @@ check_bankcommand() {
 #			echo "Credits to be deposited $BVALUE"
 			if [ "$CREDITSTOTAL" -ge "$BVALUE" ]
 			then
-				if [ "$CONFIGDTSD_CREDITLIMITON" == "Yes" ] && [ $(( BALANCECREDITS + BVALUE )) -gt $CONFIGDTSD_CREDITLIMIT ]
+				if [ "$CREDITLIMITON" == "Yes" ] && [ $(( BALANCECREDITS + BVALUE )) -gt $CREDITLIMIT ]
 				then
 					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You have reached the credit limit. You can deposit $REMAININGCREDITS before you hit the credit limit.
 				else

@@ -12,30 +12,36 @@ check_bankcommand() {
 	PLAYERBANKCOMMAND=($PLAYERBANKCOMMAND)
 	BCOMMAND=${PLAYERBANKCOMMAND[0]}
 	BVALUE=${PLAYERBANKCOMMAND[1]}
-
+	
 	case "$BCOMMAND" in
 		*"PLAYERDEPOSIT"*)   
 			echo "match found for banking command"
 			BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
 # 			echo $BALANCECREDITS
 			CREDITSTOTAL=$(lib_myvalueretrieve CREDITS PLAYERDB $1)
+			REMAININGCREDITS=$(( $CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS ))
 #			echo "Credits in log $CREDITTOTAL"
 #			echo "Total credits are $CREDITSTOTAL on person and $BALANCECREDITS in bank"
 #			echo "Credits to be deposited $BVALUE"
 			if [ "$CREDITSTOTAL" -ge "$BVALUE" ]
-			then 
+			then
+				if [ "$CONFIGDTSD_CREDITLIMITON" == "Yes" ] && [ $(( BALANCECREDITS + BVALUE )) -gt $CONFIGDTSD_CREDITLIMIT ]
+				then
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You have reached the credit limit. You can deposit $REMAININGCREDITS before you hit the credit limit.
+				else
 #					echo "enough money detected"
-                NEWBALANCE=$(( $BVALUE + $BALANCECREDITS ))
-				NEWCREDITS=$(( $CREDITSTOTAL - $BVALUE ))
+					NEWBALANCE=$(( $BVALUE + $BALANCECREDITS ))
+					NEWCREDITS=$(( $CREDITSTOTAL - $BVALUE ))
 #				echo "new bank balance is $NEWBALANCE"
-				lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 -$BVALUE
-				lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
-				lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK You successfully deposited $2 credits
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK Your balance is now $NEWBALANCE
+					lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 -$BVALUE
+					lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
+					lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You successfully deposited $BVALUE credits
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Your balance is now $NEWBALANCE
 				# as_user "echo '$1 deposited $2' >> $BANKLOG"
+				fi
 			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK Insufficient money
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Insufficient money
 				lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
 				echo "not enough money"
 			fi
@@ -51,48 +57,73 @@ check_bankcommand() {
 chatcommand_DEPOSIT() { 
 # Deposits money into your server account from your player
 # USAGE: !DEPOSIT <Amount>
+	BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
+	PLAYERCREDITS=$(lib_myvalueretrieve CREDITS PLAYERDB $1)
+	if [ "$CONFIGDTSD_CREDITLIMITON" == "Yes" ]
+	then
+		REMAININGCREDITS=$(( $CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS ))
+	else
+		REMAININGCREDITS=$PLAYERCREDITS
+	fi
 	if [ "$#" -ne "2" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !DEPOSIT Amount
 	else
-# Check to make sure a posistive amount was entered
-		if ! test "$2" -gt 0 2> /dev/null
+		if [ "$2" = "all" ]
 		then
-			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
-		else 
-# Run playerinfo command to update playerfile and get the current player credits
-			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTICE BANK - Connecting to servers
-			COMMANDBANK="PLAYERDEPOSIT $2"
-			lib_myupdate PLAYERDB BANKCOMMAND "$COMMANDBANK" NAME $1
-			lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
-		fi	
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTICE BANK - Connecting to servers
+				COMMANDBANK="PLAYERDEPOSIT $REMAININGCREDITS"
+				lib_myupdate PLAYERDB BANKCOMMAND "$COMMANDBANK" NAME $1
+				lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
+		else
+	# Check to make sure a posistive amount was entered
+			if ! test "$2" -gt 0 2> /dev/null
+			then
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
+			else 
+	# Run playerinfo command to update playerfile and get the current player credits
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTICE BANK - Connecting to servers
+				COMMANDBANK="PLAYERDEPOSIT $2"
+				lib_myupdate PLAYERDB BANKCOMMAND "$COMMANDBANK" NAME $1
+				lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
+			fi	
+		fi
 	fi
 }
 chatcommand_WITHDRAW(){ 
 # Takes money out of your server account and gives it to your player
 # USAGE: !WITHDRAW <Amount>
 # echo "Withdraw command"
+	BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
 	if [ "$#" -ne "2" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !WITHDRAW Amount
 	else
-		if ! test "$2" -gt 0 2> /dev/null
+		if [ "$2" = "all" ]
 		then
-			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
-		else
-#			echo "Withdraw $2"
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
-			BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
-#			echo "bank balance is $BALANCECREDITS"
-			if [ "$2" -le "$BALANCECREDITS" ]
+			NEWBALANCE=$(( $BALANCECREDITS - $BALANCECREDITS ))
+			lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 $BALANCECREDITS
+			lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You successfully withdrawn $BALANCECREDITS credits
+		else
+			if ! test "$2" -gt 0 2> /dev/null
 			then
-				NEWBALANCE=$(( $BALANCECREDITS - $2 ))
-# 				echo "new balance for bank account is $NEWBALANCE"
-				lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 $2
-				lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK You successfully withdrawn $2 credits
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
 			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You have insufficient funds
+	#			echo "Withdraw $2"
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+	#			echo "bank balance is $BALANCECREDITS"
+				if [ "$2" -le "$BALANCECREDITS" ]
+				then
+					NEWBALANCE=$(( $BALANCECREDITS - $2 ))
+	# 				echo "new balance for bank account is $NEWBALANCE"
+					lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 $2
+					lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You successfully withdrawn $2 credits
+				else
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You have insufficient funds
+				fi
 			fi
 		fi
 	fi

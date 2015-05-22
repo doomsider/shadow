@@ -131,7 +131,8 @@ core_logloop() {
 # This sets the field seperator to use \n next line instead of next space.  This makes it so the array is a whole sentence not a word
 			IFS=$'\n'
 			RESULTARRAY=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe  "SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) >0" ) )
-			IFS=$OLD_IFS			
+			IFS=$OLD_IFS		
+			printf "%s\n" "${RESULTARRAY[@]}" >> result.txt
 # Send the array to the lib_resultloop function
 			lib_resultloop RESULTARRAY[@] &
 			log_myerasetable LOGLOOP		

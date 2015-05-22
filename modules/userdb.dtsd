@@ -32,6 +32,8 @@ player_login() {
     # Cut trailing space to get the playername that is logging in
     LOGINPLAYERNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
     echo "$LOGINPLAYERNAME is logging in"
+	lib_myinsert REQUESTINFODB NAME $LOGINPLAYERNAME
+	lib_myupdate REQUESTINFODB TYPE Astronaut NAME $LOGINPLAYERNAME
     lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $LOGINPLAYERNAME
 }
 
@@ -40,6 +42,7 @@ player_login() {
 
 collect_player_SECTOR() {
 	PLAYERSECTORSTRING="${@:1}"
+	echo "This was send to collect player sector $PLAYERSECTORSTRING"
 	CUTSTRING=${PLAYERSECTORSTRING##*\(}
 	XSECTOR=${CUTSTRING%%,*}
 	echo "collect this X value $XSECTOR"
@@ -54,9 +57,19 @@ collect_player_SECTOR() {
 	ZSECTOR="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
 	echo "collect this Z value $ZSECTOR"
 	CURRENTSECTOR="$XSECTOR"_"$YSECTOR"_"$ZSECTOR"
-	COLLECT_PLAYER_CURRENTSECTOR=$CURRENTSECTOR
-	log_mysql_write_TMPDB COLLECT_PLAYER_CURRENTSECTOR=$CURRENTSECTOR
-	echo "This was send to collect player sector $PLAYERSECTORSTRING"
+	COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT NAME FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
+	COLLECTSHIPTYPE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT TYPE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
+	echo "this is the player name from table $COLLECTPLAYERNAME"
+	echo "this is the entity type from table $COLLECTSHIPTYPE"
+	
+	if [ "$COLLECTSHIPTYPE" = "Astronaut" ]
+	then
+		lib_myupdate PLAYERDB CURRENTSECTOR $CURRENTSECTOR NAME $COLLECTPLAYERNAME
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "DELETE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;"
+	fi
+	
+#	COLLECT_PLAYER_CURRENTSECTOR=$CURRENTSECTOR
+#	log_mysql_write_TMPDB COLLECT_PLAYER_CURRENTSECTOR=$CURRENTSECTOR
 }
 
 collect_player_CREDITS() {
@@ -66,7 +79,15 @@ collect_player_CREDITS() {
     cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
     COLLECT_PLAYER_CREDITS="${cutstring%"${cutstring##*[![:space:]]}"}"
     echo "This was send to collect player credits $COLLECT_PLAYER_CREDITS"
-    log_mysql_write_TMPDB COLLECT_PLAYER_CREDITS=$COLLECT_PLAYER_CREDITS
+	COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT NAME FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
+	COLLECTSHIPTYPE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT TYPE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
+	echo "this is the player name from table $COLLECTPLAYERNAME"
+	echo "this is the entity type from table $COLLECTSHIPTYPE"
+	if [ "$COLLECTSHIPTYPE" = "Astronaut" ]
+	then
+		lib_myupdate PLAYERDB CREDITS $COLLECT_PLAYER_CREDITS NAME $COLLECTPLAYERNAME
+	fi
+#    log_mysql_write_TMPDB COLLECT_PLAYER_CREDITS=$COLLECT_PLAYER_CREDITS
 }
 
 collect_player_FACTION() {
@@ -76,7 +97,15 @@ collect_player_FACTION() {
     cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
     COLLECT_PLAYER_FACTION="${cutstring%"${cutstring##*[![:space:]]}"}"
     echo "This was send to collect player faction $COLLECT_PLAYER_FACTION"
-    log_mysql_write_TMPDB COLLECT_PLAYER_FACTION=$COLLECT_PLAYER_FACTION
+	COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT NAME FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
+	COLLECTSHIPTYPE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT TYPE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
+	echo "this is the player name from table $COLLECTPLAYERNAME"
+	echo "this is the entity type from table $COLLECTSHIPTYPE"
+	if [ "$COLLECTSHIPTYPE" = "Astronaut" ]
+	then
+		lib_myupdate PLAYERDB FACTION $COLLECT_PLAYER_FACTION NAME $COLLECTPLAYERNAME
+	fi
+#    log_mysql_write_TMPDB COLLECT_PLAYER_FACTION=$COLLECT_PLAYER_FACTION
 }
 
 collect_player_CURRENTIP() {
@@ -86,7 +115,15 @@ collect_player_CURRENTIP() {
     cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
     COLLECT_PLAYER_CURRENTIP="${cutstring%"${cutstring##*[![:space:]]}"}"
     echo "This was send to collect player IP $COLLECT_PLAYER_CURRENTIP"
-    log_mysql_write_TMPDB COLLECT_PLAYER_CURRENTIP=$COLLECT_PLAYER_CURRENTIP
+    COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT NAME FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
+	COLLECTSHIPTYPE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT TYPE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
+	echo "this is the player name from table $COLLECTPLAYERNAME"
+	echo "this is the entity type from table $COLLECTSHIPTYPE"
+	if [ "$COLLECTSHIPTYPE" = "Astronaut" ]
+	then
+		lib_myupdate PLAYERDB CURRENTIP $COLLECT_PLAYER_CURRENTIP NAME $COLLECTPLAYERNAME
+	fi
+	#log_mysql_write_TMPDB COLLECT_PLAYER_CURRENTIP=$COLLECT_PLAYER_CURRENTIP
 }
 
 collect_player_NAME() {
@@ -99,47 +136,49 @@ collect_player_NAME() {
     echo ${#COLLECT_PLAYER_NAME}
     lib_myinsert PLAYERDB NAME $COLLECT_PLAYER_NAME
     # lib_myrowretrieve TMPDB TMPSTRING
-    
+    # mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "DELETE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;"
+    check_bankcommand $COLLECT_PLAYER_NAME
+	
+#	log_mysql_erase_TMPDB
     # Collect the retrieved variable of all the player values
-    RETRIEVE=$(lib_mycolumnretrieve TMPDB TMPSTRING)
-    echo $RETRIEVE
+    #RETRIEVE=$(lib_mycolumnretrieve TMPDB TMPSTRING)
+    #echo $RETRIEVE
     # Set all player values to an array
-    RETARRARY=($RETRIEVE)
-    echo "Here is retrieve array zero ${RETARRARY[0]}"
-    echo "Here is retrieve array one ${RETARRARY[1]}"
-    echo "Here is retrieve array two ${RETARRARY[2]}"
-    echo "Here is retrieve array three ${RETARRARY[3]}"
-    echo "Here is retrieve array four ${RETARRARY[4]}"
-    echo "Here is retrieve array five ${RETARRARY[5]}"
-    echo "Here is retrieve array six ${RETARRARY[6]}"
-    echo "Here is retrieve array seven ${RETARRARY[7]}"
-    echo "Here is retrieve array eight ${RETARRARY[8]}"
-    echo "Here is retrieve array nine ${RETARRARY[9]}"
+    #RETARRARY=($RETRIEVE)
+    #echo "Here is retrieve array zero ${RETARRARY[0]}"
+    #echo "Here is retrieve array one ${RETARRARY[1]}"
+    #echo "Here is retrieve array two ${RETARRARY[2]}"
+    #echo "Here is retrieve array three ${RETARRARY[3]}"
+    #echo "Here is retrieve array four ${RETARRARY[4]}"
+    #echo "Here is retrieve array five ${RETARRARY[5]}"
+    #echo "Here is retrieve array six ${RETARRARY[6]}"
+    #echo "Here is retrieve array seven ${RETARRARY[7]}"
+    #echo "Here is retrieve array eight ${RETARRARY[8]}"
+    #echo "Here is retrieve array nine ${RETARRARY[9]}"
     
-    TEMPARRAY=0
+    #TEMPARRAY=0
     
-    while [ -n "${RETARRARY[$TEMPARRAY]+set}" ]
-        do
-        PLAYERTEMPVALUE=${RETARRARY[$TEMPARRAY]}
-        echo "Player value variable $PLAYERTEMPVALUE"
-        PLAYERTEMPVAR=${PLAYERTEMPVALUE%=*}
-        echo "Player temp var is $PLAYERTEMPVAR"
-        PLAYERCOLUMN=${PLAYERTEMPVAR##*_}
-        echo "Player value goes to column $PLAYERCOLUMN"
-        PLAYERTEMPVAL=${PLAYERTEMPVALUE#*=}
-        echo "Player value is $PLAYERTEMPVAL"
+    #while [ -n "${RETARRARY[$TEMPARRAY]+set}" ]
+        #do
+        #PLAYERTEMPVALUE=${RETARRARY[$TEMPARRAY]}
+        #echo "Player value variable $PLAYERTEMPVALUE"
+        #PLAYERTEMPVAR=${PLAYERTEMPVALUE%=*}
+        #echo "Player temp var is $PLAYERTEMPVAR"
+        #PLAYERCOLUMN=${PLAYERTEMPVAR##*_}
+        #echo "Player value goes to column $PLAYERCOLUMN"
+        #PLAYERTEMPVAL=${PLAYERTEMPVALUE#*=}
+        #echo "Player value is $PLAYERTEMPVAL"
         #	eval $PLAYERTEMPVALUE
-        lib_myupdate PLAYERDB $PLAYERCOLUMN $PLAYERTEMPVAL NAME $COLLECT_PLAYER_NAME
-        let TEMPARRAY++
-    done
+        #lib_myupdate PLAYERDB $PLAYERCOLUMN $PLAYERTEMPVAL NAME $COLLECT_PLAYER_NAME
+        #let TEMPARRAY++
+    #done
         
     #echo "lib_myupdate PLAYERDB IP $COLLECT_PLAYER_IP NAME $COLLECT_PLAYER_NAME"
     #lib_myupdate PLAYERDB CURRENTIP $COLLECT_PLAYER_IP NAME $COLLECT_PLAYER_NAME
     #lib_myupdate PLAYERDB FACTION $COLLECT_PLAYER_FACTION NAME $COLLECT_PLAYER_NAME
     #lib_myupdate PLAYERDB CREDITS $COLLECT_PLAYER_CREDITS NAME $COLLECT_PLAYER_NAME
     
-    log_mysql_erase_TMPDB
-    check_bankcommand $COLLECT_PLAYER_NAME
+
 }
 
 # INSERT OR IGNORE INTO EVENTTYPE (EventTypeName) VALUES 'ANI Received'

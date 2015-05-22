@@ -84,9 +84,12 @@ chatcommand_DEPOSIT() {
 				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
 			else 
 	# Run playerinfo command to update playerfile and get the current player credits
+	
 				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTICE BANK - Connecting to servers
 				COMMANDBANK="PLAYERDEPOSIT $2"
 				lib_myupdate PLAYERDB BANKCOMMAND "$COMMANDBANK" NAME $1
+				lib_myinsert REQUESTINFODB NAME $1
+				lib_myupdate REQUESTINFODB TYPE Astronaut NAME $1
 				lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
 			fi	
 		fi

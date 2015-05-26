@@ -42,6 +42,7 @@ ENTITYINFOSTRING="${@:1}"
 	*"Ship"*) 
 		lib_myinsert REQUESTINFODB NAME $ENTITYNAME
 		lib_myupdate REQUESTINFODB TYPE $ENTITYTYPE NAME $ENTITYNAME
+		lib_myinsert SHIPDB NAME $ENTITYNAME
 		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$ENTITYNAME\"
 		
 		

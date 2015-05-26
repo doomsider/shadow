@@ -80,6 +80,7 @@ core_logloop() {
 # This function is testing a solution to the sluggishness of the current_core loop.  Currently it inserts lines into the database while they are received from a log file.
 	log_myerasetable LOGLOOP
 	log_myerasetable REQUESTINFODB
+	log_myerasetable COLLECTINFODB
 #	log_myerasetable SEARCHRESULT
 	testloop=0
 	LINEARRAY=0
@@ -130,7 +131,7 @@ core_logloop() {
 			OLD_IFS=$IFS
 # This sets the field seperator to use \n next line instead of next space.  This makes it so the array is a whole sentence not a word
 			IFS=$'\n'
-			RESULTARRAY=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe  "SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) >0 ORDER BY line ASC" ) )
+			RESULTARRAY=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe  "SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) > 0 AND LOGLOOP.line > 0 ORDER BY LOGLOOP.line ASC" ) )
 			IFS=$OLD_IFS		
 			printf "%s\n" "${RESULTARRAY[@]}" >> result.txt
 # Send the array to the lib_resultloop function
@@ -160,7 +161,7 @@ ARRAYVALUE=0
 				unset CURRENTARRAY[$MAXARRAYPOSITION]
 				unset CURRENTARRAY[$FUNCTIONPOSITION]
 				CURRENTSTRING=${CURRENTARRAY[@]}
-				eval $CURENTFUNCTION '$CURRENTSTRING' &
+				eval $CURENTFUNCTION '$CURRENTSTRING' 
 #			echo $CURRENTRESULTLINE
 #			echo "this is the max of the array $MAXARRAYPOSITION"
 #			echo "this is the function $CURENTFUNCTION"

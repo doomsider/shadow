@@ -5,7 +5,7 @@
 MYSQLDTSD_COLLECTINFODB_COLLECTVALUE="VARCHAR(50)"
 MYSQLDTSD_COLLECTINFODB_COLLECTVARIABLE="VARCHAR(50)"
 
-collect_writedb () {
+collect_writedb() {
 # Usage:  collect_writedb
 # Sleep added here to address issue with blocks being issued twice for ship info.  This small pause allows second block to be collected for ships.
 	COLLECTENTITYNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT NAME FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
@@ -15,7 +15,7 @@ collect_writedb () {
 	case $COLLECTSHIPTYPE in
 	*"Ship"*) 
 				echo "Ship detected for writing to DB" 
-                COLLECTSTOPLOOP=5
+                COLLECTSTOPLOOP=8
 				DBWRITETO=SHIPDB
             ;;
 	*"Astronaut"*) 

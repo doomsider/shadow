@@ -41,10 +41,10 @@ LOGSEARCH_collect_ship_ATTACHED="[SERVER-LOCAL-ADMIN] Attached:"
 LOGSEARCH_collect_ship_DOCKED="[SERVER-LOCAL-ADMIN] DockedUIDs:"
 LOGSEARCH_collect_ship_BLOCKS="[SERVER-LOCAL-ADMIN] Blocks:"
 LOGSEARCH_collect_ship_MASS="[SERVER-LOCAL-ADMIN] Mass:"
-LOGSEARCH_collect_ship_LASTMODIFY="[SERVER-LOCAL-ADMIN] LastModified:"
+#LOGSEARCH_collect_ship_LASTMODIFY="[SERVER-LOCAL-ADMIN] LastModified:"
 LOGSEARCH_collect_ship_CREATOR="[SERVER-LOCAL-ADMIN] Creator:"
 LOGSEARCH_collect_ship_CURRENTSECTOR="[SERVER-LOCAL-ADMIN] Sector:"
-LOGSEARCH_collect_ship_NAME="[SERVER-LOCAL-ADMIN] UID:"
+#LOGSEARCH_collect_ship_NAME="[SERVER-LOCAL-ADMIN] UID:"
 LOGSEARCH_collect_ship_LASTPOSITION="[SERVER-LOCAL-ADMIN] Local-Pos:"
 
 
@@ -110,7 +110,7 @@ collect_ship_DOCKED() {
 }
 collect_ship_BLOCKS() {
 	SHIPBLOCKSSTRING="${@:1}"
-	string="[SEND][SERVERMESSAGE] Blocks: 1 to RegisteredClient: harry_dude (2) connected: true"; string=${string#*:}; string=${string%%t*}; string="${string%"${string##*[![:space:]]}"}"; string="${string#"${string%%[![:space:]]*}"}";echo ""; echo $string; echo ${#string}; echo ""
+#	string="[SEND][SERVERMESSAGE] Blocks: 1 to RegisteredClient: harry_dude (2) connected: true"; string=${string#*:}; string=${string%%t*}; string="${string%"${string##*[![:space:]]}"}"; string="${string#"${string%%[![:space:]]*}"}";echo ""; echo $string; echo ${#string}; echo ""
 	CUTSTRING=${SHIPBLOCKSSTRING#*:}
 	if [ -n "${CUTSTRING}" ] 
 	then
@@ -174,14 +174,14 @@ collect_ship_CURRENTSECTOR() {
 		echo "no current sector detected"
 	fi
 }
-collect_ship_NAME() {
-	SHIPNAMESTRING="${@:1}"
+#collect_ship_NAME() {
+#	SHIPNAMESTRING="${@:1}"
 #	[SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_new ship 
-	FIRSTUNDERCUTSTRING=${SHIPNAMESTRING#*_}
-	COLLECTENTITYTYPE=${FIRSTUNDERCUTSTRING%%_*}
-	COLLECT_SHIP_NAME=${FIRSTUNDERCUTSTRING#*_}
-	echo "This is entity type from collect_ship_name $COLLECTENTITYTYPE"
-	echo "This is ship name from collect_ship_name $COLLECT_SHIP_NAME"
-	lib_myinsert SHIPDB NAME "$COLLECT_SHIP_NAME"	
-}
+#	FIRSTUNDERCUTSTRING=${SHIPNAMESTRING#*_}
+#	COLLECTENTITYTYPE=${FIRSTUNDERCUTSTRING%%_*}
+#	COLLECT_SHIP_NAME=${FIRSTUNDERCUTSTRING#*_}
+#	echo "This is entity type from collect_ship_name $COLLECTENTITYTYPE"
+#	echo "This is ship name from collect_ship_name $COLLECT_SHIP_NAME"
+#	lib_myinsert SHIPDB NAME "$COLLECT_SHIP_NAME"	
+#}
 

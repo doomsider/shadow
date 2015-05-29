@@ -43,14 +43,18 @@ ENTITYINFOSTRING="${@:1}"
 
 	case "$ENTITYTYPE" in
 	*"Ship"*) 
-		lib_myinsert REQUESTINFODB NAME $ENTITYNAME
-		lib_myupdate REQUESTINFODB TYPE $ENTITYTYPE NAME $ENTITYNAME
-		lib_myinsert SHIPDB NAME $ENTITYNAME
+		lib_myinsert REQUESTINFODB NAME "$ENTITYNAME"
+		lib_myupdate REQUESTINFODB TYPE "$ENTITYTYPE" NAME "$ENTITYNAME"
+		lib_myinsert SHIPDB NAME "$ENTITYNAME"
 		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$ENTITYNAME\"
-		
-		
 		;;
-		
+	
+	*"Space Station"*) 
+		lib_myinsert REQUESTINFODB NAME "$ENTITYNAME"
+		lib_myupdate REQUESTINFODB TYPE "$ENTITYTYPE" NAME "$ENTITYNAME"
+		lib_myinsert STATIONDB NAME "$ENTITYNAME"
+		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$ENTITYNAME\"
+		;;
 	esac
 }
 
@@ -58,10 +62,8 @@ ENTITYINFOSTRING="${@:1}"
 sector_collectinfo () {
 
 # string="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](1, 2, 3); Protected: false; Peace: false; Seed: 0; Type: MAIN"; echo ""; string=${string#*\(}; string=${string%\)*}; string=${string//,/}; array=($string); echo $string; echo ""; echo ${array[1]}; echo ${#array[1]}
-
 	echo "Sector info detected"
 	SECTORINFOSTRING="${@:1}"
-	
 	CUTSTRING=${SECTORINFOSTRING#*\(}
 	CUTSTRING=${CUTSTRING%\)*}
 	CUTSTRING=${CUTSTRING//,/}
@@ -72,8 +74,6 @@ sector_collectinfo () {
 	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
 	echo "here is sector name $SECTORNAME"
 	lib_myinsert SECTORDB NAME $SECTORNAME
-	
-		
 	echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z"
 # string="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](1, 2, 3); Protected: false; Peace: false; Seed: 0; Type: MAIN"; string=${string#*\;}; string=${string#*:}; string=${string%%\;*}; string="${string#"${string%%[![:space:]]*}"}"; echo ""; echo $string; echo ${#string}; echo ""
 	CUTFIRSTSEMISTRING=${SECTORINFOSTRING#*\;}
@@ -99,6 +99,4 @@ sector_collectinfo () {
 	COLLECTTYPE="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
 	lib_myupdate SECTORDB TYPE $COLLECTTYPE NAME $SECTORNAME
 	echo "This is the type $COLLECTTYPE"
-	
-	
 }

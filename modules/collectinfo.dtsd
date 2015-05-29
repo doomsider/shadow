@@ -14,15 +14,21 @@ collect_writedb() {
 	echo "this is the entity type from table $COLLECTSHIPTYPE"
 	case $COLLECTSHIPTYPE in
 	*"Ship"*) 
-				echo "Ship detected for writing to DB" 
-                COLLECTSTOPLOOP=8
-				DBWRITETO=SHIPDB
-            ;;
+		echo "Ship detected for writing to DB" 
+        COLLECTSTOPLOOP=8
+		DBWRITETO=SHIPDB
+	;;
 	*"Astronaut"*) 
-				echo "Astronaut detected for writing to DB" 
-                COLLECTSTOPLOOP=4
-				DBWRITETO=PLAYERDB
-            ;;
+		echo "Astronaut detected for writing to DB" 
+        COLLECTSTOPLOOP=4
+		DBWRITETO=PLAYERDB
+        ;;
+	*"Space Station"*) 
+		echo "Space Station detected for writing to DB" 
+        COLLECTSTOPLOOP=8
+		DBWRITETO=STATIONDB
+        ;;
+
 	esac
 	COLLECTLOOP=0
 	while [ "$COLLECTLOOP" -lt "$COLLECTSTOPLOOP" ]

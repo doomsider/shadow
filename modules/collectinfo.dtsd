@@ -9,44 +9,39 @@ MYSQLDTSD_REQUESTINFODB_NAME="VARCHAR(50)"
 MYSQLDTSD_REQUESTINFODB_TYPE="VARCHAR(50)"
 
 LOGSEARCH_player_boarding="[CONTROLLER][ADD-UNIT] (Server(0)): PlS"
-
 LOGSEARCH_player_changesector="has players attached. Doing Sector Change for PlS"
-
-LOGSEARCH_sector_collectinfo="[SERVER-LOCAL-ADMIN] LOADED SECTOR INFO: Sector"
+LOGSEARCH_sector_info="[SERVER-LOCAL-ADMIN] LOADED SECTOR INFO: Sector"
 LOGSEARCH_sector_entityinfo="[SERVER-LOCAL-ADMIN] LoadedEntity [uid="
-LOGSEARCH_sector_initiallogin="[SERVER][GALAXY] SENDING SYSTEM BACK TO CLIENT:"
 
 LOGSEARCH_collect_player_CREDITS="[SERVER-LOCAL-ADMIN] [PL] CREDITS:"
 LOGSEARCH_collect_player_FACTION="[SERVER-LOCAL-ADMIN] [PL] FACTION:"
 LOGSEARCH_collect_player_CURRENTIP="[SERVER-LOCAL-ADMIN] [PL] IP:"
 LOGSEARCH_collect_player_NAME="[SERVER-LOCAL-ADMIN] [PL] Name:"
 LOGSEARCH_collect_player_SECTOR="[SERVER-LOCAL-ADMIN] [PL] SECTOR:"
-LOGSEARCH_collect_player_CURRENTPOS="[SERVER-LOCAL-ADMIN] [PL] CONTROLLING-POS:"
+LOGSEARCH_collect_player_LASTPOSITION="[SERVER-LOCAL-ADMIN] [PL] CONTROLLING-POS:"
 
 LOGSEARCH_collect_ship_ATTACHED="[SERVER-LOCAL-ADMIN] Attached:"
 LOGSEARCH_collect_ship_DOCKED="[SERVER-LOCAL-ADMIN] DockedUIDs:"
 LOGSEARCH_collect_ship_BLOCKS="[SERVER-LOCAL-ADMIN] Blocks:"
 LOGSEARCH_collect_ship_MASS="[SERVER-LOCAL-ADMIN] Mass:"
-#LOGSEARCH_collect_ship_LASTMODIFY="[SERVER-LOCAL-ADMIN] LastModified:"
 LOGSEARCH_collect_ship_CREATOR="[SERVER-LOCAL-ADMIN] Creator:"
 LOGSEARCH_collect_ship_CURRENTSECTOR="[SERVER-LOCAL-ADMIN] Sector:"
-#LOGSEARCH_collect_ship_NAME="[SERVER-LOCAL-ADMIN] UID:"
 LOGSEARCH_collect_ship_LASTPOSITION="[SERVER-LOCAL-ADMIN] Local-Pos:"
 
-
-
-
-sector_initiallogin() {
-SECTORINITIALLOGINSTRING="${@:1}"
-	echo "This was send to collect player current position $SECTORINITIALLOGINSTRING="
+# Functions to collect player info
+collect_player_LASTPOSITION() {
+	PLAYERLASTPOSITIONSTRING="${@:1}"
+	CUTSTRING=${PLAYERLASTPOSITIONSTRING#*\(}
+	CUTSTRING=${CUTSTRING%%)*}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+	echo "This was send to collect player current position $PLAYERLASTPOSITIONSTRING"
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO COLLECTINFODB (COLLECTVARIABLE, COLLECTVALUE) VALUES (\"LASTPOSITION\",\"$POSITIONNAME\")"
 }
-
-collect_player_CURRENTPOS() {
-PLAYERCURRENTPOSSTRING="${@:1}"
-	echo "This was send to collect player current position $PLAYERCURRENTPOSSTRING"
-}
-
-
 collect_player_SECTOR() {
 	PLAYERSECTORSTRING="${@:1}"
 	echo "This was send to collect player sector $PLAYERSECTORSTRING"
@@ -67,7 +62,6 @@ collect_player_SECTOR() {
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO COLLECTINFODB (COLLECTVARIABLE, COLLECTVALUE) VALUES (\"CURRENTSECTOR\",\"$CURRENTSECTOR\")"
 
 }
-
 collect_player_CREDITS() {
     # [SERVER-LOCAL-ADMIN] [PL] CREDITS: 20000
     COLLECTSTRING="${@:1}"
@@ -78,7 +72,6 @@ collect_player_CREDITS() {
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO COLLECTINFODB (COLLECTVARIABLE, COLLECTVALUE) VALUES (\"CREDITS\",\"$COLLECT_PLAYER_CREDITS\")"
 
 }
-
 collect_player_FACTION() {
     # [SERVER-LOCAL-ADMIN] [PL] FACTION: null
     COLLECTSTRING="${@:1}"
@@ -89,11 +82,10 @@ collect_player_FACTION() {
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO COLLECTINFODB (COLLECTVARIABLE, COLLECTVALUE) VALUES (\"FACTION\",\"$COLLECT_PLAYER_FACTION\")"
 
 }
-
 collect_player_CURRENTIP() {
     # [SERVER-LOCAL-ADMIN] [PL] IP: /192.168.1.9
     COLLECTSTRING="${@:1}"
-    cutstring=${COLLECTSTRING##*:}
+    cutstring=${COLLECTSTRING#*/}
     cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
     COLLECT_PLAYER_CURRENTIP="${cutstring%"${cutstring##*[![:space:]]}"}"
     echo "This was send to collect player IP $COLLECT_PLAYER_CURRENTIP"
@@ -101,7 +93,6 @@ collect_player_CURRENTIP() {
 	(COLLECTVARIABLE, COLLECTVALUE) VALUES (\"CURRENTIP\",\"$COLLECT_PLAYER_CURRENTIP\")"
 
 }
-
 collect_player_NAME() {
     # [SERVER-LOCAL-ADMIN] [PL] Name: Doomsider
     COLLECTSTRING="${@:1}"
@@ -113,13 +104,11 @@ collect_player_NAME() {
 	collect_writedb
 	check_bankcommand $COLLECT_PLAYER_NAME
 }
-
-# Function for boarding
-#		SEARCHBOARD="[CONTROLLER][ADD-UNIT]"
+# Function for boarding ships and stations
+player_boarding() {
 # [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: Ship[test ship](132)
 # [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: PlayerCharacter[(ENTITY_PLAYERCHARACTER_testdude)(131)]
 # [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: SpaceStation[ENTITY_SPACESTATION_test station(151)]
-player_boarding() {
 	echo "Boarding detected"
 	BOARDSTRING="${@:1}"
 	CUTSTRING=${BOARDSTRING%%;*}
@@ -161,44 +150,8 @@ player_boarding() {
 	;;
 	esac
 }
-collect_writedb() {
-# Usage:  collect_writedb
-# Sleep added here to address issue with blocks being issued twice for ship info.  This small pause allows second block to be collected for ships.
-	COLLECTENTITYNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT NAME FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
-	COLLECTSHIPTYPE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT TYPE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
-	echo "this is the player name from table $COLLECTENTITYNAME"
-	echo "this is the entity type from table $COLLECTSHIPTYPE"
-	case $COLLECTSHIPTYPE in
-	*"Ship"*) 
-		echo "Ship detected for writing to DB" 
-        COLLECTSTOPLOOP=8
-		DBWRITETO=SHIPDB
-	;;
-	*"Astronaut"*) 
-		echo "Astronaut detected for writing to DB" 
-        COLLECTSTOPLOOP=4
-		DBWRITETO=PLAYERDB
-        ;;
-	*"Space Station"*) 
-		echo "Space Station detected for writing to DB" 
-        COLLECTSTOPLOOP=8
-		DBWRITETO=STATIONDB
-        ;;
-
-	esac
-	COLLECTLOOP=0
-	while [ "$COLLECTLOOP" -lt "$COLLECTSTOPLOOP" ]
-	do
-	echo "Collect loop is at $COLLECTLOOP"
-	COLLECTVARIABLE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT COLLECTVARIABLE FROM COLLECTINFODB ORDER BY line ASC LIMIT 1;")
-	COLLECTVALUE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT COLLECTVALUE FROM COLLECTINFODB ORDER BY line ASC LIMIT 1;")
-	echo "Sending $COLLECTVALUE to variable $COLLECTVARIABLE to $COLLECTENTITYNAME entry"
-	lib_myupdate $DBWRITETO $COLLECTVARIABLE $COLLECTVALUE NAME $COLLECTENTITYNAME
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "DELETE FROM COLLECTINFODB ORDER BY line ASC LIMIT 1;"
-	let COLLECTLOOP++
-	done
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "DELETE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;"
-}
+# Functions to collect from sector info
+sector_entityinfo () {
 #[ADMIN COMMAND] SECTOR_INFO from org.schema.schine.network.server.AdminLocalClient@614b3189 params: [3, -1, 3]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLAYERCHARACTER_harry, type=Astronaut]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANETCORE_6_8_-6, type=Planet Core]
@@ -207,7 +160,7 @@ collect_writedb() {
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SPACESTATION_test_station_10_block, type=Space Station, seed=0, lastModifier=, spawner=, realName=test_station_10_block, touched=true, faction=0, pos=(-285.80713, -22.024189, 56.327763), minPos=(-4, -4, -4), maxPos=(4, 4, 4), creatorID=1]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SHOP_1431965817638, type=Shop, seed=0, lastModifier=, spawner=, realName=Shop, touched=false, faction=0, pos=(0.0, 0.0, 0.0), minPos=(0, -15, 0), maxPos=(0, 15, 0), creatorID=0]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_FLOATINGROCK_1432202013135_2_2_2_0, type=Asteroid, seed=7652247429851126783, lastModifier=, spawner=, realName=undef, touched=false, faction=0, pos=(115.0, -116.0, 76.0), minPos=(-1, -4, -3), maxPos=(2, 2, 2), creatorID=7]
-sector_entityinfo () {
+
 echo "Entity info detected"
 ENTITYINFOSTRING="${@:1}"
 
@@ -294,8 +247,7 @@ ENTITYINFOSTRING="${@:1}"
 
 	esac
 }
-sector_collectinfo () {
-
+sector_info () {
 # string="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](1, 2, 3); Protected: false; Peace: false; Seed: 0; Type: MAIN"; echo ""; string=${string#*\(}; string=${string%\)*}; string=${string//,/}; array=($string); echo $string; echo ""; echo ${array[1]}; echo ${#array[1]}
 	echo "Sector info detected"
 	SECTORINFOSTRING="${@:1}"
@@ -310,7 +262,6 @@ sector_collectinfo () {
 	echo "here is sector name $SECTORNAME"
 	lib_myinsert SECTORDB NAME $SECTORNAME
 	echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z"
-# string="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](1, 2, 3); Protected: false; Peace: false; Seed: 0; Type: MAIN"; string=${string#*\;}; string=${string#*:}; string=${string%%\;*}; string="${string#"${string%%[![:space:]]*}"}"; echo ""; echo $string; echo ${#string}; echo ""
 	CUTFIRSTSEMISTRING=${SECTORINFOSTRING#*\;}
 	CUTSTRING=${CUTFIRSTSEMISTRING#*:}
 	CUTSTRING=${CUTSTRING%%\;*}
@@ -336,31 +287,7 @@ sector_collectinfo () {
 	echo "This is the type $COLLECTTYPE"
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "DELETE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;"
 }
-
-# Strings to retrieve for Ship and Station info
-
-#Received after /sector_info not loaded
-#[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SHIP_space ship, sectorPos=(2, 2, 2), type=5, seed=0, lastModifier=, spawner=<admin>, realName=space ship, touched=true, faction=0, pos=(440.3829, 2.4231818, -369.9619), minPos=(-2, -1, -1), maxPos=(1, 0, 1), creatorID=0]
-#Received after /ship_info_name not loaded
-#[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SHIP_test ship, sectorPos=(1, 2, 2), type=5, seed=0, lastModifier=, spawner=ENTITY_PLAYERSTATE_testdude, realName=test ship, touched=true, faction=0, pos=(691.1531, -15.3399725, 0.22808628), minPos=(-2, -2, -2), maxPos=(2, 2, 2), creatorID=0]
-#Received after /ship_info_name loaded
-#[SERVER-LOCAL-ADMIN] [INFO] new ship found in loaded objects 
-#[SERVER-LOCAL-ADMIN] Attached: [PlS[harry_dude ; id(284)(3)f(0)]] 
-#[SERVER-LOCAL-ADMIN] DockedUIDs:  
-#[SERVER-LOCAL-ADMIN] Blocks: 1
-#[SERVER-LOCAL-ADMIN] Mass: 0.1 
-#[SERVER-LOCAL-ADMIN] LastModified: 
-#[SERVER-LOCAL-ADMIN] Creator: ENTITY_PLAYERSTATE_harry_dude 
-#[SERVER-LOCAL-ADMIN] Sector: 150 -> Sector[150](2, 2, 2) 
-#[SERVER-LOCAL-ADMIN] Name: new ship 
-#[SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_new ship 
-#[SERVER-LOCAL-ADMIN] MinBB(chunks): (-2, -2, -2) 
-#[SERVER-LOCAL-ADMIN] MaxBB(chunks): (2, 2, 2)
-#[SERVER-LOCAL-ADMIN] Blocks: 1 
-#[SERVER-LOCAL-ADMIN] Local-Pos: (8.301939, -3.4012308, -16.057693) 
-#[SERVER-LOCAL-ADMIN] Orientation: (0.0, -0.70710677, 0.0, 0.70710677) 
-#[SERVER-LOCAL-ADMIN] Ship
-
+# Functions to collect ship and station info
 collect_ship_LASTPOSITION() {
 SHIPLASTPOSSTRING="${@:1}"
 echo "This sent to last position $SHIPLASTPOSSTRING"
@@ -487,23 +414,13 @@ collect_ship_CURRENTSECTOR() {
 		echo "no current sector detected"
 	fi
 }
-#collect_ship_NAME() {
-#	SHIPNAMESTRING="${@:1}"
-#	[SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_new ship 
-#	FIRSTUNDERCUTSTRING=${SHIPNAMESTRING#*_}
-#	COLLECTENTITYTYPE=${FIRSTUNDERCUTSTRING%%_*}
-#	COLLECT_SHIP_NAME=${FIRSTUNDERCUTSTRING#*_}
-#	echo "This is entity type from collect_ship_name $COLLECTENTITYTYPE"
-#	echo "This is ship name from collect_ship_name $COLLECT_SHIP_NAME"
-#	lib_myinsert SHIPDB NAME "$COLLECT_SHIP_NAME"	
-#}
-
+# Function for sector change for players
+player_changesector() {
 # Strings to retrieve
-#		SEARCHCHANGE="has players attached. Doing Sector Change for PlS"
+# SEARCHCHANGE="has players attached. Doing Sector Change for PlS"
 # [SERVER] Ship[test ship](132) has players attached. Doing Sector Change for PlS[testdude ; id(3)(1)f(0)]: Sector[4](2, 2, 2) -> Sector[9](1, 2, 2)
 # [SERVER] PlayerCharacter[(ENTITY_PLAYERCHARACTER_testdude)(131)] has players attached. Doing Sector Change for PlS[testdude ; id(3)(1)f(0)]: Sector[9](1, 2, 2) -> Sector[4](2, 2, 2)
-#string="[SERVER] Ship[test ship](132) has players attached. Doing Sector Change for PlS[testdude ; id(3)(1)f(0)]: Sector[4](2, 2, 2) -> Sector[9](1, 2, 2)"; string=${string#*]}; string=${string%%[*}; string="${string#"${string%%[![:space:]]*}"}"; echo ${#string}; echo $string
-player_changesector() {
+# string="[SERVER] Ship[test ship](132) has players attached. Doing Sector Change for PlS[testdude ; id(3)(1)f(0)]: Sector[4](2, 2, 2) -> Sector[9](1, 2, 2)"; string=${string#*]}; string=${string%%[*}; string="${string#"${string%%[![:space:]]*}"}"; echo ${#string}; echo $string
 	echo "Change sector detected for player"
 	SECTORSTRING="${@:1}"
 	CUTSTRING=${SECTORSTRING#*]}
@@ -532,7 +449,6 @@ player_changesector() {
 		CHANGESECTORZ="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
 		echo "sector z $CHANGESECTORZ"
 		CURRENTCHANGESECTOR="$CHANGESECTORX"_"$CHANGESECTORY"_"$CHANGESECTORZ"
-
 		lib_myinsert SECTORDB NAME $CURRENTCHANGESECTOR
 		lib_myinsert SHIPDB NAME $CHANGESHIPNAME
 		lib_myupdate PLAYERDB CURRENTSECTOR $CURRENTCHANGESECTOR NAME $CHANGEPLAYERNAME
@@ -550,5 +466,73 @@ player_changesector() {
 	esac
 
 }
+# Write to the databases from collectinfodb
+collect_writedb() {
+# Usage:  collect_writedb
+	COLLECTENTITYNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT NAME FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
+	COLLECTSHIPTYPE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT TYPE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;")
+	echo "this is the player name from table $COLLECTENTITYNAME"
+	echo "this is the entity type from table $COLLECTSHIPTYPE"
+	case $COLLECTSHIPTYPE in
+	*"Ship"*) 
+		echo "Ship detected for writing to DB" 
+        COLLECTSTOPLOOP=8
+		DBWRITETO=SHIPDB
+	;;
+	*"Astronaut"*) 
+		echo "Astronaut detected for writing to DB" 
+        COLLECTSTOPLOOP=5
+		DBWRITETO=PLAYERDB
+        ;;
+	*"Space Station"*) 
+		echo "Space Station detected for writing to DB" 
+        COLLECTSTOPLOOP=8
+		DBWRITETO=STATIONDB
+        ;;
 
-
+	esac
+	COLLECTLOOP=0
+	while [ "$COLLECTLOOP" -lt "$COLLECTSTOPLOOP" ]
+	do
+	echo "Collect loop is at $COLLECTLOOP"
+	COLLECTVARIABLE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT COLLECTVARIABLE FROM COLLECTINFODB ORDER BY line ASC LIMIT 1;")
+	COLLECTVALUE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT COLLECTVALUE FROM COLLECTINFODB ORDER BY line ASC LIMIT 1;")
+	echo "Sending $COLLECTVALUE to variable $COLLECTVARIABLE to $COLLECTENTITYNAME entry"
+	lib_myupdate $DBWRITETO $COLLECTVARIABLE $COLLECTVALUE NAME $COLLECTENTITYNAME
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "DELETE FROM COLLECTINFODB ORDER BY line ASC LIMIT 1;"
+	let COLLECTLOOP++
+	done
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "DELETE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;"
+}
+#collect_ship_NAME() {
+#	SHIPNAMESTRING="${@:1}"
+#	[SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_new ship 
+#	FIRSTUNDERCUTSTRING=${SHIPNAMESTRING#*_}
+#	COLLECTENTITYTYPE=${FIRSTUNDERCUTSTRING%%_*}
+#	COLLECT_SHIP_NAME=${FIRSTUNDERCUTSTRING#*_}
+#	echo "This is entity type from collect_ship_name $COLLECTENTITYTYPE"
+#	echo "This is ship name from collect_ship_name $COLLECT_SHIP_NAME"
+#	lib_myinsert SHIPDB NAME "$COLLECT_SHIP_NAME"	
+#}
+# Strings to retrieve for Ship and Station info
+#Received after /sector_info not loaded
+#[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SHIP_space ship, sectorPos=(2, 2, 2), type=5, seed=0, lastModifier=, spawner=<admin>, realName=space ship, touched=true, faction=0, pos=(440.3829, 2.4231818, -369.9619), minPos=(-2, -1, -1), maxPos=(1, 0, 1), creatorID=0]
+#Received after /ship_info_name not loaded
+#[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SHIP_test ship, sectorPos=(1, 2, 2), type=5, seed=0, lastModifier=, spawner=ENTITY_PLAYERSTATE_testdude, realName=test ship, touched=true, faction=0, pos=(691.1531, -15.3399725, 0.22808628), minPos=(-2, -2, -2), maxPos=(2, 2, 2), creatorID=0]
+#Received after /ship_info_name loaded
+#[SERVER-LOCAL-ADMIN] [INFO] new ship found in loaded objects 
+#[SERVER-LOCAL-ADMIN] Attached: [PlS[harry_dude ; id(284)(3)f(0)]] 
+#[SERVER-LOCAL-ADMIN] DockedUIDs:  
+#[SERVER-LOCAL-ADMIN] Blocks: 1
+#[SERVER-LOCAL-ADMIN] Mass: 0.1 
+#[SERVER-LOCAL-ADMIN] LastModified: 
+#[SERVER-LOCAL-ADMIN] Creator: ENTITY_PLAYERSTATE_harry_dude 
+#[SERVER-LOCAL-ADMIN] Sector: 150 -> Sector[150](2, 2, 2) 
+#[SERVER-LOCAL-ADMIN] Name: new ship 
+#[SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_new ship 
+#[SERVER-LOCAL-ADMIN] MinBB(chunks): (-2, -2, -2) 
+#[SERVER-LOCAL-ADMIN] MaxBB(chunks): (2, 2, 2)
+#[SERVER-LOCAL-ADMIN] Blocks: 1 
+#[SERVER-LOCAL-ADMIN] Local-Pos: (8.301939, -3.4012308, -16.057693) 
+#[SERVER-LOCAL-ADMIN] Orientation: (0.0, -0.70710677, 0.0, 0.70710677) 
+#[SERVER-LOCAL-ADMIN] Ship

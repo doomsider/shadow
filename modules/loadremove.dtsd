@@ -11,3 +11,8 @@
 #[SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_SHIP_spawnship2.ent
 
 
+#  /save_uid ENTITY_SHIP_spawnship spawnsave
+
+# Spawn a pirate ship
+
+#/spawn_entity spawnsave testspawn 2 2 2 -1 false

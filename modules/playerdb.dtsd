@@ -1,0 +1,34 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# User database will contain all values related to a player
+
+MYSQLDTSD_PLAYERDB_NAME="VARCHAR(25)"
+MYSQLDTSD_PLAYERDB_CONTROLLING="VARCHAR(50) DEFAULT 'Spacesuit'"
+MYSQLDTSD_PLAYERDB_CONTROLTYPE="VARCHAR(50) DEFAULT 'Astronaut'"
+MYSQLDTSD_PLAYERDB_RANK="VARCHAR(25) DEFAULT 'Ensign'"
+MYSQLDTSD_PLAYERDB_CREDITS="BIGINT DEFAULT '0'"
+MYSQLDTSD_PLAYERDB_LASTCORE="INT DEFAULT '0'"
+MYSQLDTSD_PLAYERDB_FACTION="VARCHAR(25)"
+MYSQLDTSD_PLAYERDB_CURRENTIP="VARCHAR(15)"
+MYSQLDTSD_PLAYERDB_LASTUPDATE=TIMESTAMP
+MYSQLDTSD_PLAYERDB_CURRENTSECTOR="VARCHAR(8)"
+MYSQLDTSD_PLAYERDB_LASTPOSITION="VARCHAR(50)"
+MYSQLALTER_PLAYERDB_NAME="UNIQUE INDEX"
+
+LOGSEARCH_player_login="[SERVER] org.schema.game.server.controller.GameServerController"
+
+player_login() {
+    PLAYERLOGINSTRING="${@:1}"
+    # Below is an example of the string received by player_login
+    # [SERVER] org.schema.game.server.controller.GameServerController@478b7093 SPAWNING NEW CHARACTER FOR PlS[Doomsider ; id(4)(1)f(0)]
+    # Cut everything before the first [
+    cutstring=${PLAYERLOGINSTRING##*[}
+    # Cut everything after the ; 
+    cutstring=${cutstring%;*}
+    # Cut trailing space to get the playername that is logging in
+    LOGINPLAYERNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+    echo "$LOGINPLAYERNAME is logging in"
+	lib_myinsert REQUESTINFODB NAME $LOGINPLAYERNAME
+	lib_myupdate REQUESTINFODB TYPE Astronaut NAME $LOGINPLAYERNAME
+    lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $LOGINPLAYERNAME
+}

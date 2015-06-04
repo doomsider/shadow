@@ -45,7 +45,7 @@ player_boarding() {
 		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSTATIONNAME\"		
 	;;
 	*"PlayerCharacter"*)
-		echo "Exiting object detected"
+		echo "Astronaut in space"
 		lib_myupdate PLAYERDB CONTROLLING Spacesuit NAME $PLAYERBOARDING
 		lib_myupdate PLAYERDB CONTROLTYPE Astronaut NAME $PLAYERBOARDING
 	;;

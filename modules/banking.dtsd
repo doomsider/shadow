@@ -7,6 +7,10 @@ CREDITLIMIT=1000000 #Change this number to the number you wish to have the bank 
 MYSQLDTSD_PLAYERDB_BANKCREDITS="BIGINT DEFAULT '0'"
 MYSQLDTSD_PLAYERDB_BANKCOMMAND="VARCHAR(25)  DEFAULT 'none' "
 
+CHATHELP_DEPOSIT="[Deposits money into your server account from your player] USAGE: !DEPOSIT <Amount>"
+CHATHELP_WITHDRAW="[Takes money out of your server account and gives it to your player] USAGE: !WITHDRAW <Amount>"
+CHATHELP_TRANSFER="[Sends money from your bank account to another players account] USAGE: !TRANSFER <Player> <Amount>"
+
 check_bankcommand() {
 # Usage check_bankcommand player
 	PLAYERBANKCOMMAND=$(lib_myvalueretrieve BANKCOMMAND PLAYERDB $1)
@@ -55,7 +59,6 @@ check_bankcommand() {
 
 	esac
 }
-
 chatcommand_DEPOSIT() { 
 # Deposits money into your server account from your player
 # USAGE: !DEPOSIT <Amount>

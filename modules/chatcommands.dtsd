@@ -407,7 +407,6 @@ chatcommand_WHITEADD(){
 	fi
 }
 #######################WORKING############################
-
 # #Functional Commands
 # chatcommand_PLAYERWHITELIST(){
 # #Adds or removes players from your personal whitelist, allowing them to use your jumpgates
@@ -465,8 +464,6 @@ chatcommand_WHITEADD(){
 		# fi
 	# fi
 # }
-
-
 # #Vanilla Admin Commands
 # chatcommand_BANHAMMER(){
 # #Bans the specified player from the server by IP, Name and Account
@@ -544,7 +541,6 @@ chatcommand_WHITEADD(){
 		# done
 	# fi
 # }
-
 # chatcommand_LISTWHITE(){ 
 # #Tells you all the names, IPs and accounts that are whitelisted on the server
 # #USAGE: !LISTWHITE <name/account/ip/all>
@@ -591,5 +587,3 @@ chatcommand_WHITEADD(){
 		# fi			
 	# fi
 # }
-
-

@@ -80,7 +80,8 @@ core_logloop() {
 # This function is testing a solution to the sluggishness of the current_core loop.  Currently it inserts lines into the database while they are received from a log file.
 	log_myerasetable LOGLOOP
 	log_myerasetable REQUESTINFODB
-	log_myerasetable COLLECTINFODB
+	log_myerasetable TRIGGERDB
+#	log_myerasetable COLLECTINFODB
 #	log_myerasetable SEARCHRESULT
 	testloop=0
 	LINEARRAY=0

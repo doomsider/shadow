@@ -5,7 +5,6 @@ CREDITLIMITON=no #Change to "Yes" to use the credit cap on banking. This means a
 CREDITLIMIT=1000000 #Change this number to the number you wish to have the bank limit the credits at.
 
 MYSQLDTSD_PLAYERDB_BANKCREDITS="BIGINT DEFAULT '0'"
-MYSQLDTSD_PLAYERDB_BANKCOMMAND="VARCHAR(25)  DEFAULT 'none' "
 
 CHATHELP_DEPOSIT="[Deposits money into your server account from your player] USAGE: !DEPOSIT <Amount>"
 CHATHELP_WITHDRAW="[Takes money out of your server account and gives it to your player] USAGE: !WITHDRAW <Amount>"
@@ -62,41 +61,45 @@ check_bankcommand() {
 chatcommand_DEPOSIT() { 
 # Deposits money into your server account from your player
 # USAGE: !DEPOSIT <Amount>
+	CONFIGDTSD_CREDITLIMITON=No
+	CONFIGDTSD_CREDITLIMIT=2000000
 	BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
 	PLAYERCREDITS=$(lib_myvalueretrieve CREDITS PLAYERDB $1)
-	if [ "$CONFIGDTSD_CREDITLIMITON" == "Yes" ]
-	then
-		REMAININGCREDITS=$(( $CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS ))
-	else
-		REMAININGCREDITS=$PLAYERCREDITS
-	fi
+	REMAININGCREDITS=$(($CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS))
+	DEPOSITCREDITS=$2
+	echo "Chatcommand deposit collect $BALANCECREDITS as player balance $PLAYERCREDITS current credits before update and a deposit of $DEPOSITCREDITS"
+	echo "Remaining credits possible to deposit are $REMAININGCREDITS if creditlimit is set"
 	if [ "$#" -ne "2" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !DEPOSIT Amount
 	else
-		if [ "$2" = "all" ]
+		if ! test "$DEPOSITCREDITS" -gt 0 2> /dev/null
 		then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTICE BANK - Connecting to servers
-				COMMANDBANK="PLAYERDEPOSIT $REMAININGCREDITS"
-				lib_myupdate PLAYERDB BANKCOMMAND "$COMMANDBANK" NAME $1
-				lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
 		else
-	# Check to make sure a posistive amount was entered
-			if ! test "$2" -gt 0 2> /dev/null
+			if [ "$DEPOSITCREDITS" = "all" ]
+			then 
+				DEPOSITCREDITS=$BALANCECREDITS
+			fi
+			if [ "$CONFIGDTSD_CREDITLIMITON" == "Yes" ]
 			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
-			else 
-	# Run playerinfo command to update playerfile and get the current player credits
-	
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTICE BANK - Connecting to servers
-				COMMANDBANK="PLAYERDEPOSIT $2"
-				lib_myupdate PLAYERDB BANKCOMMAND "$COMMANDBANK" NAME $1
-				lib_myinsert REQUESTINFODB NAME $1
-				lib_myupdate REQUESTINFODB TYPE Astronaut NAME $1
-				lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
-			fi	
-		fi
-	fi
+				TOTALDEPOSIT=$(($BALANCECREDITS + $DEPOSITCREDITS))
+				if [ "$TOTALDEPOSIT" -gt "$CONFIGDTSD_CREDITLIMIT" ]
+				then
+					echo "Credit limit reached"
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You have reached the credit limit. You can deposit $REMAININGCREDITS before you hit the credit limit.
+				else 
+	#				echo "Withdraw $2"
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+					trigger_command player $1 deposit $DEPOSITCREDITS
+				fi
+			else
+	#			echo "Withdraw $2"
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+				trigger_command player $1 deposit $DEPOSITCREDITS
+			fi
+		fi	
+	fi		
 }
 chatcommand_WITHDRAW(){ 
 # Takes money out of your server account and gives it to your player

@@ -33,6 +33,7 @@ LOGSEARCH_collect_ship_LASTPOSITION="[SERVER-LOCAL-ADMIN] Local-Pos:"
 # Function to remove entities
 entity_destroy() {
 # [SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_SHIP_spawnship2.ent
+# [SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_SPACESTATION_destroyme.ent
 # DELETE FROM bar where field1 like '%foo%' 
 # [SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_SPACESTATION_station_2.ent
 # [SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_FLOATINGROCK_1432202013135_2_2_2_0.ent
@@ -140,9 +141,11 @@ collect_player_NAME() {
 	cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
 	COLLECT_PLAYER_NAME="${cutstring%"${cutstring##*[![:space:]]}"}"
 	echo "This was send to collect player name $COLLECT_PLAYER_NAME"
-	lib_myinsert PLAYERDB NAME $COLLECT_PLAYER_NAME	
+	lib_myinsert PLAYERDB NAME $COLLECT_PLAYER_NAME
+	trigger_command check $COLLECT_PLAYER_NAME
 #	collect_writedb
-	check_bankcommand $COLLECT_PLAYER_NAME
+#	check_bankcommand $COLLECT_PLAYER_NAME
+	
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "DELETE FROM REQUESTINFODB ORDER BY line ASC LIMIT 1;"
 }
 # Function for boarding ships and stations

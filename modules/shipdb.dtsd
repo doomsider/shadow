@@ -13,16 +13,17 @@ MYSQLDTSD_SHIPDB_LASTPOSITION="VARCHAR(50)"
 MYSQLDTSD_SHIPDB_FACTION="VARCHAR(25)"
 MYSQLALTER_SHIPDB_NAME="UNIQUE INDEX"
 
-
+EXAMPLESTARTERSHIP="Isanth Type-Zero Cc"
 
 chatcommand_STARTERSHIP(){
 # Gives a Player a designated starter ship
-# USAGE: !STARTERSHIP
+# USAGE: !STARTERSHIP 
+
 	if [ "$#" -ne "1" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !STARTERSHIP
 	else
-		lib_screensend $CONFIGDTSD_MAINSCREEN /ban_name $2
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The name $2 is now banned from the server
+		echo "Startership command executed"
+		trigger_command player $1 startership $EXAMPLESTARTERSHIP
 	fi
 }

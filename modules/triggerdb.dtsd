@@ -19,7 +19,6 @@ trigger_command(){
 	SWITCH=$1
 	NAME=$2
 	COMMAND=$3
-	VALUE=$4
 	case "$SWITCH" in
 	*"ship"*) 
 		echo "switch for ship detected"
@@ -39,6 +38,12 @@ trigger_command(){
 		;;
 			*"startership"*)
 			echo "startership command triggered"
+			lib_myinsert TRIGGERDB NAME $2
+			lib_myupdate TRIGGERDB COMMAND $3 NAME $2
+			lib_myupdate TRIGGERDB VALUE $4 NAME $2
+			lib_myinsert REQUESTINFODB NAME $2
+			lib_myupdate REQUESTINFODB TYPE Astronaut NAME $2
+			lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $2
 		;;
 		esac
 	;;
@@ -78,7 +83,27 @@ trigger_command(){
 				fi
 			;;
 			*"startership"*)
-			echo "startership command released"
+				echo "startership command released"
+				SECTORLOCATION=$(lib_myvalueretrieve CURRENTSECTOR PLAYERDB $2)
+				PLAYERPOS=$(lib_myvalueretrieve LASTPOSITION PLAYERDB $2)
+				PLAYERFAC=$(lib_myvalueretrieve FACTION PLAYERDB $2)
+				if [[ $PLAYERFAC == null ]]
+				then
+					PLAYERFAC=0
+				fi
+				CUTSTRING=${SECTORLOCATION//_/ }
+				ARRAYSTRING=($CUTSTRING)
+				COLLECTSECTORX=${ARRAYSTRING[0]}
+				COLLECTSECTORY=${ARRAYSTRING[1]}
+				COLLECTSECTORZ=${ARRAYSTRING[2]}
+				CUTSTRING=${PLAYERPOS//_/ }
+				ARRAYSTRING=($CUTSTRING)
+				COLLECTPOSX=${ARRAYSTRING[0]}
+				COLLECTPOSY=${ARRAYSTRING[1]}
+				COLLECTPOSZ=${ARRAYSTRING[2]}	
+				echo "startership $VALUE to be spawned in $SECTORLOCATION in pos $PLAYERPOS with faction tag $PLAYERFAC as the name $RANDOM'_startship'"
+				lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity_pos \"$EXAMPLESTARTERSHIP\" $RANDOM'_startership' $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ $COLLECTPOSX $COLLECTPOSY $COLLECTPOSZ $PLAYERFAC false
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where NAME like '$2';"
 			;;
 		esac
 	;;

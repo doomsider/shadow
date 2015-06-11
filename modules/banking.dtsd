@@ -1,8 +1,8 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
 # Banking related functions 
-CREDITLIMITON=no #Change to "Yes" to use the credit cap on banking. This means a player can deposit credits into the bank until they hit the number specified below.
-CREDITLIMIT=1000000 #Change this number to the number you wish to have the bank limit the credits at.
+CONFIGDTSD_CREDITLIMITON=No #Change to "Yes" to use the credit cap on banking. This means a player can deposit credits into the bank until they hit the number specified below.
+CONFIGDTSD_CREDITLIMIT=2000000 #Change this number to the number you wish to have the bank limit the credits at.
 
 MYSQLDTSD_PLAYERDB_BANKCREDITS="BIGINT DEFAULT '0'"
 
@@ -10,59 +10,10 @@ CHATHELP_DEPOSIT="[Deposits money into your server account from your player] USA
 CHATHELP_WITHDRAW="[Takes money out of your server account and gives it to your player] USAGE: !WITHDRAW <Amount>"
 CHATHELP_TRANSFER="[Sends money from your bank account to another players account] USAGE: !TRANSFER <Player> <Amount>"
 
-check_bankcommand() {
-# Usage check_bankcommand player
-	PLAYERBANKCOMMAND=$(lib_myvalueretrieve BANKCOMMAND PLAYERDB $1)
-	echo "here is the players current bank command $PLAYERBANKCOMMAND"
-	PLAYERBANKCOMMAND=($PLAYERBANKCOMMAND)
-	BCOMMAND=${PLAYERBANKCOMMAND[0]}
-	BVALUE=${PLAYERBANKCOMMAND[1]}
-	
-	case "$BCOMMAND" in
-		*"PLAYERDEPOSIT"*)   
-			echo "match found for banking command"
-			BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
-# 			echo $BALANCECREDITS
-			CREDITSTOTAL=$(lib_myvalueretrieve CREDITS PLAYERDB $1)
-			REMAININGCREDITS=$(( $CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS ))
-#			echo "Credits in log $CREDITTOTAL"
-#			echo "Total credits are $CREDITSTOTAL on person and $BALANCECREDITS in bank"
-#			echo "Credits to be deposited $BVALUE"
-			if [ "$CREDITSTOTAL" -ge "$BVALUE" ]
-			then
-				if [ "$CREDITLIMITON" == "Yes" ] && [ $(( BALANCECREDITS + BVALUE )) -gt $CREDITLIMIT ]
-				then
-					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You have reached the credit limit. You can deposit $REMAININGCREDITS before you hit the credit limit.
-				else
-#					echo "enough money detected"
-					NEWBALANCE=$(( $BVALUE + $BALANCECREDITS ))
-					NEWCREDITS=$(( $CREDITSTOTAL - $BVALUE ))
-#				echo "new bank balance is $NEWBALANCE"
-					lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 -$BVALUE
-					lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
-					lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
-					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You successfully deposited $BVALUE credits
-					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Your balance is now $NEWBALANCE
-				# as_user "echo '$1 deposited $2' >> $BANKLOG"
-				fi
-			else
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Insufficient money
-				lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
-				echo "not enough money"
-			fi
-		;;
-		*"none"*)   
-			echo "no banking command"
-			
-		;;
-
-	esac
-}
 chatcommand_DEPOSIT() { 
 # Deposits money into your server account from your player
 # USAGE: !DEPOSIT <Amount>
-	CONFIGDTSD_CREDITLIMITON=No
-	CONFIGDTSD_CREDITLIMIT=2000000
+	
 	BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
 	PLAYERCREDITS=$(lib_myvalueretrieve CREDITS PLAYERDB $1)
 	REMAININGCREDITS=$(($CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS))
@@ -304,3 +255,53 @@ chatcommand_BALANCE(){
 		# fi
 	# fi
 # }
+
+
+#check_bankcommand() {
+# Usage check_bankcommand player
+#	PLAYERBANKCOMMAND=$(lib_myvalueretrieve BANKCOMMAND PLAYERDB $1)
+#	echo "here is the players current bank command $PLAYERBANKCOMMAND"
+#	PLAYERBANKCOMMAND=($PLAYERBANKCOMMAND)
+#	BCOMMAND=${PLAYERBANKCOMMAND[0]}
+#	BVALUE=${PLAYERBANKCOMMAND[1]}
+#	
+#	case "$BCOMMAND" in
+#		*"PLAYERDEPOSIT"*)   
+#			echo "match found for banking command"
+#			BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
+# 			echo $BALANCECREDITS
+#			CREDITSTOTAL=$(lib_myvalueretrieve CREDITS PLAYERDB $1)
+#			REMAININGCREDITS=$(( $CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS ))
+#			echo "Credits in log $CREDITTOTAL"
+#			echo "Total credits are $CREDITSTOTAL on person and $BALANCECREDITS in bank"
+#			echo "Credits to be deposited $BVALUE"
+#			if [ "$CREDITSTOTAL" -ge "$BVALUE" ]
+#			then
+#				if [ "$CREDITLIMITON" == "Yes" ] && [ $(( BALANCECREDITS + BVALUE )) -gt $CREDITLIMIT ]
+#				then
+#					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You have reached the credit limit. You can deposit $REMAININGCREDITS before you hit the credit limit.
+#				else
+#					echo "enough money detected"
+#					NEWBALANCE=$(( $BVALUE + $BALANCECREDITS ))
+#					NEWCREDITS=$(( $CREDITSTOTAL - $BVALUE ))
+#				echo "new bank balance is $NEWBALANCE"
+#					lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 -$BVALUE
+#					lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
+#					lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
+#					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You successfully deposited $BVALUE credits
+#					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Your balance is now $NEWBALANCE
+#				# as_user "echo '$1 deposited $2' >> $BANKLOG"
+#				fi
+#			else
+#				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Insufficient money
+#				lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
+#				echo "not enough money"
+#			fi
+#		;;
+#		*"none"*)   
+#			echo "no banking command"
+#			
+#		;;
+#
+#	esac
+#}

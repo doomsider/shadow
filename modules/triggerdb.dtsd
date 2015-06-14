@@ -19,6 +19,8 @@ trigger_command(){
 	SWITCH=$1
 	NAME=$2
 	COMMAND=$3
+	VALUE="${@:4}"
+	echo "Value is $VALUE"
 	case "$SWITCH" in
 	*"ship"*) 
 		echo "switch for ship detected"
@@ -102,7 +104,7 @@ trigger_command(){
 				COLLECTPOSY=${ARRAYSTRING[1]}
 				COLLECTPOSZ=${ARRAYSTRING[2]}	
 				echo "startership $VALUE to be spawned in $SECTORLOCATION in pos $PLAYERPOS with faction tag $PLAYERFAC as the name $RANDOM'_startship'"
-				lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity_pos \"$EXAMPLESTARTERSHIP\" $RANDOM'_startership' $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ $COLLECTPOSX $COLLECTPOSY $COLLECTPOSZ $PLAYERFAC false
+				lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity_pos \"$VALUE\" $RANDOM'_startership' $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ $COLLECTPOSX $COLLECTPOSY $COLLECTPOSZ $PLAYERFAC false
 				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where NAME like '$2';"
 			;;
 		esac

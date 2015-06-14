@@ -11,9 +11,14 @@ MYSQLDTSD_SHIPDB_MASS="VARCHAR(50)"
 MYSQLDTSD_SHIPDB_CREATOR="VARCHAR(50)"
 MYSQLDTSD_SHIPDB_LASTPOSITION="VARCHAR(50)"
 MYSQLDTSD_SHIPDB_FACTION="VARCHAR(25)"
+MYSQLDTSD_SHIPDB_LASTCONTROLLER="VARCHAR(50)"
+MYSQLDTSD_SHIPDB_LASTUPDATE=TIMESTAMP
 MYSQLALTER_SHIPDB_NAME="UNIQUE INDEX"
 
 EXAMPLESTARTERSHIP="Isanth Type-Zero Cc"
+
+CHATHELP_STARTERSHIP="[Gives a Player a designated starter ship] USAGE: !STARTERSHIP"
+CHATHELP_GARAGE="[Puts a ship away into your garage or retrieves one from the garage] USAGE: !GARAGE <add or remove> <shipname>"
 
 chatcommand_STARTERSHIP(){
 # Gives a Player a designated starter ship
@@ -27,3 +32,29 @@ chatcommand_STARTERSHIP(){
 		trigger_command player $1 startership $EXAMPLESTARTERSHIP
 	fi
 }
+
+chatcommand_GARAGE(){
+# Puts a ship away into your garage or retrieves one from the garage
+# USAGE: !GARAGE <add or remove> <shipname>
+
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GARAGE add or remove shipname
+	else
+		echo "Gargage command executed"
+		SHIPGARAGE="${@:3}"
+		case "$2" in
+		*"add"*) 
+# Ship must be in same sector and must have been boarded last by player
+			
+			echo "Adding ship $SHIPGARAGE to garage"
+		;;
+		*"remove"*) 
+			echo "Removing $SHIPGARAGE from garage"
+		;;
+		esac
+
+#		trigger_command player $1 startership $EXAMPLESTARTERSHIP
+	fi
+}
+

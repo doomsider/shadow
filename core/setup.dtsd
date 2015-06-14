@@ -54,11 +54,19 @@ core_setup() {
 	else
 		FOUNDZIP=NO
 	fi
+	echo "Doing basic test for Dos2unix installation."
+	if command -v dos2unix >/dev/null
+	then
+		echo "dos2unix was found"
+		FOUNDDOS2UNIX=YES
+	else
+		FOUNDDOS2UNIX=NO
+	fi
 	if [[ $FOUNDSCREEN == NO ]] || [[ $FOUNDMYSQL == NO ]] || [[ $FOUNDJAVA == NO ]] || [[ $FOUNDZIP == NO ]] || [[ $FOUNDSTARMADE == NO ]]
 	then
 		if [[ $FOUNDSTARMADE == NO ]]
 		then
-			echo "Please install starmade.  IE with Shadow type - ./shadow.dtsd download"
+			echo "Please install Starmade or copy over and existing install.  IE to install/update with Shadow type - ./shadow.dtsd download"
 		fi
 		if [[ $FOUNDSCREEN == NO ]]
 		then
@@ -66,15 +74,19 @@ core_setup() {
 		fi	
 		if [[ $FOUNDMYSQL == NO ]]
 		then
-			echo "Please install mysql.  IE: for Ubuntu type - sudo apt-get install mysql-server libapache2-mod-auth-mysql php5-mysql"
+			echo "Please install Mysql and set a root password.  IE: for Ubuntu type - sudo apt-get install mysql-server libapache2-mod-auth-mysql php5-mysql"
 		fi
 		if [[ $FOUNDJAVA == NO ]]
 		then
-			echo "Please install java.  IE: for Ubuntu type - sudo apt-get install default-jre"
+			echo "Please install Java.  IE: for Ubuntu type - sudo apt-get install default-jre"
 		fi
 		if [[ $FOUNDZIP == NO ]]
 		then
 			echo "Please install Zip.  IE: for Ubuntu type - sudo apt-get install zip"
+		fi
+		if [[ $FOUNDDOS2UNIX == NO ]]
+		then
+			echo "Please install dos2unix.  IE: for Ubuntu type - sudo apt-get install dos2unix"
 		fi
 		exit
 	fi

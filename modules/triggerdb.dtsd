@@ -34,7 +34,6 @@ lib_trigger() {
 #		fi
 #	done
 }
-
 lib_release() {
 #lib_release <command> <value to search for>""
 	echo "lib_released initiated"
@@ -76,23 +75,45 @@ lib_release() {
 #		fi
 #	done
 }
-
 TRIGGER_playerinfo() {
 	echo "player info triggered"
 	lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
 }
-
 RELEASE_playerinfo() {
 	echo "player info released"
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;"
 }
-
-
+TRIGGER_shipinfo() {
+	echo "ship info triggered"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSHIPNAME\"
+}
+RELEASE_shipinfo() {
+	echo "ship info released"
+	SHIPNAME="${@:2}"
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE3='$SHIPNAME' and VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;"
+}
+TRIGGER_sectorinfo() {
+	echo "sector info triggered"
+	SECTORRELEASESTRING="${@:1}"
+	echo "This sent to trigger_sectorinfo $SECTORRELEASESTRING"
+	VALUERELEASE="${@:2}"
+	SECTORNAME=$1
+	CUTSTRING=${SECTORNAME//_/ }
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	lib_screensend $CONFIGDTSD_MAINSCREEN /sector_info $COLLECTX $COLLECTY $COLLECTZ
+}
+RELEASE_sectorinfo() {
+	echo "sectorinfo command released"
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;"
+	
+}
 TRIGGER_playerdeposit() {
 	echo "deposit command triggered"
 	lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
 }
-
 RELEASE_playerdeposit() {
 	echo "deposit command released"
 	echo "match found for banking command"
@@ -124,7 +145,6 @@ RELEASE_playerdeposit() {
 		echo "not enough money"
 	fi
 }
-
 trigger_command() {
 # Starts player or ship info and stores a command to be triggered later with check when the value wanted is received
 # USAGE: trigger_command <player, ship or check> <name> <command> <value>

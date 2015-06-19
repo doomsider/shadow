@@ -28,7 +28,8 @@ player_login() {
     # Cut trailing space to get the playername that is logging in
     LOGINPLAYERNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
     echo "$LOGINPLAYERNAME is logging in"
-	lib_myinsert REQUESTINFODB NAME $LOGINPLAYERNAME
-	lib_myupdate REQUESTINFODB TYPE Astronaut NAME $LOGINPLAYERNAME
-    lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $LOGINPLAYERNAME
+	lib_trigger playerinfo $LOGINPLAYERNAME Astronaut
+	#	lib_myinsert REQUESTINFODB NAME $LOGINPLAYERNAME
+#	lib_myupdate REQUESTINFODB TYPE Astronaut NAME $LOGINPLAYERNAME
+#   lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $LOGINPLAYERNAME
 }

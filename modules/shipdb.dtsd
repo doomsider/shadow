@@ -42,12 +42,17 @@ chatcommand_GARAGE(){
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GARAGE add or remove shipname
 	else
 		echo "Gargage command executed"
-		SHIPGARAGE="${@:3}"
+		SHIPTOGARAGE="${@:3}"
 		case "$2" in
 		*"add"*) 
 # Ship must be in same sector and must have been boarded last by player
-			
+			SHIPSECTOR=$(lib_myvalueretrieve CURRENTSECTOR SHIPDB $SHIPTOGARAGE)
+			SHIPLASTCONTROLLER=$(lib_myvalueretrieve LASTCONTROLLER SHIPDB $SHIPTOGARAGE)
+			PLAYERSECTOR=$(lib_myvalueretrieve CURRENTSECTOR PLAYERDB $1)
 			echo "Adding ship $SHIPGARAGE to garage"
+			echo "Ship sector is $SHIPSECTOR player sector is $PLAYERSECTOR"
+			echo "Last controller of ship was $SHIPLASTCONTROLLER"
+			
 		;;
 		*"remove"*) 
 			echo "Removing $SHIPGARAGE from garage"

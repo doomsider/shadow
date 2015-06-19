@@ -15,7 +15,7 @@ Install:
 
 Shadow is in testing mode only at the moment.  The current target test system is Ubuntu 14.04.  If you want to test shadow on other operating systems or configurations I cannot offer support during testing.  
 
-Due to issues related to formatting between Windows and Linux and the high number of problems we have had we now use dos2unix on all related .dstd files.  Please issue dos2unix shadow.dtsd command if any formatting issues are seen by shell.
+Due to issues related to formatting between Windows and Linux and the high number of problems we have had we now use dos2unix on all related .dstd files.  Please issue a dos2unix shadow.dtsd command if any formatting issues are seen by shell.
 
 To download a current copy of StarMade if you are doing a fresh install ./shadows.dtsd download
 

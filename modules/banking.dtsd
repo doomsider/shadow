@@ -42,12 +42,12 @@ chatcommand_DEPOSIT() {
 				else 
 	#				echo "Withdraw $2"
 					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
-					trigger_command player $1 deposit $DEPOSITCREDITS
+					lib_trigger playerdeposit $1 $DEPOSITCREDITS
 				fi
 			else
 	#			echo "Withdraw $2"
 				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
-				trigger_command player $1 deposit $DEPOSITCREDITS
+				lib_trigger playerdeposit $1 $DEPOSITCREDITS
 			fi
 		fi	
 	fi		

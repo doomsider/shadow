@@ -2,14 +2,130 @@
 # Shadow .01 Based off of DTSD
 # Triggerdb handles functions that need to wait for additional information from the server to execute
 
-MYSQLDTSD_TRIGGERDB_SWITCH="VARCHAR(50)"
-MYSQLDTSD_TRIGGERDB_NAME="VARCHAR(50)"
-MYSQLDTSD_TRIGGERDB_COMMAND="VARCHAR(50)"
-MYSQLDTSD_TRIGGERDB_VALUE="VARCHAR(50)"
-MYSQLALTER_TRIGGERDB_NAME="UNIQUE INDEX"
+
+MYSQLDTSD_TRIGGERDB_VALUE1="VARCHAR(50)"
+MYSQLDTSD_TRIGGERDB_VALUE2="VARCHAR(50)"
+MYSQLDTSD_TRIGGERDB_VALUE3="VARCHAR(50)"
+
+lib_trigger() {
+#lib_trigger command value name
+#	TRIGGERVAR=( $(compgen -v | grep TRIGGER_ ) )
+	VALUE1=$1
+	VALUE2=$2
+	VALUE3="${@:3}"
+	COMMAND=TRIGGER_$VALUE1
+	echo "This was sent to trigger function for value1  $VALUE1 and value2 $VALUE2 and value3 $VALUE3"
+    mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO TRIGGERDB (VALUE1, VALUE2, VALUE3) VALUES (\"$VALUE1\",\"$VALUE2\",\"$VALUE3\");"
+#	lib_myinsert TRIGGERDB VALUE2 $2
+#	lib_myupdate TRIGGERDB VALUE1 $COMMAND NAME $2
+#	lib_myupdate TRIGGERDB VALUE3 $3 NAME $2
+	eval $COMMAND $VALUE2 $VALUE3
+#	TRIGARRAY=0
+#	while [ -n "${TRIGGERVAR[$TRIGARRAY]+set}" ]
+#	do
+#		if [ "${TRIGGERVAR[$TRIGARRAY]}" = "$COMMAND" ]
+#		then
+#			echo "Command found"				
+#			echo "Here is adjusted command for trigger $COMMAND $@"
+#			eval $COMMAND $@
+#			let TRIGARRAY++
+#		else
+#			let TRIGARRAY++
+#		fi
+#	done
+}
+
+lib_release() {
+#lib_release <command> <value to search for>""
+	echo "lib_released initiated"
+	LIBRELEASESTRING="${@:1}"
+	echo "This sent to lib_release $LIBRELEASESTRING"
+	VALUERELEASE="${@:2}"
+	COMMAND=$1
+	echo "Current command is $COMMAND and value is $VALUERELEASE"
+	CHECKENTRYEXISTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='$1' and VALUE2='$VALUERELEASE' ORDER BY line ASC LIMIT 1;")
+	echo "This is the value of the checkentryexists string $CHECKENTRYEXISTS"
+	if [[ -z "$CHECKENTRYEXISTS" ]]
+	then
+		echo "No match for release $1"
+	else
+		CHECKVALUE1=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='$1' ORDER BY line ASC LIMIT 1;")
+		CHECKVALUE2=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='$1' ORDER BY line ASC LIMIT 1;")
+		COMMAND=RELEASE_$1
+		echo "send this command for lib_release $COMMAND $CHECKVALUE1 $CHECKVALUE2"
+		eval $COMMAND $CHECKVALUE1 $CHECKVALUE2
+	#  DELETE FROM TRIGGERDB where VALUE1='VALUE1' ORDER BY line ASC LIMIT 1
+	fi
+#lib_release value
+#RELEASEVAR=( $(compgen -v | grep RELEASE_ ) )
+#
+#	VALUE2=$2
+#	VALUE3="${@:3}"
+#	COMMAND=RELEASE_$VALUE1
+#	echo "This was sent to trigger function for value1  $VALUE1 and value2 $VALUE2 and value3 $VALUE3"
+#	RELEASEARRAY=0
+#	while [ -n "${RELEASEVAR[$RELEASEARRAY]+set}" ]
+#	do
+#		if [ "${RELEASEVAR[$RELEASEARRAY]}" = "$COMMAND" ]
+#			echo "Command found"				
+#			echo "Here is adjusted command for release $COMMAND $@"
+#			eval $COMMAND $@
+#			let RELEASEARRAY++
+#		else
+#			let RELEASEARRAY++
+#		fi
+#	done
+}
+
+TRIGGER_playerinfo() {
+	echo "player info triggered"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
+}
+
+RELEASE_playerinfo() {
+	echo "player info released"
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;"
+}
 
 
-trigger_command(){
+TRIGGER_playerdeposit() {
+	echo "deposit command triggered"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
+}
+
+RELEASE_playerdeposit() {
+	echo "deposit command released"
+	echo "match found for banking command"
+	BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
+	BVALUE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE2='$1' and VALUE1='playerdeposit' ORDER BY line ASC LIMIT 1;")
+	echo "Credits to be deposited $BVALUE"
+	CREDITSTOTAL=$(lib_myvalueretrieve CREDITS PLAYERDB $1)
+	REMAININGCREDITS=$(( $CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS ))
+	echo "Credits in log $CREDITSTOTAL"
+	echo "Total credits are $CREDITSTOTAL on person and $BALANCECREDITS in bank"
+	if [ "$CREDITSTOTAL" -ge "$BVALUE" ]
+	then
+		echo "enough money detected"
+		NEWBALANCE=$(( $BVALUE + $BALANCECREDITS ))
+		NEWCREDITS=$(( $CREDITSTOTAL - $BVALUE ))
+#		echo "new bank balance is $NEWBALANCE"
+		lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 -$BVALUE
+		lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
+#		lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You successfully deposited $BVALUE credits
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Your balance is now $NEWBALANCE
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='playerdeposit' ORDER BY line ASC LIMIT 1;"
+		DELETE FROM TRIGGERDB where VALUE1='VALUE1' ORDER BY line ASC LIMIT 1
+		#		as_user "echo '$1 deposited $2' >> $BANKLOG"
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $2 GALATIC BANK - Insufficient money
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='playerdeposit' ORDER BY line ASC LIMIT 1;"
+#		lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
+		echo "not enough money"
+	fi
+}
+
+trigger_command() {
 # Starts player or ship info and stores a command to be triggered later with check when the value wanted is received
 # USAGE: trigger_command <player, ship or check> <name> <command> <value>
 # EXAMPLE 1: trigger_command player doomsider deposit 2000

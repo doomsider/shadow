@@ -42,7 +42,7 @@ lib_release() {
 	VALUERELEASE="${@:2}"
 	COMMAND=$1
 	echo "Current command is $COMMAND and value is $VALUERELEASE"
-	CHECKENTRYEXISTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='$1' and VALUE2='$VALUERELEASE' ORDER BY line ASC LIMIT 1;")
+	CHECKENTRYEXISTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='$1' and VALUE2='$VALUERELEASE' or VALUE3='$VALUERELEASE' ORDER BY line ASC LIMIT 1;")
 	echo "This is the value of the checkentryexists string $CHECKENTRYEXISTS"
 	if [[ -z "$CHECKENTRYEXISTS" ]]
 	then
@@ -75,6 +75,36 @@ lib_release() {
 #		fi
 #	done
 }
+TRIGGER_startership() {
+	echo "Startership triggered" 
+	lib_trigger playerinfo $1 Astronaut
+}
+RELEASE_startership() {
+	BLUEPRINT="${@:2}"
+	echo "startership command released and blueprint to spawn is $BLUEPRINT"
+	SECTORLOCATION=$(lib_myvalueretrieve CURRENTSECTOR PLAYERDB $1)
+	PLAYERPOS=$(lib_myvalueretrieve LASTPOSITION PLAYERDB $1)
+	PLAYERFAC=$(lib_myvalueretrieve FACTION PLAYERDB $1)
+	if [[ $PLAYERFAC == null ]]
+	then
+		PLAYERFAC=0
+	fi
+	CUTSTRING=${SECTORLOCATION//_/ }
+	ARRAYSTRING=($CUTSTRING)
+	COLLECTSECTORX=${ARRAYSTRING[0]}
+	COLLECTSECTORY=${ARRAYSTRING[1]}
+	COLLECTSECTORZ=${ARRAYSTRING[2]}
+	CUTSTRING=${PLAYERPOS//_/ }
+	ARRAYSTRING=($CUTSTRING)
+	COLLECTPOSX=${ARRAYSTRING[0]}
+	COLLECTPOSY=${ARRAYSTRING[1]}
+	COLLECTPOSZ=${ARRAYSTRING[2]}	
+	echo "startership $VALUE to be spawned in $SECTORLOCATION in pos $PLAYERPOS with faction tag $PLAYERFAC as the name $RANDOM'_startship'"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity_pos \"$BLUEPRINT\" $RANDOM'_startership' $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ $COLLECTPOSX $COLLECTPOSY $COLLECTPOSZ $PLAYERFAC false
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='startership';"
+
+}
+
 TRIGGER_playerinfo() {
 	echo "player info triggered"
 	lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
@@ -112,7 +142,7 @@ RELEASE_sectorinfo() {
 }
 TRIGGER_playerdeposit() {
 	echo "deposit command triggered"
-	lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
+	lib_trigger playerinfo $1 Astronaut
 }
 RELEASE_playerdeposit() {
 	echo "deposit command released"
@@ -194,6 +224,7 @@ trigger_command() {
 				echo "match found for banking command"
 				BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $2)
 				BVALUE=$(lib_myvalueretrieve VALUE TRIGGERDB $2)
+BVALUE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='playerdeposit' ORDER BY line ASC LIMIT 1;")
 #	 			echo $BALANCECREDITS
 				CREDITSTOTAL=$(lib_myvalueretrieve CREDITS PLAYERDB $2)
 				REMAININGCREDITS=$(( $CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS ))

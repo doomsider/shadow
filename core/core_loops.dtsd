@@ -17,11 +17,9 @@ ONSTART_RUN() {
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
 #	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH resultloop
 }
-
 ONINTERVAL_600_announce() {
 	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat This message brought to you by Shadow pre-alpha"
 }
-
 ONEND_goodbye() {
 echo "Server stopped"
 
@@ -59,7 +57,6 @@ core_mainloop() {
         $func &
     done
 }
-
 core_makesearchdb() {
 # Make the search database whish contains all the search strings and their related functions
 	log_myerasetable SEARCHDB
@@ -75,7 +72,6 @@ core_makesearchdb() {
 		let SEARCHARRAY++
 	done
 }
-
 core_logloop() {
 	USERAMDRIVE=no
 	if [ "$USERAMDRIVE" = "no" ]
@@ -84,7 +80,6 @@ core_logloop() {
 	else
 		WRITEDIR="/dev/shm"
 	fi
-
 # This function is testing a solution to the sluggishness of the current_core loop.  Currently it inserts lines into the database while they are received from a log file.
 	log_myerasetable LOGLOOP
 	log_myerasetable REQUESTINFODB
@@ -152,8 +147,6 @@ core_logloop() {
 	sleep 1
 	done
 }
-
-
 lib_resultloop() {
 # Declare an array of the passed array placeholder
 declare -a PASSEDARRAY=("${!1}")
@@ -179,74 +172,6 @@ ARRAYVALUE=0
 			done
 			
 }
-
-core_resultloopold() {
-
-	while lib_check_server_running
-	do
-		LINESNATCH=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT * from SEARCHRESULT LIMIT 1")
-#		LINESNATCH=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT * from SEARCHRESULT HAVING RESULTSTRING NOT IN ('') limit 1")
-#		echo $LINESNATCH
-# mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "delete from SEARCHRESULT LIMIT 1"
-		if [ -n "${LINESNATCH}" ]
-		then 
-#			echo "Line has value"
-			SNATCHARRAY=($LINESNATCH)
-			SNATCHFUNCTION=${SNATCHARRAY[1]}
-#			echo $SNATCHFUNCTION
-			SNATCHSTRING=${SNATCHARRAY[@]:2}
-#			echo $SNATCHFUNCTION
-#			echo $SNATCHSTRING
-#			eval $SNATCHFUNCTION '$SNATCHSTRING' &
-		fi 
-	done
-}
-
-core_resultloopolder() {
-# The result loop goes through the search results database line by line starting with the last entry
-	echo "Starting result loop"
-	while ! lib_check_server_running
-	do
-	echo "result loop"
-# Get the last line number of the search database
-		LASTLINESEARCH=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SEARCHRESULT ORDER BY line DESC LIMIT 1;")
-# Make sure line has a value if not the script effectively waits for searchresults to exist
-		if [ -z "$LASTLINESEARCH" ]
-		then
-			echo "no value found in DB waiting"
-			sleep 1
-		else
-			echo "this is the last line search $LASTLINESEARCH"
-# Set linesearch to the most recent line if it doesn't exist yet
-			if [ -z "$LINESSEARCHSTART" ]
-			then
-				LINESSEARCHSTART=$LASTLINESEARCH
-#				echo "Start at line $LINESSEARCHSTART"
-			fi	
-#			echo "this is the current search line $LINESSEARCHSTART"
-			while [ "$LASTLINESEARCH" -ge "$LINESSEARCHSTART" ] 
-			do
-#				echo "Line is greater"
-#				echo "Current searchline $LINESSEARCHSTART"
-#				echo "This is the last line of the result log $LASTLINESEARCH"
-# Get the current search string from the DB
-				COMMANDSEARCHSTRING=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select RESULTSTRING from SEARCHRESULT where line='$LINESSEARCHSTART'")
-#				echo $COMMANDSEARCHSTRING
-# Get the current search function from the DB			
-				COMMANDFUNCTION=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select RESULTFUNCTION from SEARCHRESULT where line='$LINESSEARCHSTART'")
-#				echo $COMMANDFUNCTION
-				if [ -n "$COMMANDSEARCHSTRING" ] && [ -n "$COMMANDFUNCTION" ]
-				then
-					eval $COMMANDFUNCTION '$COMMANDSEARCHSTRING' &
-				fi
-			let LINESSEARCHSTART++
-		
-			done	
-		fi
-	done
-
-}
-
 log_mysql_dtsd() {
     MYLOGDUMPCOMMAND="${@:1}"
     lib_myinsert DTSDLOG LOGSTRING $MYLOGDUMPCOMMAND

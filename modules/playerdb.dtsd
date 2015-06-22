@@ -15,7 +15,8 @@ MYSQLDTSD_PLAYERDB_CURRENTSECTOR="VARCHAR(8)"
 MYSQLDTSD_PLAYERDB_LASTPOSITION="VARCHAR(50)"
 MYSQLALTER_PLAYERDB_NAME="UNIQUE INDEX"
 
-LOGSEARCH_player_login="[SERVER] org.schema.game.server.controller.GameServerController"
+LOGSEARCH_player_login="[SERVER][SPAWN] SPAWNING NEW CHARACTER FOR PlS"
+
 
 player_login() {
     PLAYERLOGINSTRING="${@:1}"
@@ -29,7 +30,4 @@ player_login() {
     LOGINPLAYERNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
     echo "$LOGINPLAYERNAME is logging in"
 	lib_trigger playerinfo $LOGINPLAYERNAME Astronaut
-	#	lib_myinsert REQUESTINFODB NAME $LOGINPLAYERNAME
-#	lib_myupdate REQUESTINFODB TYPE Astronaut NAME $LOGINPLAYERNAME
-#   lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $LOGINPLAYERNAME
 }

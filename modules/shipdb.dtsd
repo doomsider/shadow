@@ -29,7 +29,7 @@ chatcommand_STARTERSHIP(){
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !STARTERSHIP
 	else
 		echo "Startership command executed"
-		trigger_command player $1 startership $EXAMPLESTARTERSHIP
+		lib_trigger startership $1 $EXAMPLESTARTERSHIP
 	fi
 }
 
@@ -59,7 +59,6 @@ chatcommand_GARAGE(){
 		;;
 		esac
 
-#		trigger_command player $1 startership $EXAMPLESTARTERSHIP
 	fi
 }
 

@@ -104,7 +104,6 @@ RELEASE_startership() {
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='startership';"
 
 }
-
 TRIGGER_playerinfo() {
 	echo "player info triggered"
 	lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $1
@@ -115,7 +114,8 @@ RELEASE_playerinfo() {
 }
 TRIGGER_shipinfo() {
 	echo "ship info triggered"
-	lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSHIPNAME\"
+	SHIPNAME="${@:2}"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$SHIPNAME\"
 }
 RELEASE_shipinfo() {
 	echo "ship info released"
@@ -174,111 +174,4 @@ RELEASE_playerdeposit() {
 #		lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
 		echo "not enough money"
 	fi
-}
-trigger_command() {
-# Starts player or ship info and stores a command to be triggered later with check when the value wanted is received
-# USAGE: trigger_command <player, ship or check> <name> <command> <value>
-# EXAMPLE 1: trigger_command player doomsider deposit 2000
-# EXAMPLE 2: trigger_command check doomsider
-	TRIGGERCOMMANDSTRING="${@:1}"
-	echo "This was sent to trigger command $TRIGGERCOMMANDSTRING"
-	SWITCH=$1
-	NAME=$2
-	COMMAND=$3
-	VALUE="${@:4}"
-	echo "Value is $VALUE"
-	case "$SWITCH" in
-	*"ship"*) 
-		echo "switch for ship detected"
-	;;
-	*"player"*) 
-		echo "switch for player detected"
-		case "$COMMAND" in
-			*"deposit"*)
-			echo "deposit command triggered"
-			lib_myinsert TRIGGERDB NAME $2
-			lib_myupdate TRIGGERDB COMMAND $3 NAME $2
-			lib_myupdate TRIGGERDB VALUE $4 NAME $2
-#			lib_myupdate PLAYERDB BANKCOMMAND "$COMMANDBANK" NAME $1
-			lib_myinsert REQUESTINFODB NAME $2
-			lib_myupdate REQUESTINFODB TYPE Astronaut NAME $2
-			lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $2
-		;;
-			*"startership"*)
-			echo "startership command triggered"
-			lib_myinsert TRIGGERDB NAME $2
-			lib_myupdate TRIGGERDB COMMAND $3 NAME $2
-			lib_myupdate TRIGGERDB VALUE $4 NAME $2
-			lib_myinsert REQUESTINFODB NAME $2
-			lib_myupdate REQUESTINFODB TYPE Astronaut NAME $2
-			lib_screensend $CONFIGDTSD_MAINSCREEN /player_info $2
-		;;
-		esac
-	;;
-	*"check"*) 
-		echo "switch for check detected"
-		CHECKCOMMAND=$(lib_myvalueretrieve COMMAND TRIGGERDB $2)
-		case "$CHECKCOMMAND" in
-			*"deposit"*)
-				echo "deposit command released"
-				echo "match found for banking command"
-				BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $2)
-				BVALUE=$(lib_myvalueretrieve VALUE TRIGGERDB $2)
-BVALUE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='playerdeposit' ORDER BY line ASC LIMIT 1;")
-#	 			echo $BALANCECREDITS
-				CREDITSTOTAL=$(lib_myvalueretrieve CREDITS PLAYERDB $2)
-				REMAININGCREDITS=$(( $CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS ))
-				echo "Credits in log $CREDITSTOTAL"
-				echo "Total credits are $CREDITSTOTAL on person and $BALANCECREDITS in bank"
-				echo "Credits to be deposited $BVALUE"
-				if [ "$CREDITSTOTAL" -ge "$BVALUE" ]
-				then
-					echo "enough money detected"
-					NEWBALANCE=$(( $BVALUE + $BALANCECREDITS ))
-					NEWCREDITS=$(( $CREDITSTOTAL - $BVALUE ))
-#					echo "new bank balance is $NEWBALANCE"
-					lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $2 -$BVALUE
-					lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $2
-#					lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
-					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $2 GALATIC BANK - You successfully deposited $BVALUE credits
-					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $2 GALATIC BANK - Your balance is now $NEWBALANCE
-					mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where NAME like '$2';"
-			#		as_user "echo '$1 deposited $2' >> $BANKLOG"
-				else
-					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $2 GALATIC BANK - Insufficient money
-					mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where NAME like '$2';"
-#					lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
-					echo "not enough money"
-				fi
-			;;
-			*"startership"*)
-				echo "startership command released"
-				SECTORLOCATION=$(lib_myvalueretrieve CURRENTSECTOR PLAYERDB $2)
-				PLAYERPOS=$(lib_myvalueretrieve LASTPOSITION PLAYERDB $2)
-				PLAYERFAC=$(lib_myvalueretrieve FACTION PLAYERDB $2)
-				if [[ $PLAYERFAC == null ]]
-				then
-					PLAYERFAC=0
-				fi
-				CUTSTRING=${SECTORLOCATION//_/ }
-				ARRAYSTRING=($CUTSTRING)
-				COLLECTSECTORX=${ARRAYSTRING[0]}
-				COLLECTSECTORY=${ARRAYSTRING[1]}
-				COLLECTSECTORZ=${ARRAYSTRING[2]}
-				CUTSTRING=${PLAYERPOS//_/ }
-				ARRAYSTRING=($CUTSTRING)
-				COLLECTPOSX=${ARRAYSTRING[0]}
-				COLLECTPOSY=${ARRAYSTRING[1]}
-				COLLECTPOSZ=${ARRAYSTRING[2]}	
-				echo "startership $VALUE to be spawned in $SECTORLOCATION in pos $PLAYERPOS with faction tag $PLAYERFAC as the name $RANDOM'_startship'"
-				lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity_pos \"$VALUE\" $RANDOM'_startership' $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ $COLLECTPOSX $COLLECTPOSY $COLLECTPOSZ $PLAYERFAC false
-				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where NAME like '$2';"
-			;;
-		esac
-	;;
-	
-	
-	esac
-	
-	
 }

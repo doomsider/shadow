@@ -16,8 +16,14 @@ MYSQLDTSD_PLAYERDB_LASTPOSITION="VARCHAR(50)"
 MYSQLALTER_PLAYERDB_NAME="UNIQUE INDEX"
 
 LOGSEARCH_player_login="[SERVER][SPAWN] SPAWNING NEW CHARACTER FOR PlS"
+LOGSEARCG_player_connected="[SERVER][LOGIN] new client connected"
+
+player_connected() {
+	CONNECTSTRING="${@:1}"
+	echo "This was sent to player connected $CONNECTSTRING"
 
 
+}
 player_login() {
     PLAYERLOGINSTRING="${@:1}"
     # Below is an example of the string received by player_login
@@ -30,4 +36,5 @@ player_login() {
     LOGINPLAYERNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
     echo "$LOGINPLAYERNAME is logging in"
 	lib_trigger playerinfo $LOGINPLAYERNAME Astronaut
+	lib_trigger guestbookip $LOGINPLAYERNAME Spawned
 }

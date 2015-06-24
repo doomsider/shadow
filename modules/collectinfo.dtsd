@@ -2,11 +2,25 @@
 # Shadow .01 Based off of DTSD
 # Database to store info from entities
 
+
+MYSQLDTSD_ADMINLOG_NAME="VARCHAR(25)"
+MYSQLDTSD_ADMINLOG_COMMAND="VARCHAR(50)"
+MYSQLDTSD_ADMINLOG_TIME=TIMESTAMP
+
+MYSQLDTSD_GUESTBOOK_NAME="VARCHAR(25)"
+MYSQLDTSD_GUESTBOOK_STATUS="VARCHAR(20)"
+MYSQLDTSD_GUESTBOOK_IP="VARCHAR(15) DEFAULT 'Not Collected'"
+MYSQLDTSD_GUESTBOOK_TIME=TIMESTAMP
+
 LOGSEARCH_player_boarding="[CONTROLLER][ADD-UNIT] (Server(0)): PlS"
 LOGSEARCH_player_changesector="has players attached. Doing Sector Change for PlS"
 LOGSEARCH_sector_info="[SERVER-LOCAL-ADMIN] LOADED SECTOR INFO: Sector"
 LOGSEARCH_sector_entityinfo="[SERVER-LOCAL-ADMIN] LoadedEntity [uid="
 LOGSEARCH_entity_destroy="[SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY:"
+LOGSEARCH_admin_commandlog="[ADMIN COMMAND]"
+LOGSEARCH_client_connected="[SERVER][LOGIN] new client connected"
+LOGSEARCH_client_logout="[SERVER] SETTING LOGOUT SPAWNING POINT"
+
 
 LOGSEARCH_collect_player_CREDITS="[SERVER-LOCAL-ADMIN] [PL] CREDITS:"
 LOGSEARCH_collect_player_FACTION="[SERVER-LOCAL-ADMIN] [PL] FACTION:"
@@ -23,7 +37,30 @@ LOGSEARCH_collect_ship_CREATOR="[SERVER-LOCAL-ADMIN] Creator:"
 LOGSEARCH_collect_ship_CURRENTSECTOR="[SERVER-LOCAL-ADMIN] Sector:"
 LOGSEARCH_collect_ship_LASTPOSITION="[SERVER-LOCAL-ADMIN] Local-Pos:"
 
-
+admin_commandlog() {
+# [ADMIN COMMAND] GIVEID from RegisteredClient: MewGuy (1) connected: true params: [MewGuy, 123, 100]
+# [ADMIN COMMAND] SECTOR_INFO from org.schema.schine.network.server.AdminLocalClient@75c33175 params: [2, 2, 2]
+	ADMINLOGSTRING="${@:1}"
+	echo "This was sent to admin commandlog $ADMINLOGSTRING"
+	if [[ $ADMINLOGSTRING == *"RegisteredClient"* ]]
+	then
+		echo "Admin command from player sent"
+		cutstring=${ADMINLOGSTRING#*:}
+		cutstring=${cutstring%(*}
+		cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
+		ADMIN_NAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+		cutstring=${ADMINLOGSTRING#*]}
+		cutstring=${cutstring%f*}
+		ADMIN_COMMAND="${cutstring%"${cutstring##*[![:space:]]}"}"
+		cutstring=${ADMINLOGSTRING##*[}
+		cutstring=${cutstring%]*}
+		ADMIN_PARAMETERS=${cutstring//,/}
+		echo "Collected admin name $ADMIN_NAME admin command $ADMIN_COMMAND and admin parameters $ADMIN_PARAMETERS"
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO ADMINLOG (NAME, COMMAND) VALUES (\"$ADMIN_NAME\",\"$ADMIN_COMMAND $ADMIN_PARAMETERS\");"
+	else
+		echo "Admin command from console sent"
+	fi
+}
 # Function to remove entities
 entity_destroy() {
 # [SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_SHIP_spawnship2.ent
@@ -55,6 +92,32 @@ entity_destroy() {
 	esac
 }
 # Functions to collect player info
+client_connected() {
+	CLIENTCONNECTSTRING="${@:1}"
+	cutstring=${CLIENTCONNECTSTRING##*:}
+	CONNECTNAME="${cutstring#"${cutstring%%[![:space:]]*}"}"
+	echo "This was sent to client connected $CLIENTCONNECTSTRING"
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO GUESTBOOK (NAME, STATUS) VALUES (\"$CONNECTNAME\",\"connected\");"
+}
+client_logout() {
+#[SERVER] SETTING LOGOUT SPAWNING POINT OF PlS[MewGuy ; id(15)(1)f(0)] TO (-305.9333, 12.027243, 143.01651)
+	CLIENTLOGOUTSTRING="${@:1}"
+	echo "This was sent to client logout $CLIENTCONNECTSTRING"
+	cutstring=${CLIENTLOGOUTSTRING%;*}
+	cutstring=${cutstring##*[}
+	LOGOUTNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+	CUTSTRING=${CLIENTLOGOUTSTRING##*\(}
+	CUTSTRING=${CUTSTRING%%)*}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+	echo "collected $LOGOUTNAME name with $POSITIONNAME as last position"
+	lib_myupdate PLAYERDB LASTPOSITION $POSITIONNAME NAME $LOGOUTNAME
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO GUESTBOOK (NAME, STATUS) VALUES (\"$LOGOUTNAME\",\"logout\");"
+}
 collect_player_LASTPOSITION() {
 	PLAYERLASTPOSITIONSTRING="${@:1}"
 	CUTSTRING=${PLAYERLASTPOSITIONSTRING#*\(}
@@ -118,6 +181,7 @@ collect_player_CURRENTIP() {
 	echo "This was send to collect player IP $COLLECT_PLAYER_CURRENTIP"
 	COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
 	lib_myupdate PLAYERDB CURRENTIP $COLLECT_PLAYER_CURRENTIP NAME $COLLECTPLAYERNAME
+	lib_release guestbookip $COLLECTPLAYERNAME
 }
 collect_player_NAME() {
 # [SERVER-LOCAL-ADMIN] [PL] Name: Doomsider
@@ -130,6 +194,7 @@ collect_player_NAME() {
 	lib_release playerinfo $COLLECT_PLAYER_NAME
 	lib_release playerdeposit $COLLECT_PLAYER_NAME
 	lib_release startership $COLLECT_PLAYER_NAME
+	
 }
 # Function for boarding ships and stations
 player_boarding() {
@@ -510,6 +575,20 @@ player_changesector() {
 	esac
 
 }
+
+#Temporary holding spot for search strings, these will be placed in their respective functions
+#	SEARCHLOGIN="[SERVER][LOGIN] login received. returning login info for RegisteredClient: "
+#		SEARCHREMOVE="[SERVER][DISCONNECT] Client 'RegisteredClient:"
+#		SEARCHCHAT="[CHAT]"
+#		SEARCHCHANGE="has players attached. Doing Sector Change for PlS"
+#		SEARCHBUY="[BLUEPRINT][BUY]"
+#		SEARCHBOARD="[CONTROLLER][ADD-UNIT]"
+#		SEARCHDOCK="NOW REQUESTING DOCK FROM"
+#		SEARCHUNDOCK="NOW UNDOCKING:"
+#		SEARCHADMIN="[ADMIN COMMAND]"
+#		SEARCHKILL="Announcing kill:"
+#		SEARCHDESTROY="PERMANENTLY DELETING ENTITY:"
+#		SEARCHINIT="SPAWNING NEW CHARACTER FOR PlS"
 #collect_ship_NAME() {
 #	SHIPNAMESTRING="${@:1}"
 #	[SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_new ship 

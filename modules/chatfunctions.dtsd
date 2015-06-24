@@ -2,22 +2,18 @@
 # Shadow .01 Based off of DTSD
 # Location of all the functions related to the chat system
 
-
-
-
 MYSQLDTSD_CHATLOG_SENDER="VARCHAR(25)"
-MYSQLDTSD_CHATLOG_LOGSTRING=TEXT
+MYSQLDTSD_CHATLOG_CHATSTRING=TEXT
 MYSQLDTSD_CHATLOG_RECIEVER="VARCHAR(25)"
 MYSQLDTSD_CHATLOG_LOGDATE=TIMESTAMP
-
-# Below example of Chat string recieved
-# [CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT][sender=Doomsider][receiverType=CHANNEL][receiver=all][message=hey]
 
 LOGSEARCH_chat_log="[CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT]"
 LOGSEARCH_chat_commands="[CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT]"
 
 chat_log() {
     MYCHATSTRING="${@:1}"
+# Below example of Chat string received
+# [CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT][sender=Doomsider][receiverType=CHANNEL][receiver=all][message=hey]
 # String manipulation with parameter expansion is used here to cut at the first = which reveals the sender 
 # followed by the rest of MYCHATSTRING	
 	CUTSTRING=${MYCHATSTRING#*=}
@@ -35,22 +31,15 @@ chat_log() {
 	CUTSTRING=${CUTSTRING#*=}
 # Remove everything after ] to get message
 	MESSAGESTRING=${CUTSTRING%%]*}
-	
-	
 	echo "This was sent to chat log $@"
 	echo "This was the message $MESSAGESTRING"
 	echo "This was sender $SENDERNAME"
 	echo "This was receiver $RECEIVERNAME"
 	echo "This was receivertype $RECEIVERTYPE"
-
 # [CHAT is error value for SENDERNAME
-	log_mysql_chat $MYCHATSTRING
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO CHATLOG (SENDER, CHATSTRING, RECIEVER) VALUES (\"$SENDERNAME\",\"$MESSAGESTRING\",\"$RECEIVERNAME\");"
 }
-	
-#	library_main.dtsd: eval: line 45: `chat_log [CHAT] Server(0) Doomsider: hey test'ng chat
-
 chat_commands() {
-
     MYCHATSTRING="${@:1}"
 # String manipulation with parameter expansion is used here to cut at the first = which reveals the sender 
 # followed by the rest of MYCHATSTRING	
@@ -117,12 +106,5 @@ chat_commands() {
         then
             lib_screensend $CONFIGDTSD_MAINSCREEN /pm $SENDERNAME "Unknown command. Please use !HELP for alist of the commands you can use"
         fi
-	fi
-	
+	fi	
 }
-
-log_mysql_chat() {
-    MYCHATDUMPCOMMAND="${@:1}"
-    lib_myinsert CHATLOG LOGSTRING $MYCHATDUMPCOMMAND
-}
-

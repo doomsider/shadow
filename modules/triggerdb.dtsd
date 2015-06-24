@@ -175,3 +175,13 @@ RELEASE_playerdeposit() {
 		echo "not enough money"
 	fi
 }
+TRIGGER_guestbookip() {
+	echo "guestbookip command triggered"
+}
+RELEASE_guestbookip() {
+	echo "guestbookip command released"
+	PLAYERIP=$(lib_myvalueretrieve CURRENTIP PLAYERDB $1)
+	echo "playername $1 and IP $PLAYERIP was sent to guestbook"
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO GUESTBOOK (NAME, STATUS, IP) VALUES (\"$1\",\"spawned\",\"$PLAYERIP\");"
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$PLAYERNAME' and VALUE1='guestbookip' ORDER BY line ASC LIMIT 1;"
+}

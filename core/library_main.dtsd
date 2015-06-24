@@ -21,7 +21,6 @@ lib_arraycontains() {
     done
     return 1
 }
-
 lib_check_server_running() {
     if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
     then
@@ -34,8 +33,6 @@ lib_check_server_running() {
         return 1 
     fi
 }
-
-
 lib_searchline() {
 # Usage lib_searchline line
 # This generates an array of all the search strings and then tests them against a line from the log
@@ -60,14 +57,11 @@ lib_searchline() {
 		let SEARCHARRAY++
 	done
 }
-
 core_sortsearch () {
 # Temporary core function to test a string against current searches
 	SORTSTRING="${@:2}"
 	lib_searchline $SORTSTRING
 }
-
-
 lib_screenadd() {
 #usage lib_screenadd screenname
 	if ps aux | grep -v grep | grep SCREEN | grep $1 >/dev/null
@@ -80,53 +74,44 @@ lib_screenadd() {
 	echo "starting screen $1"
 	screen -dmS $1
 }
-
 core_screenadd() {
 # Temporary core function 
 	echo "attempting to create screen $2"
 	lib_screenadd $2
 }
-
 lib_screensend() {
 # usage lib_screensend screen command
 	STUFFCOMMAND="${@:2}"
 #	echo "trying to send this command $STUFFCOMMAND to the screen $1"
 	screen -p 0 -S $1 -X stuff "$STUFFCOMMAND"$(printf \\r)
 }
-
 core_screensend() {
 # Temporary core function 
 	STUFFCOMMAND="${@:3}"
 	echo "Sending command"
 	lib_screensend $2 $STUFFCOMMAND
 }
-
 lib_screensendback() {
 # usage lib_screensendback screen command
 	STUFFCOMMAND="${@:2}"
 	echo "trying to send this command $STUFFCOMMAND to the screen $1"
 	screen -p 0 -S $1 -X stuff "$STUFFCOMMAND &"$(printf \\r)
 }
-
 core_screensendback() {
 # Temporary core function 
 	STUFFCOMMAND="${@:3}"
 	echo "Sending command"
 	lib_screensendback $2 $STUFFCOMMAND
 }
-
-
 core_do() {
     STUFFCOMMAND="${@:2}"
     echo "Sending command"
     lib_screensend $CONFIGDTSD_MAINSCREEN $STUFFCOMMAND
 }
-
 lib_pause() {
   local dummy
   read -s -r -p "Press any key to continue..." -n 1 dummy
 }
-
 lib_softstop() {
     if lib_check_server_running
 	then
@@ -149,7 +134,6 @@ lib_softstop() {
     fi
     return 1
 }
-
 lib_hardstop(){
     if lib_check_server_running
 	then
@@ -170,7 +154,6 @@ lib_hardstop(){
 	fi
     return 1
 }
-
 lib_forcestop(){
     if lib_check_server_running 
 	then
@@ -180,7 +163,6 @@ lib_forcestop(){
         return 1
 	fi
 }
-
 core_softstart() {
 # Softstart can only be ran after a softstop
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN >/dev/null
@@ -264,7 +246,6 @@ core_softstop() {
 	lib_screenadd $CONFIGDTSD_MAINSCREEN
 	lib_screensend $CONFIGDTSD_MAINSCREEN $CONFIGDTSD_SCRIPTPATH softstart
 }
-
 lib_function_exists(){
     declare -f -F $1 > /dev/null 2>&1
     return $?
@@ -273,16 +254,4 @@ lib_function_exists(){
 # Create an array with the indirect reference of the current rankcommand and the values command list contains
 #	eval COMMANDLIST=\( \${${CURRENTARRAY}[@]} \)
 
-#Temporary holding spot for search strings, these will be placed in their respective functions
-#	SEARCHLOGIN="[SERVER][LOGIN] login received. returning login info for RegisteredClient: "
-#		SEARCHREMOVE="[SERVER][DISCONNECT] Client 'RegisteredClient:"
-#		SEARCHCHAT="[CHAT]"
-#		SEARCHCHANGE="has players attached. Doing Sector Change for PlS"
-#		SEARCHBUY="[BLUEPRINT][BUY]"
-#		SEARCHBOARD="[CONTROLLER][ADD-UNIT]"
-#		SEARCHDOCK="NOW REQUESTING DOCK FROM"
-#		SEARCHUNDOCK="NOW UNDOCKING:"
-#		SEARCHADMIN="[ADMIN COMMAND]"
-#		SEARCHKILL="Announcing kill:"
-#		SEARCHDESTROY="PERMANENTLY DELETING ENTITY:"
-#		SEARCHINIT="SPAWNING NEW CHARACTER FOR PlS"
+

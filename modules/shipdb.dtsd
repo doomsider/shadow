@@ -15,11 +15,77 @@ MYSQLDTSD_SHIPDB_LASTCONTROLLER="VARCHAR(50)"
 MYSQLDTSD_SHIPDB_LASTUPDATE=TIMESTAMP
 MYSQLALTER_SHIPDB_NAME="UNIQUE INDEX"
 
+MYSQLDTSD_GARAGEDB_PLAYER="VARCHAR(50)"
+MYSQLDTSD_GARAGEDB_SHIP="VARCHAR(50)"
+MYSQLALTER_GARAGEDB_SHIP="UNIQUE INDEX"
+
+
 EXAMPLESTARTERSHIP="Isanth Type-Zero Cc"
 
 CHATHELP_STARTERSHIP="[Gives a Player a designated starter ship] USAGE: !STARTERSHIP"
 CHATHELP_GARAGE="[Puts a ship away into your garage or retrieves one from the garage] USAGE: !GARAGE <add or remove> <shipname>"
 
+
+chatcommand_GARAGE(){
+# Puts a ship away into your garage or retrieves one from the garage
+# USAGE: !GARAGE <add or remove> <shipname>
+	SHIPTOGARAGE="${@:3}"
+	case "$2" in
+	*"add"*) 
+# Ship must be in same sector and must have been boarded last by player
+		if [ "$#" -ne "3" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GARAGE add shipname
+		else
+			echo "Gargage add command executed"
+			SHIPLIST=$(lib_mycolumnretrieve SHIPDB NAME $SHIPTOGARAGE)
+			SHIPLIST=($SHIPLIST)
+			if lib_arraycontains SHIPLIST $SHIPTOGARAGE
+			then
+				echo "Ship found"
+				SHIPSECTOR=$(lib_myvalueretrieve CURRENTSECTOR SHIPDB $SHIPTOGARAGE)
+				SHIPLASTCONTROLLER=$(lib_myvalueretrieve LASTCONTROLLER SHIPDB $SHIPTOGARAGE)
+				PLAYERSECTOR=$(lib_myvalueretrieve CURRENTSECTOR PLAYERDB $1)
+				PLAYERCONTROLTYPE=$(lib_myvalueretrieve CONTROLTYPE PLAYERDB $1)
+				echo "Adding ship $SHIPGARAGE to garage"
+				echo "Ship sector is $SHIPSECTOR player sector is $PLAYERSECTOR"
+				echo "The player is controlling $PLAYERCONTROLTYPE"
+				echo "Last controller of ship was $SHIPLASTCONTROLLER"
+				if [ "$PLAYERSECTOR" = "$SHIPSECTOR" ]
+				then
+					echo "Ship and Player in same sector"
+					if  [ "$SHIPLASTCONTROLLER" = "$1" ]
+					then
+						echo "Ship last controller and player matches"
+						if  [ "$PLAYERCONTROLTYPE" = "Astronaut" ]
+						then
+							echo "Player in space and all conditions met for add to ship garage"
+							lib_screensend $CONFIGDTSD_MAINSCREEN /save_uid \"ENTITY_SHIP_$SHIPTOGARAGE\" \"$SHIPTOGARAGE\"
+							lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid \"ENTITY_SHIP_$SHIPTOGARAGE\"
+							mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO GARAGEDB (SHIP, PLAYER) VALUES (\"$SHIPTOGARAGE\",\"$1\");"
+						else
+							echo "player not in space"
+						fi
+					else
+						echo "Ships last controller was not player"
+					fi
+				else
+				echo "ship and player not in same sector"
+				fi
+			else
+				echo "No shipname found"
+			fi
+		fi
+	;;
+	*"remove"*) 
+		echo "remove from garage executed"
+		SHIPTOREMOVE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "SELECT SHIP FROM GARAGEDB where PLAYER='$1' ORDER BY line ASC LIMIT 1;")
+		echo "here is the ship to remove $SHIPTOREMOVE"
+		lib_trigger garageremove $1 $SHIPTOREMOVE
+	;;
+	esac
+
+}
 chatcommand_STARTERSHIP(){
 # Gives a Player a designated starter ship
 # USAGE: !STARTERSHIP 
@@ -32,33 +98,3 @@ chatcommand_STARTERSHIP(){
 		lib_trigger startership $1 $EXAMPLESTARTERSHIP
 	fi
 }
-
-chatcommand_GARAGE(){
-# Puts a ship away into your garage or retrieves one from the garage
-# USAGE: !GARAGE <add or remove> <shipname>
-
-	if [ "$#" -ne "2" ]
-	then
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GARAGE add or remove shipname
-	else
-		echo "Gargage command executed"
-		SHIPTOGARAGE="${@:3}"
-		case "$2" in
-		*"add"*) 
-# Ship must be in same sector and must have been boarded last by player
-			SHIPSECTOR=$(lib_myvalueretrieve CURRENTSECTOR SHIPDB $SHIPTOGARAGE)
-			SHIPLASTCONTROLLER=$(lib_myvalueretrieve LASTCONTROLLER SHIPDB $SHIPTOGARAGE)
-			PLAYERSECTOR=$(lib_myvalueretrieve CURRENTSECTOR PLAYERDB $1)
-			echo "Adding ship $SHIPGARAGE to garage"
-			echo "Ship sector is $SHIPSECTOR player sector is $PLAYERSECTOR"
-			echo "Last controller of ship was $SHIPLASTCONTROLLER"
-			
-		;;
-		*"remove"*) 
-			echo "Removing $SHIPGARAGE from garage"
-		;;
-		esac
-
-	fi
-}
-

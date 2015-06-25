@@ -98,6 +98,8 @@ client_connected() {
 	CONNECTNAME="${cutstring#"${cutstring%%[![:space:]]*}"}"
 	echo "This was sent to client connected $CLIENTCONNECTSTRING"
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO GUESTBOOK (NAME, STATUS) VALUES (\"$CONNECTNAME\",\"connected\");"
+	lib_myinsert PLAYERDB NAME $CONNECTNAME
+	lib_myupdate PLAYERDB ONLINE y NAME $CONNECTNAME
 }
 client_logout() {
 #[SERVER] SETTING LOGOUT SPAWNING POINT OF PlS[MewGuy ; id(15)(1)f(0)] TO (-305.9333, 12.027243, 143.01651)
@@ -117,6 +119,7 @@ client_logout() {
 	echo "collected $LOGOUTNAME name with $POSITIONNAME as last position"
 	lib_myupdate PLAYERDB LASTPOSITION $POSITIONNAME NAME $LOGOUTNAME
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO GUESTBOOK (NAME, STATUS) VALUES (\"$LOGOUTNAME\",\"logout\");"
+	lib_myupdate PLAYERDB ONLINE n NAME $CONNECTNAME
 }
 collect_player_LASTPOSITION() {
 	PLAYERLASTPOSITIONSTRING="${@:1}"
@@ -194,6 +197,7 @@ collect_player_NAME() {
 	lib_release playerinfo $COLLECT_PLAYER_NAME
 	lib_release playerdeposit $COLLECT_PLAYER_NAME
 	lib_release startership $COLLECT_PLAYER_NAME
+	lib_release garageremove $COLLECT_PLAYER_NAME
 	
 }
 # Function for boarding ships and stations

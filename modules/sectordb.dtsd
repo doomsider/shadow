@@ -10,6 +10,10 @@ MYSQLALTER_SECTORDB_NAME="UNIQUE INDEX"
 
 LOGSEARCH_sector_initiallogin="[SERVER][GALAXY] SENDING SYSTEM BACK TO CLIENT"
 
+UNIVERSECENTER="2_2_2" #Set the center of the universe boarder
+UNIVERSERADIUS=50 #Set the radius of the universe boarder around 
+UNIVERSEBOARDER=YES
+
 sector_initiallogin() {
 	SECTORINITIALLOGINSTRING="${@:1}"
 	echo "This was send to initial login $SECTORINITIALLOGINSTRING"
@@ -21,4 +25,80 @@ sector_initiallogin() {
 	COLLECTZ=${COLLECTSECTORARRAY[2]}
 	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
 	lib_trigger sectorinfo $SECTORNAME Sector
+}
+
+
+universeboarder() {
+# Universeboarder set limits and wraps players around once they have reached then end of the universe
+# Usage: universeboarder x y z name
+	if [ "$UNIVERSEBOARDER" = "YES" ]
+	then
+		UCENTER=$UNIVERSECENTER
+		echo "UCENTER $UCENTER"
+		UCENTER=${UCENTER//_/ }
+		UCENTER=($UCENTER)
+		XCENTER=${UCENTER[0]}
+		YCENTER=${UCENTER[1]}
+		ZCENTER=${UCENTER[2]}
+		XCOORD=$1
+		YCOORD=$2
+		ZCOORD=$3
+		XULIMIT=$(($XCENTER + $UNIVERSERADIUS))
+		YULIMIT=$(($YCENTER + $UNIVERSERADIUS))
+		ZULIMIT=$(($ZCENTER + $UNIVERSERADIUS))
+		XLLIMIT=$(($XCENTER - $UNIVERSERADIUS))
+		YLLIMIT=$(($YCENTER - $UNIVERSERADIUS))
+		ZLLIMIT=$(($ZCENTER - $UNIVERSERADIUS))
+		XUEXCESS=$(($XULIMIT + 2))
+		YUEXCESS=$(($YULIMIT + 2))
+		ZUEXCESS=$(($ZULIMIT + 2))
+		XLEXCESS=$(($XLLIMIT - 2))
+		YLEXCESS=$(($YLLIMIT - 2))
+		ZLEXCESS=$(($ZLLIMIT - 2))
+		echo "Universe board active with XCENTER $XCENTER YCENTER $YCENTER ZCENTER $ZCENTER XCOORD $XCOORD YCOORD $YCOORD ZCOORD $ZCOORD XULIMIT $XULIMIT YULIMIT $YULIMIT ZULIMIT $ZULIMIT"
+		echo "XLLIMIT $XLLIMIT YLLIMIT $YLLIMIT ZLLIMIT $ZLLIMIT XUEXCESS $XUEXCESS YUEXCESS $YUEXCESS ZUEXCESS $ZUEXCESS XLEXCESS $XLEXCESS YLEXCESS $YLEXCESS ZLEXCESS $ZLEXCESS"
+		if [ "$XCOORD" -ge "$XULIMIT" ] || [ "$YCOORD" -ge "$YULIMIT" ] || [ "$ZCOORD" -ge "$ZULIMIT" ] || [ "$XCOORD" -lt "$XLLIMIT" ] || [ "$YCOORD" -lt "$YLLIMIT" ] || [ "$ZCOORD" -lt "$ZLLIMIT" ]
+		then
+# X-Coord Checking
+			if [ "$XCOORD" -ge "$XULIMIT" ]
+			then
+				NEWX=$(($XCOORD - $XULIMIT + $XLLIMIT))
+			elif [ "$XCOORD" -lt "$XLLIMIT" ]
+			then
+				NEWX=$(($XCOORD - $XLLIMIT + $XULIMIT))
+			else
+				NEWX=$XCOORD
+			fi
+# Y-Coord checking
+			if [ "$YCOORD" -ge "$YULIMIT" ]
+			then
+				NEWY=$(($YCOORD - $YULIMIT + $YLLIMIT))
+			elif [ "$YCOORD" -lt "$YLLIMIT" ]
+			then
+				NEWY=$(($YCOORD - $YLLIMIT + $YULIMIT))
+			else
+				NEWY=$YCOORD
+			fi
+# Z-Coord Checking
+			if [ "$ZCOORD" -ge "$ZULIMIT" ]
+			then
+				NEWZ=$(($ZCOORD - $ZULIMIT + $ZLLIMIT))
+			elif [ "$ZCOORD" -lt "$ZLLIMIT" ]
+			then
+				NEWZ=$(($ZCOORD - $ZLLIMIT + $ZULIMIT))
+			else
+				NEWZ=$ZCOORD
+			fi
+# Checks if they are too far outside of the boarder, and overrides the previous checks if they are
+			if [ "$XCOORD" -ge "$XUEXCESS" ] || [ "$XCOORD" -le "$XLEXCESS" ] || [ "$YCOORD" -ge "$YUEXCESS" ] || [ "$YCOORD" -le "$YLEXCESS" ] || [ "$ZCOORD" -ge "$ZUEXCESS" ] || [ "$ZCOORD" -le "$ZLEXCESS" ]
+			then
+				NEWX=$XCENTER
+				NEWY=$YCENTER
+				NEWZ=$ZCENTER
+			fi
+		sleep 4
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /pm $4 You have warped to the opposite side of the universe! It appears you cant go further out...
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $4 $NEWX $NEWY $NEWZ
+		fi
+	fi
 }

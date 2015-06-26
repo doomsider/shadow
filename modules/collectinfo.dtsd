@@ -576,6 +576,7 @@ player_changesector() {
 		lib_myinsert REQUESTINFODB NAME "$CURRENTCHANGESECTOR"
 		lib_myupdate REQUESTINFODB TYPE "SECTOR" NAME "$CURRENTCHANGESECTOR"
 		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_info $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ
+		universeboarder $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
 	;;
 	*"SpaceStation"*) 
 		echo "Station changed sector with player"

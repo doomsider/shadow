@@ -1,0 +1,176 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions for bounty system
+
+MYSQLDTSD_BOUNTYDB_NAME="VARCHAR(50)"
+MYSQLDTSD_BOUNTYDB_BOUNTY="BIGINT DEFAULT '0'"
+MYSQLDTSD_BOUNTYDB_DEATHS="BIGINT DEFAULT '0'"
+MYSQLDTSD_BOUNTYDB_KILLS="BIGINT DEFAULT '0'"
+MYSQLDTSD_BOUNTYDB_KILLEDBY="VARCHAR(50) DEFAULT 'none'"
+MYSQLDTSD_BOUNTYDB_LASTKILL="VARCHAR(50) DEFAULT 'none'"
+MYSQLALTER_BOUNTYDB_NAME="UNIQUE INDEX"
+
+MYSQLDTSD_KILLDB_KILLER="VARCHAR(50)"
+MYSQLDTSD_KILLDB_VICTIM="VARCHAR(50)"
+MYSQLDTSD_KILLDB_KILLTIME=TIMESTAMP
+
+MYSQLDTSD_BOUNTYLOG_WANTED="VARCHAR(50)"
+MYSQLDTSD_BOUNTYLOG_AMOUNT="BIGINT"
+MYSQLDTSD_BOUNTYLOG_POSTER="VARCHAR(50)"
+MYSQLDTSD_BOUNTYLOG_TIME=TIMESTAMP
+
+LOGSEARCH_kill_message="Server(0) PlS"
+
+CHATHELP_POSTBOUNTY="[Places a bounty on the player specified, by taking the specified amount of credits from your account USAGE: !POSTBOUNTY <Player> <Amount>"
+CHATHELP_LISTBOUNTY="[Lists all players with bounties, and how much they are worth] USAGE: !LISTBOUNTY"
+
+kill_message() {
+#String to collect
+#Server(0) PlS[Victim ; id(154)(2)f(0)] Announcing kill: PlayerCharacter[(ENTITY_PLAYERCHARACTER_Murder)(153)] killed PlS[Victim ; id(154)(2)f(0)]
+#Server(0) PlS[Victim ; id(154)(2)f(0)] Announcing kill: Ship[killership](257) killed PlS[Victim ; id(154)(2)f(0)]
+    KILLSTRING="${@:1}"
+	echo "This was sent to killstring $KILLSTRING"
+	if [[ $KILLSTRING == *"Announcing kill"* ]]
+	then
+		echo "Kill string found"
+		cutstring=${KILLSTRING#*:}
+		cutstring=${cutstring%%[*}
+		KILLTYPE="${cutstring#"${cutstring%%[![:space:]]*}"}"
+		echo "The was the kill type collected $KILLTYPE"
+		cutstring=${KILLSTRING##*[}
+		cutstring=${cutstring%;*}
+		VICTIMNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+		echo "This was the victim $VICTIMNAME"
+		case "$KILLTYPE" in 
+		*PlayerCharacter*)
+			echo "Player killed in personal combat"
+			cutstring=${KILLSTRING##*_}
+			KILLER=${cutstring%%)*}
+			echo "The killer is $KILLER"
+			lib_myinsert BOUNTYDB NAME $KILLER
+			lib_myupdate BOUNTYDB LASTKILL $VICTIMNAME NAME $KILLER
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET KILLS = KILLS + 1 WHERE NAME = '$KILLER';"
+			lib_myinsert BOUNTYDB NAME $VICTIMNAME
+			lib_myupdate BOUNTYDB KILLEDBY $KILLER NAME $VICTIMNAME
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET DEATHS = DEATHS + 1 WHERE NAME = '$VICTIMNAME';"
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO KILLDB (KILLER, VICTIM) VALUES (\"$KILLER\",\"$VICTIMNAME\");"
+			BOUNTYONVICTIM=$(lib_myvalueretrieve BOUNTY BOUNTYDB $VICTIMNAME)
+			if [ "$BOUNTYONVICTIM" -gt "0" ]
+			then
+				echo "bounty found"
+				BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $KILLER)
+				NEWBALANCE=$(( $BALANCECREDITS + $BOUNTYONVICTIM ))
+				echo "bounty of $BOUNTYONVICTIM added to existing $BALANCECREDITS for a new total of $NEWBALANCE"
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET BOUNTY='0' WHERE NAME='$VICTIMNAME';"
+				lib_myupdate PLAYERDB BANKCREDITS $NEWBALANCE NAME $KILLER
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $KILLER GALACTIC COMMAND - You have been awarded $BOUNTYONVICTIM credits for killing $VICTIMNAME
+				
+			else
+				echo "no bounty on victim"
+			fi
+		;;
+		*Ship*)
+			echo "Player destroyed by a ship"
+			cutstring=${KILLSTRING#*:}
+			cutstring=${cutstring%%]*}
+			KILLERSHIP=${cutstring#*[}
+			 -sNe "select NAME from PLAYERDB where CONTROLLING='$KILLERSHIP' ORDER BY LASTUPDATE DESC LIMIT 1;"
+			# Order by lastupdate desc is used to return the newest result to the last person to be updated.  This prevents players that have been disconnect and still control the ship in the database erroneously 
+			KILLER=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select NAME from PLAYERDB where CONTROLLING='$KILLERSHIP' ORDER BY LASTUPDATE DESC LIMIT 1;")
+			echo "The killing ship is $KILLERSHIP and is piloted by $KILLER"
+			lib_myinsert BOUNTYDB NAME $KILLER
+			lib_myupdate BOUNTYDB LASTKILL $VICTIMNAME NAME $KILLER
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET KILLS = KILLS + 1 WHERE NAME = '$KILLER';"
+			lib_myinsert BOUNTYDB NAME $VICTIMNAME
+			lib_myupdate BOUNTYDB KILLEDBY $KILLER NAME $VICTIMNAME
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET DEATHS = DEATHS + 1 WHERE NAME = '$VICTIMNAME';"
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO KILLDB (KILLER, VICTIM) VALUES (\"$KILLER\",\"$VICTIMNAME\");"
+			BOUNTYONVICTIM=$(lib_myvalueretrieve BOUNTY BOUNTYDB $VICTIMNAME)
+			if [ "$BOUNTYONVICTIM" -gt "0" ]
+			then
+				echo "bounty found"
+				BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $KILLER)
+				NEWBALANCE=$(( $BALANCECREDITS + $BOUNTYONVICTIM ))
+				echo "bounty of $BOUNTYONVICTIM added to existing $BALANCECREDITS for a new total of $NEWBALANCE"
+				lib_myupdate PLAYERDB BANKCREDITS $NEWBALANCE NAME $KILLER
+				lib_myupdate BOUNTYDB BOUNTY 0 NAME $VICTIMNAME
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $KILLER GALACTIC COMMAND - You have been awarded $BOUNTYONVICTIM credits for killing $VICTIMNAME
+			else
+				echo "no bounty on victim"
+			fi
+		;;
+		esac
+	fi
+}
+#Bounty Commands
+chatcommand_POSTBOUNTY(){ 
+#Places a bounty on the player specified, by taking the specified amount of credits from your account.
+#USAGE: !POSTBOUNTY <Player> <Amount>
+	if [ "$#" -ne "3" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !POSTBOUNTY player amount
+	else
+		BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
+		echo "Current bank credits are $BALANCECREDITS"
+		if [ "$1" = "$2" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC COMMAND - You cannot post a bounty on yourself
+		else
+			if ! test "$3" -gt 0 2> /dev/null
+			then
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
+			else
+				PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
+				PLAYERLIST=($PLAYERLIST)
+				if lib_arraycontains PLAYERLIST $2
+				then
+					if [ "$3" -le "$BALANCECREDITS" ]
+					then
+						OLDBOUNTY=$(lib_myvalueretrieve BOUNTY BOUNTYDB $2)
+						echo "The old bounty is $OLDBOUNTY"
+						CURRENTBOUNTY=$(( $OLDBOUNTY + $3 ))
+						echo "The current new bounty will be $CURRENTBOUNTY"
+						NEWBALANCE=$(( $BALANCECREDITS - $3 ))
+						lib_myupdate BOUNTYDB BOUNTY $CURRENTBOUNTY NAME $2
+						lib_myupdate PLAYERDB BANKCREDITS $NEWBALANCE NAME $1
+						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO BOUNTYLOG (WANTED, AMOUNT, POSTER) VALUES (\"$2\",\"$3\",\"$1\");"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC COMMAND - You have placed a bounty of $3 on $2
+					else 
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Not enough credits in your bank account. Please use !DEPOSIT Amount
+					fi	
+				else
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC COMMAND - This person does not exist
+				fi
+			fi
+		fi	
+	fi
+}
+chatcommand_LISTBOUNTY(){ 
+#Lists all players with bounties, and how much they are worth
+#USAGE: !LISTBOUNTY
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !LISTBOUNTY
+	else
+		BOUNTYLIST=$(lib_mycolumnretrieve BOUNTYDB NAME)
+		BOUNTYLIST=($BOUNTYLIST)
+		BOUNTYTOTAL=${#BOUNTYLIST[@]}
+		BARRAY=0
+		BOUNTYFOUND=NO
+		while [ -n "${BOUNTYLIST[$BARRAY]+set}" ] 
+		do
+			BOUNTYNAME=${BOUNTYLIST[$BARRAY]}
+			BOUNTYRETRIEVE=$(lib_myvalueretrieve BOUNTY BOUNTYDB $BOUNTYNAME)
+			if [ "$BOUNTYRETRIEVE" -ne "0" ]
+			then
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $BOUNTYNAME - $BOUNTYRETRIEVE credits
+				BOUNTYFOUND=YES
+			fi
+			let BARRAY++
+		done
+		if [ "$BOUNTYFOUND" = "NO" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No bounties detected
+		fi
+	fi
+}

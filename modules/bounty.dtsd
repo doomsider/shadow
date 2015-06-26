@@ -124,6 +124,7 @@ chatcommand_POSTBOUNTY(){
 				PLAYERLIST=($PLAYERLIST)
 				if lib_arraycontains PLAYERLIST $2
 				then
+					lib_myinsert BOUNTYDB NAME $2
 					if [ "$3" -le "$BALANCECREDITS" ]
 					then
 						OLDBOUNTY=$(lib_myvalueretrieve BOUNTY BOUNTYDB $2)

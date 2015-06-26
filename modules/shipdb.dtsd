@@ -33,7 +33,7 @@ chatcommand_GARAGE(){
 	case "$2" in
 	*"add"*) 
 # Ship must be in same sector and must have been boarded last by player
-		if [ "$#" -ne "3" ]
+		if [ "$#" -lt "3" ]
 		then
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GARAGE add shipname
 		else

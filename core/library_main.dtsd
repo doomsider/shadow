@@ -5,33 +5,34 @@
 DTSDHELP_restart="\nRestart usage: shadow.dtsd restart\nSoft restart for server.  For a hard reset\n"
 
 lib_arraycontains() {
-    [[ -n "$1" && -n "$2" ]] || {
-        echo "usage: lib_arraycontains <array> <value>"
-        echo "Returns 0 if array contains value, 1 otherwise"
-        return 2
-    }
-    eval 'local values=("${'$1'[@]}")'
-    local element
-    for element in "${values[@]}"
-    do
-        if [[ "$element" == "$2" ]]
-        then
-            return 0
-        fi
-    done
-    return 1
+# Checks to see if an array contains a string
+# usage: lib_arraycontains <array> <value> 
+# Returns 0 if array contains value, 1 otherwise
+	[[ -n "$1" && -n "$2" ]] || {
+	return 2
+	}
+	eval 'local values=("${'$1'[@]}")'
+	local element
+	for element in "${values[@]}"
+	do
+		if [[ "$element" == "$2" ]]
+		then
+			return 0
+		fi
+	done
+	return 1
 }
 lib_check_server_running() {
-    if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
-    then
-        SERVERSTATUS=RUNNING
- #      echo running
-        return 0
-    else
-        SERVERSTATUS=STOPPED
-#       echo stopped
-        return 1 
-    fi
+	if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
+	then
+		SERVERSTATUS=RUNNING
+		#echo running
+		return 0
+	else
+		SERVERSTATUS=STOPPED
+		#echo stopped
+		return 1
+	fi
 }
 lib_searchline() {
 # Usage lib_searchline line
@@ -44,76 +45,60 @@ lib_searchline() {
 		SEARCHSTRING=${!CURRENTSEARCH}
 		SEARCHFUNCTION=${CURRENTSEARCH#*_}
 		SEARCHCOMMAND="${@:1}"
-#		echo "here is the search command $SEARCHCOMMAND"
-		case "$SEARCHCOMMAND" in 
-            *"$SEARCHSTRING"*)   
-                echo "match found"
-                eval $SEARCHFUNCTION '$SEARCHCOMMAND' &
+		#echo "here is the search command $SEARCHCOMMAND"
+		case "$SEARCHCOMMAND" in
+			*"$SEARCHSTRING"*)
+				echo "match found"
+				eval $SEARCHFUNCTION '$SEARCHCOMMAND' &
 # Not sure if there should be a break here, may save some time after a match has been found
-            ;;
-		esac
-#	echo "Search function is $SEARCHFUNCTION"
-#	echo "Search string is ${!CURRENTSEARCH}"
+			;;
+			esac
+		#echo "Search function is $SEARCHFUNCTION"
+		#echo "Search string is ${!CURRENTSEARCH}"
 		let SEARCHARRAY++
 	done
-}
-core_sortsearch () {
-# Temporary core function to test a string against current searches
-	SORTSTRING="${@:2}"
-	lib_searchline $SORTSTRING
 }
 lib_screenadd() {
 #usage lib_screenadd screenname
 	if ps aux | grep -v grep | grep SCREEN | grep $1 >/dev/null
-    then
+	then
 		echo "Screen(s) identified by $1 detected and will be closed"
-		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $1 | awk '{print $2}') )   
-		echo "Trying to kill these ${PIDS[@]}"		
+		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $1 | awk '{print $2}') )
+		echo "Trying to kill these ${PIDS[@]}"
 		kill ${PIDS[@]}
 	fi
 	echo "starting screen $1"
 	screen -dmS $1
 }
-core_screenadd() {
-# Temporary core function 
-	echo "attempting to create screen $2"
-	lib_screenadd $2
-}
 lib_screensend() {
 # usage lib_screensend screen command
 	STUFFCOMMAND="${@:2}"
-#	echo "trying to send this command $STUFFCOMMAND to the screen $1"
+	#echo "trying to send this command $STUFFCOMMAND to the screen $1"
 	screen -p 0 -S $1 -X stuff "$STUFFCOMMAND"$(printf \\r)
 }
-core_screensend() {
-# Temporary core function 
-	STUFFCOMMAND="${@:3}"
-	echo "Sending command"
-	lib_screensend $2 $STUFFCOMMAND
-}
 lib_screensendback() {
-# usage lib_screensendback screen command
+	# usage lib_screensendback screen command
 	STUFFCOMMAND="${@:2}"
-	echo "trying to send this command $STUFFCOMMAND to the screen $1"
+	#echo "trying to send this command $STUFFCOMMAND to the screen $1"
 	screen -p 0 -S $1 -X stuff "$STUFFCOMMAND &"$(printf \\r)
 }
 core_screensendback() {
-# Temporary core function 
+	# Temporary core function
 	STUFFCOMMAND="${@:3}"
 	echo "Sending command"
 	lib_screensendback $2 $STUFFCOMMAND
 }
 core_do() {
-    STUFFCOMMAND="${@:2}"
-    echo "Sending command"
-    lib_screensend $CONFIGDTSD_MAINSCREEN $STUFFCOMMAND
+	STUFFCOMMAND="${@:2}"
+	echo "Sending command"
+	lib_screensend $CONFIGDTSD_MAINSCREEN $STUFFCOMMAND
 }
 lib_pause() {
-  local dummy
-  read -s -r -p "Press any key to continue..." -n 1 dummy
+	local dummy
+	read -s -r -p "Press any key to continue..." -n 1 dummy
 }
 lib_softstop() {
-    if lib_check_server_running
+	if lib_check_server_running
 	then
 # Issue Chat and a command to the server to shutdown
 		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Server Going down be back in a bit."
@@ -127,15 +112,15 @@ lib_softstop() {
 				sleep 1
 			else
 				echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
-                return 1
+				return 1
 			fi
 		done
-        return 0
-    fi
-    return 1
+		return 0
+	fi
+	return 1
 }
 lib_hardstop(){
-    if lib_check_server_running
+	if lib_check_server_running
 	then
 		echo $CONFIGDTSD_SERVICE is taking too long to close and may be frozen. Forcing shut down
 		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
@@ -147,39 +132,39 @@ lib_hardstop(){
 				sleep 1
 			else
 				echo $CONFIGDTSD_SERVICE had to be force shut down
-                return 1
+			return 1
 			fi
 		done
-        return 0
+		return 0
 	fi
-    return 1
+	return 1
 }
 lib_forcestop(){
-    if lib_check_server_running 
+	if lib_check_server_running
 	then
 		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
-		kill -9 $PID			
+		kill -9 $PID
 		echo $CONFIGDTSD_SERVICE took too long to close. $CONFIGDTSD_SERVICE had to be killed
-        return 1
+		return 1
 	fi
 }
 core_softstart() {
 # Softstart can only be ran after a softstop
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN >/dev/null
-    then
+	then
 		echo "Screen(s) identified by $CONFIGDTSD_DTSDSCREEN detected and will be closed"
-		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN | awk '{print $2}') )   
-        echo "Trying to kill these ${PIDS[@]}"		
-        kill ${PIDS[@]}
+		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN | awk '{print $2}') )
+		echo "Trying to kill these ${PIDS[@]}"
+		kill ${PIDS[@]}
 	fi
 	lib_screenadd $CONFIGDTSD_DTSDSCREEN
 	echo "re-starting server"
 	if lib_check_server_running
-	#	if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
+#	if ps aux | grep $CONFIGDTSD_SERVICE | grep -v grep | grep -v tee | grep port:$CONFIGDTSD_PORT  >/dev/null
 	then
 		echo "Tried to start but $CONFIGDTSD_SERVICE was already running!"
 	else
-		echo "$CONFIGDTSD_SERVICE was not running... starting."	
+		echo "$CONFIGDTSD_SERVICE was not running... starting."
 # For java to launch Starmade it must be launched in the correct directory
 		lib_screensend $CONFIGDTSD_MAINSCREEN cd $CONFIGDTSD_INSTALLPATH/StarMade
 # Start script which will create a shell that is logged for all output.  This is useful to see the commands that are given.
@@ -187,15 +172,8 @@ core_softstart() {
 		lib_screensend $CONFIGDTSD_MAINSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log
 		lib_screensend $CONFIGDTSD_DTSDSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_SCRIPTSCREEN.log
 		lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
-# 	lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar "$CONFIGDTSD_INSTALLPATH"StarMade/$CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
-
-# Backgrounding runlog is disabled in testing so you can stop it and restart it from the dtsdscreen with mainloop
-#		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mainloop
-#		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
-#		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mainloop
-	fi  
-
+	fi
 }
 core_softreset() {
 	if lib_check_server_running
@@ -214,44 +192,39 @@ core_softreset() {
 			else
 				echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
 			fi
-		done			
+		done
 	fi
 # Main screen must be killed off to ensure no running process left
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null
-    then
+	then
 		echo "Screen(s) identified by $CONFIGDTSD_MAINSCREEN detected and will be closed"
-		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN | awk '{print $2}') )   
-		echo "Trying to kill these ${PIDS[@]}"		
+		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN | awk '{print $2}') )
+		echo "Trying to kill these ${PIDS[@]}"
 		kill ${PIDS[@]}
 	fi
 	lib_screenadd $CONFIGDTSD_MAINSCREEN
 	lib_screensend $CONFIGDTSD_MAINSCREEN $CONFIGDTSD_SCRIPTPATH softstart
 }
 core_softstop() {
-# Brings server to a stop and then restarts it with softstart.   
+# Brings server to a stop and then restarts it with softstart.
 	if ! lib_softstop
-    then
-        if ! lib_hardstop
-        then
-            lib_forcestop
-        fi
-    fi
+	then
+		if ! lib_hardstop
+		then
+			lib_forcestop
+		fi
+	fi
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null
-    then
+	then
 		echo "Screen(s) identified by $CONFIGDTSD_MAINSCREEN detected and will be closed"
-		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN | awk '{print $2}') )   
-		echo "Trying to kill these ${PIDS[@]}"		
+		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN | awk '{print $2}') )
+		echo "Trying to kill these ${PIDS[@]}"
 		kill ${PIDS[@]}
 	fi
 	lib_screenadd $CONFIGDTSD_MAINSCREEN
 	lib_screensend $CONFIGDTSD_MAINSCREEN $CONFIGDTSD_SCRIPTPATH softstart
 }
 lib_function_exists(){
-    declare -f -F $1 > /dev/null 2>&1
-    return $?
+	declare -f -F $1 > /dev/null 2>&1
+	return $?
 }
-
-# Create an array with the indirect reference of the current rankcommand and the values command list contains
-#	eval COMMANDLIST=\( \${${CURRENTARRAY}[@]} \)
-
-

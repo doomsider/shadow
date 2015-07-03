@@ -1,69 +1,35 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
 # This is the main set of functions for dealing with the Mysql database
-
-
-# mysql -u dtsduser -ppass -D dtsddb -e "SELECT LOGSTRING FROM DTSDLOG"
-
 lib_mysend() {
 # Usage lib_mysend database user password command
 	MYSQLCOMMAND="${@:1}"
-#	echo "command to mysql $MYSQLCOMMAND"
+	#echo "command to mysql $MYSQLCOMMAND"
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "$MYSQLCOMMAND"
 }
-
-core_mysend() {
-# This is a tempory core command for testing purposes
-#	echo "first arg $2"
-#	echo "second arg $3"
-#	echo "third arg $4"
-#	echo "fourth arg ${@:5}"
-	MYSQLCOMMAND="${@:5}"
-#	echo "command to mysql $MYSQLCOMMAND"
-	mysql -D $2 -u $3 -p$4 -e "$MYSQLCOMMAND"
-}
-
 lib_myinsert() {
 # This command creates a new row
 # Usage lib_myinsert table column value 
 	INSERTVALUE="${@:3}"
-#	echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
+	#echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
 	lib_mysend "INSERT INTO $1 ($2) VALUES (\"$INSERTVALUE\")"
 }
-
-core_myinsert() {
-# This is a tempory core command for testing purposes
-	COREINSERTVALUE="${@:3}"
-	lib_myinsert $1 $2 $COREINSERTVALUE
-}
-
-
 lib_myupdate() {
 # This command replaces a value in a column in a row containing a value
 # Current limitation of this command is inserting a value with a space in it
-# eval string3="$3"
-    UPDATESEARCHVALUE="${@:5}"
 # Usage lib_myupdate [table] [column_alter] [value to insert]  [row to search] [search value]  
 # lib_myupdate PLAYERDB IP 192.168.1 NAME Doomsider
-#	echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
+    UPDATESEARCHVALUE="${@:5}"
+	#echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
 	lib_mysend "UPDATE $1 SET $2='$3' WHERE $4='$UPDATESEARCHVALUE'"
 }
-	
-
-core_myupdate() {
-    echo "usage lib_myupdate table column_alter row_replace_value row_search_table row_search_value"
-# This is a tempory core command for testing purposes
-	COREINSERTVALUE="${@:6}"
-	lib_myupdate $2 $3 $4 $5 $COREINSERTVALUE
-}	
-
 lib_mycreate() {
 # This command generates a list of tables and columns described by all related scripts and then
 # creates them if they do not eixst
-#	echo "Generating database tables and columns"
-#	echo "These vars detected"
+	#echo "Generating database tables and columns"
+	#echo "These vars detected"
 	CREATEVAR=( $(compgen -v | grep MYSQLDTSD_ ) )
-#	echo "var list $CREATEVAR" 
+	#echo "var list $CREATEVAR" 
 	CREATEARRAY=0
 	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
 	do
@@ -72,15 +38,14 @@ lib_mycreate() {
 		MYSQLTABLENAME=${SEARCHFUNCTION%_*}
 		MYSQLCOLUMNNAME=${SEARCHFUNCTION##*_}
 		MYSQLDATATYPE=${!CURRENTSEARCH}
-#		echo "Column name is $MYSQLCOLUMNNAME"
-#		echo "Table name is $MYSQLTABLENAME"
-#		echo "Search function is $SEARCHFUNCTION"
-#		echo "Datatype is ${!CURRENTSEARCH}"
+		#echo "Column name is $MYSQLCOLUMNNAME"
+		#echo "Table name is $MYSQLTABLENAME"
+		#echo "Search function is $SEARCHFUNCTION"
+		#echo "Datatype is ${!CURRENTSEARCH}"
 		lib_mysend "CREATE TABLE IF NOT EXISTS $MYSQLTABLENAME ( line INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(line) )" 
 		lib_mysend "ALTER TABLE $MYSQLTABLENAME ADD $MYSQLCOLUMNNAME $MYSQLDATATYPE"
 		let CREATEARRAY++
 	done
-
 # This was added to address the issue of having a unique index for Mysql.  This allows for columns like players' names
 # to not contain the same values without any sort of complicated checking.	
 	CREATEVAR=( $(compgen -v | grep MYSQLALTER_ ) )
@@ -92,80 +57,36 @@ lib_mycreate() {
 		MYSQLTABLENAME=${SEARCHFUNCTION%_*}
 		MYSQLCOLUMNNAME=${SEARCHFUNCTION##*_}
 		MYSQLDATATYPE=${!CURRENTSEARCH}
-#		echo "Column name is $MYSQLCOLUMNNAME"
-#		echo "Table name is $MYSQLTABLENAME"
-#		echo "Search function is $SEARCHFUNCTION"
-#		echo "Datatype is ${!CURRENTSEARCH}"
-#		echo "Send this ALTER TABLE $MYSQLTABLENAME ADD $MYSQLDATATYPE ($MYSQLCOLUMNNAME)"
+		#echo "Column name is $MYSQLCOLUMNNAME"
+		#echo "Table name is $MYSQLTABLENAME"
+		#echo "Search function is $SEARCHFUNCTION"
+		#echo "Datatype is ${!CURRENTSEARCH}"
+		#echo "Send this ALTER TABLE $MYSQLTABLENAME ADD $MYSQLDATATYPE ($MYSQLCOLUMNNAME)"
 		lib_mysend "ALTER TABLE $MYSQLTABLENAME ADD $MYSQLDATATYPE ($MYSQLCOLUMNNAME)"
 		let CREATEARRAY++
 	done
-	
 }
-
 core_mycreate() {
-# This is a tempory core command for testing purposes
-	MYCREATECORECOMMAND="${@:1}"
-	lib_mycreate $MYCREATECORECOMMAND
+    lib_mycreate
 }
-
 lib_myvalueretrieve() {
 # Usage: lib_mysend [column to search] [table column is in] [value in column]
     MYVALUERETRIEVENAME="${@:3}"
-# echo "This is name $MYVALUERETRIEVENAME"
-
+	#echo "This is name $MYVALUERETRIEVENAME"
     mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where NAME='$MYVALUERETRIEVENAME'"
-
 }
-
-core_valueretrieve() {
-    MYVALUECOMMAND="${@:2}"
-    lib_myvalueretrieve $MYVALUECOMMAND
-}
-
 lib_mycolumnretrieve() {
 # Retrieves an entire column
 # Usage:  lib_mycolumnretrieve [table] [row]
-#	echo "this is 1 parameter value $1"
-#		echo "this is 2 parameter value $2"
-#	echo "this is 3 parameter value $3"
-#echo "this is 4 parameter value $4"
-#echo "this is 5 parameter value $5"
-#echo "this is fixed ${@:2}"
 	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -se "select $2 from $1"
 }
-
-core_columnretrieve() {
-# Usage:  columnretrieve [table] [row]
-# ./shadow.dtsd retrieve TMPDB TMPSTRING	
-#		echo "core this is 1 parameter value $1"
-#		echo "core this is 2 parameter value $2"
-#	echo "core this is 3 parameter value $3"
-#	echo "core this is 4 parameter value $4"
-#	echo "core this is 5 parameter value $5"
-	lib_mycolumnretrieve "${@:2}"
-	
-}
-
 lib_columnretrievesearch() {
 # Like myvalueretrieve only tries to grab all values from a column rather than just one from a column with a unique index
 # Usage: columnretrievesearch column_to_display table column_containing_search search_string
     searchval="${@:4}"
-    echo "this is column to retrieve from $1 from this table $2 searching from this column $3 containing this string $searchval"
+    #echo "this is column to retrieve from $1 from this table $2 searching from this column $3 containing this string $searchval"
     mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where $3 like '%$searchval%'"
-}
-	
-core_columnsearch() {
-# ./shadow.dtsd columnsearch IDNUMBER IDDB NAME ARMOR
-    lib_columnretrievesearch "${@:2}"
-}
-	
+}	
 log_myerasetable() { 
     lib_mysend "TRUNCATE TABLE $1"
 }
-
-core_erasetable() { 
-    MYVALUECOMMAND="${@:2}"
-    log_myerasetable $MYVALUECOMMAND
-}
-

@@ -26,8 +26,6 @@ sector_initiallogin() {
 	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
 	lib_trigger sectorinfo $SECTORNAME Sector
 }
-
-
 universeboarder() {
 # Universeboarder set limits and wraps players around once they have reached then end of the universe
 # Usage: universeboarder x y z name

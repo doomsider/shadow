@@ -267,8 +267,8 @@ core_setup() {
 		printf "%s=%q\n" "$var" "${!var}" | grep CONFIGDTSD_ >> $SCRIPTDIR/core/config.dtsd
 	done
 	echo "Setting up tables and columns, ranks, and search"
-	core_mycreate
-	core_setranks
+	lib_mycreate
+	set_ranks_database
 	core_makesearchdb
 	echo "Building ID database this may take a minute"
 	lib_pause

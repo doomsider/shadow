@@ -24,7 +24,7 @@ LOGSEARCH_entity_destroy="[SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTIT
 LOGSEARCH_admin_commandlog="[ADMIN COMMAND]"
 LOGSEARCH_client_connected="[SERVER][LOGIN] new client connected"
 LOGSEARCH_client_logout="[SERVER] SETTING LOGOUT SPAWNING POINT"
-
+LOGSEARCH_blueprint_load="[BLUEPRINT][LOAD]"
 
 LOGSEARCH_collect_player_CREDITS="[SERVER-LOCAL-ADMIN] [PL] CREDITS:"
 LOGSEARCH_collect_player_FACTION="[SERVER-LOCAL-ADMIN] [PL] FACTION:"
@@ -40,6 +40,12 @@ LOGSEARCH_collect_ship_MASS="[SERVER-LOCAL-ADMIN] Mass:"
 LOGSEARCH_collect_ship_CREATOR="[SERVER-LOCAL-ADMIN] Creator:"
 LOGSEARCH_collect_ship_CURRENTSECTOR="[SERVER-LOCAL-ADMIN] Sector:"
 LOGSEARCH_collect_ship_LASTPOSITION="[SERVER-LOCAL-ADMIN] Local-Pos:"
+
+blueprint_load() {
+# [BLUEPRINT][LOAD] <admin> loaded spawnsave as "spawnship2" in (1, 2, 2)
+LOADBPSTRING="${@:1}"
+echo "This was sent to blueprint load $LOADBPSTRING"
+}
 
 admin_commandlog() {
 # [ADMIN COMMAND] GIVEID from RegisteredClient: MewGuy (1) connected: true params: [MewGuy, 123, 100]

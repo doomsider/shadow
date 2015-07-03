@@ -15,14 +15,13 @@ ONSTART_RUN() {
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
-#	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH resultloop
+#	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH taillog
 }
 ONINTERVAL_600_announce() {
 	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat This message brought to you by Shadow pre-alpha"
 }
 ONEND_goodbye() {
 echo "Server stopped"
-
 }
 core_mainloop() {
     ONSTART=( $(compgen -A function | grep ONSTART_) )
@@ -35,28 +34,78 @@ core_mainloop() {
     curtime=0
 	while lib_check_server_running
 	do
-        for func in ${ONINTERVAL[@]}
-        do
-#			echo "Checking on interval functions"
-			#the % operator returns the remainder of a division. when this remainder is 0, that means the time is a while multiple of the interval
-            #meaning the function should be ran
-            if [ $(( curtime%$(($(echo $func | cut -d"_" -f2))))) -eq 0 ]
-            then
-                echo "executing interval function $func" 
+		for func in ${ONINTERVAL[@]}
+		do
+			#echo "Checking on interval functions"
+# the % operator returns the remainder of a division. when this remainder is 0, that means the time is a while multiple of the interval
+# meaning the function should be ran
+			if [ $(( curtime%$(($(echo $func | cut -d"_" -f2))))) -eq 0 ]
+			then
+				echo "executing interval function $func" 
 				$func &
-            fi
-        done
-        let curtime++
-#		echo "started loop"
+			fi
+		done
+		let curtime++
+		#echo "started loop"
 # A tiny sleep to prevent cpu burning overhead
 		sleep 1
 # Uses Cat to calculate the number of lines in the log file
 	done
-    for func in ${ONEND[@]}
-    do
-        $func &
+	for func in ${ONEND[@]}
+	do
+		$func &
+	done
+}
+
+core_taillog() {
+# Tail with -F to prevent rollover file from stopping read is extremely fast and lightweight method for feeding log lines into the database
+	tail -F $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 |
+    while read a; do
+# Quotations will cause Mysql to error so they are removed with a in line edit 
+		STRING=$(sed "s/\"//g" <<< "$a")
+#		echo "INSERT INTO SERVERLOG LOGSTRING $STRING"
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERLOG (LOGSTRING) VALUES (\"$STRING\");"
     done
 }
+
+core_searchloop() {
+	log_myerasetable LOGLOOP
+	log_myerasetable SERVERLOG
+	log_myerasetable TRIGGERDB
+	while lib_check_server_running
+	do 
+		# mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;"
+		NUMOFLINES=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
+		echo "Here is the last line of the log $NUMOFLINES"
+		# if the number of lines isn't detected it is because no lines have been fed yet
+		if [ -z "$NUMOFLINES" ]
+		then
+			NUMOFLINES=0
+			echo "Setting numoflines to 0"
+		fi
+		if [ -z "$LINESTART" ]
+		then
+			LINESTART=$NUMOFLINES
+			echo "Start at line $LINESTART"
+		fi
+		if [ "$NUMOFLINES" -gt "$LINESTART" ] 
+		then
+			echo "$NUMOFLINES is the total lines of the log"
+			echo "$LINESTART is linestart"
+			let LINESTART++
+			RESULTARRAY=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe  "SELECT SERVERLOG.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM SERVERLOG, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, SERVERLOG.LOGSTRING) > $LINESTART AND SERVERLOG.line <= $NUMOFLINES ORDER BY SERVERLOG.line ASC" ) )
+			echo ${RESULTARRAY[@]}
+			LINESTART=$NUMOFLINES
+		fi
+		
+	#	RESULTARRAY=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe  "SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) > 0 AND LOGLOOP.line > 0 ORDER BY LOGLOOP.line ASC" ) )
+		sleep 1
+	done
+}
+
+
+
+
 core_makesearchdb() {
 # Make the search database whish contains all the search strings and their related functions
 	log_myerasetable SEARCHDB
@@ -84,8 +133,6 @@ core_logloop() {
 	log_myerasetable LOGLOOP
 	log_myerasetable REQUESTINFODB
 	log_myerasetable TRIGGERDB
-#	log_myerasetable COLLECTINFODB
-#	log_myerasetable SEARCHRESULT
 	testloop=0
 	LINEARRAY=0
 	sleep 5
@@ -95,22 +142,22 @@ core_logloop() {
 # Special thanks to LordDragon for helping trouble shoot this
 # Since the Starmade log file rolls after 4mb the Linestart must be reset back to something reasonable when this happens or the script will hang
 		let "CHECKSCRIPTRESET = $LINESTART - 5000"
-	    if [ "$CHECKSCRIPTRESET" -gt "$NUMOFLINES" ]
+		if [ "$CHECKSCRIPTRESET" -gt "$NUMOFLINES" ]
 		then
-		echo "Script has reset"
-		LINESTART=$NUMOFLINES
+			echo "Script has reset"
+			LINESTART=$NUMOFLINES
 		fi
 # In case Linestart does not have a value give it an interger value of 1.  The prevents a startup error on the script.
 		if [ -z "$LINESTART" ]
 		then
 			LINESTART=$NUMOFLINES
-#			echo "Start at line $LINESTART"
+			#echo "Start at line $LINESTART"
 		fi
 # If the number of lines read from the log file is greater than last line read + 1 from the log then feed more lines.
 		if [ "$NUMOFLINES" -gt "$LINESTART" ] 
 		then
-#			echo "$NUMOFLINES is the total lines of the log"
-#   		echo "$LINESTART is linestart"
+			#echo "$NUMOFLINES is the total lines of the log"
+			#echo "$LINESTART is linestart"
 			let LINESTART++
 # Use sed to gather the current selection of lines
 			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 > $WRITEDIR/SEDSELECT.txt
@@ -128,10 +175,7 @@ core_logloop() {
 			--lines-terminated-by='{' \
 			--silent \
 			--local \
-			dtsddb $WRITEDIR/LOGLOOP.txt
-#			select LOGSTRING from LOGLOOP inner join SEARCHDB on locate(SEARCHSTRING, LOGSTRING) > 0
-#			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO SEARCHRESULT (RESULTSTRING, RESULTFUNCTION) SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) >0"
-#			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe  "SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) >0"			
+			dtsddb $WRITEDIR/LOGLOOP.txt			
 			OLD_IFS=$IFS
 # This sets the field seperator to use \n next line instead of next space.  This makes it so the array is a whole sentence not a word
 			IFS=$'\n'
@@ -142,35 +186,34 @@ core_logloop() {
 			lib_resultloop RESULTARRAY[@] &
 			log_myerasetable LOGLOOP		
 			LINESTART=$NUMOFLINES
-#			echo ${RESULTARRAY[0]}				
+			#echo ${RESULTARRAY[0]}				
 		fi		
 	sleep 1
 	done
 }
 lib_resultloop() {
 # Declare an array of the passed array placeholder
-declare -a PASSEDARRAY=("${!1}")
-ARRAYVALUE=0
-			while [ -n "${PASSEDARRAY[$ARRAYVALUE]+set}" ]
-			do
-				CURRENTRESULTLINE=${PASSEDARRAY[$ARRAYVALUE]}
-				CURRENTARRAY=($CURRENTRESULTLINE)
-				MAXARRAYPOSITION=${#CURRENTARRAY[@]}
-				let "FUNCTIONPOSITION = $MAXARRAYPOSITION - 1"
-				CURENTFUNCTION=${CURRENTARRAY[$FUNCTIONPOSITION]}
-				unset CURRENTARRAY[0]
-				unset CURRENTARRAY[1]
-				unset CURRENTARRAY[$MAXARRAYPOSITION]
-				unset CURRENTARRAY[$FUNCTIONPOSITION]
-				CURRENTSTRING=${CURRENTARRAY[@]}
-				eval $CURENTFUNCTION '$CURRENTSTRING' 
-#			echo $CURRENTRESULTLINE
-#			echo "this is the max of the array $MAXARRAYPOSITION"
-#			echo "this is the function $CURENTFUNCTION"
-#			echo "this is just the string $CURRENTSTRING"
-			let ARRAYVALUE++
-			done
-			
+	declare -a PASSEDARRAY=("${!1}")
+	ARRAYVALUE=0
+	while [ -n "${PASSEDARRAY[$ARRAYVALUE]+set}" ]
+	do
+		CURRENTRESULTLINE=${PASSEDARRAY[$ARRAYVALUE]}
+		CURRENTARRAY=($CURRENTRESULTLINE)
+		MAXARRAYPOSITION=${#CURRENTARRAY[@]}
+		let "FUNCTIONPOSITION = $MAXARRAYPOSITION - 1"
+		CURENTFUNCTION=${CURRENTARRAY[$FUNCTIONPOSITION]}
+		unset CURRENTARRAY[0]
+		unset CURRENTARRAY[1]
+		unset CURRENTARRAY[$MAXARRAYPOSITION]
+		unset CURRENTARRAY[$FUNCTIONPOSITION]
+		CURRENTSTRING=${CURRENTARRAY[@]}
+		eval $CURENTFUNCTION '$CURRENTSTRING' 
+		#echo $CURRENTRESULTLINE
+				#echo "this is the max of the array $MAXARRAYPOSITION"
+				#echo "this is the function $CURENTFUNCTION"
+				#echo "this is just the string $CURRENTSTRING"
+		let ARRAYVALUE++
+	done
 }
 log_mysql_dtsd() {
     MYLOGDUMPCOMMAND="${@:1}"

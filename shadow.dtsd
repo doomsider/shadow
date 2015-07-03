@@ -32,10 +32,9 @@ fi
 
 # All files for the script must end in .dtsd this was chosen since a significant portion of the code was borrowed from DTSD 
 # Load all the scripts associated with DTSD.  Grep -v is used here to remove shadow.dtsd itself to prevent a never ending loop
-SOURCES=( $(ls *dtsd | grep -v shadow.dtsd) )
 # echo ${SOURCES[@]}
 # Go through the sources array and then source each .dtsd file to load all the related scripts
-for MODULE in $(find ./core/*.dtsd -type f) $(find ./modules/*.dtsd -type f) $SOURCES
+for MODULE in $(find ./core/*.dtsd -type f) $(find ./modules/*.dtsd -type f) 
 do
 # The check below that is commented out is useful to troubleshoot what scripts are loading successfully
 #	echo "loading module $MODULE"	
@@ -57,9 +56,11 @@ if [ $# -eq 0 ]
 then
 	echo "Usage: shadow.dtsd [ ${USERCOMMANDS[@]} ]"
 else
+# Use lib array to see if the first parameter matches any functions that start with core_	
 	if lib_arraycontains USERCOMMANDS $1
 	then
 		COREARRAY=0
+# If a match was found go through the array to see where that match was
 		while [ -n "${USERCOMMANDS[$COREARRAY]+set}" ]
 		do
 			if [ "${USERCOMMANDS[$COREARRAY]}" = "$1" ]
@@ -67,6 +68,7 @@ else
 #				echo "Command found"				
 				ADDCOMMAND="core_$1"
 #				echo "Here is adjusted command $ADDCOMMAND $@"
+# Execute the command that was found
 				eval $ADDCOMMAND $@
 				let COREARRAY++
 			else

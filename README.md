@@ -62,12 +62,19 @@ Writing Modules:
 Writing you own module is what Shadow was designed for.  There are several functions that allow building of modules to be independent of the existing scripts.  This means you can just drop in your own script into /modules.  For instance mymodule.dtsd.
 
 MYSQL - Mysql is used heavily in Shadow and you will have to become somewhat familiar with it depending on what you wish to do.  Basic examples of interacting with Mysql can be seen in /core/lib_mysql.dtstd and throughout the other scripts.
-	Creating a database is as easy as including MYSQLDTSD_TABLENANE_COLUMNNAME="Mysql information for column".  Here is an example from the script that creates the Name column for Players MYSQLDTSD_PLAYERDB_NAME="VARCHAR(25)".
+	
+	Creating a database is as easy as including MYSQLDTSD_TABLENANE_COLUMNNAME="Mysql information for column".  
+	
+	Here is an example from the script that creates the Name column for Players MYSQLDTSD_PLAYERDB_NAME="VARCHAR(25)".
 
 Naming Conventions - Shadow looks at its own functions' names to determine special circumstances for the script.
+	
 	Any function that starts with core_ will be available for execution for the ./shadow.dtsd command line and be listed as an available function.  
+	
 	Any function that starts with chatcommand_ will be available to be executed through chatcommands in the client.  Please put function name in all caps and don't forget to add it to the ranks database for the proper rank or you wont be able to see or execute it from the client.
+	
 	Any function that starts with lib_ is a library function.  In this context this means it is an internal function expected to be used by several other functions.  The lib_ designation is only for ease of identification of heavily used functions.
+	
 	Any variable that starts with LOGSEARCH_ will automatically entered into the search database and then the result will be returned to the specified function.  The format is LOGSEARCH_functioname="String match in log".
 
 
@@ -78,6 +85,7 @@ Enhance server web pages with information from the database.
 Add a web admin panel to control the game server remotely.
 
 Current Worklist(no particular order):
+	
 	AI Guards
 	Collect info for new spawning entities
 	Reduce the size of the universe by deleting unused sectors

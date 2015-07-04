@@ -18,9 +18,9 @@ ONSTART_RUN() {
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
-#	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
 	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH taillog
 	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH searchlog
+	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH executelog
 }
 ONINTERVAL_600_announce() {
 	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat This message brought to you by Shadow pre-alpha"
@@ -61,7 +61,6 @@ core_mainloop() {
 		$func &
 	done
 }
-
 core_taillog() {
 # Tail with -F to prevent rollover file from stopping read is extremely fast and lightweight method for feeding log lines into the database
 	tail -F $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 |
@@ -72,7 +71,6 @@ core_taillog() {
 		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERLOG (LOGSTRING) VALUES (\"$STRING\");"
     done
 }
-
 core_searchlog() {
 	log_myerasetable SERVERLOG
 	log_myerasetable TRIGGERDB
@@ -110,7 +108,6 @@ core_searchlog() {
 		
 	done
 }
-
 core_executelog() {
 	while lib_check_server_running
 	do 
@@ -137,8 +134,6 @@ core_executelog() {
 		fi
 	done
 }
-
-
 core_makesearchdb() {
 # Make the search database which contains all the search strings and their related functions
 	log_myerasetable SEARCHDB
@@ -153,104 +148,6 @@ core_makesearchdb() {
 		lib_myupdate SEARCHDB SEARCHSTRING "$CURRENTSEARCHSTRING" SEARCHFUNCTION $CURRENTSEARCHFUNCTION
 		let SEARCHARRAY++
 	done
-}
-core_logloop() {
-	USERAMDRIVE=no
-	if [ "$USERAMDRIVE" = "no" ]
-	then
-		WRITEDIR=$CONFIGDTSD_INSTALLPATH
-	else
-		WRITEDIR="/dev/shm"
-	fi
-# This function is testing a solution to the sluggishness of the current_core loop.  Currently it inserts lines into the database while they are received from a log file.
-	log_myerasetable LOGLOOP
-	log_myerasetable REQUESTINFODB
-	log_myerasetable TRIGGERDB
-	testloop=0
-	LINEARRAY=0
-	sleep 5
-	while lib_check_server_running
-	do 
-		NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 | cut -d" " -f1)
-# Special thanks to LordDragon for helping trouble shoot this
-# Since the Starmade log file rolls after 4mb the Linestart must be reset back to something reasonable when this happens or the script will hang
-		let "CHECKSCRIPTRESET = $LINESTART - 5000"
-		if [ "$CHECKSCRIPTRESET" -gt "$NUMOFLINES" ]
-		then
-			echo "Script has reset"
-			LINESTART=$NUMOFLINES
-		fi
-# In case Linestart does not have a value give it an interger value of 1.  The prevents a startup error on the script.
-		if [ -z "$LINESTART" ]
-		then
-			LINESTART=$NUMOFLINES
-			#echo "Start at line $LINESTART"
-		fi
-# If the number of lines read from the log file is greater than last line read + 1 from the log then feed more lines.
-		if [ "$NUMOFLINES" -gt "$LINESTART" ] 
-		then
-			#echo "$NUMOFLINES is the total lines of the log"
-			#echo "$LINESTART is linestart"
-			let LINESTART++
-# Use sed to gather the current selection of lines
-			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 > $WRITEDIR/SEDSELECT.txt
-# Remove all occurrences of quotes with a in-line edit 
-			sed -i 's/\"//g' $WRITEDIR/SEDSELECT.txt
-# Surround every line with a quote for Mysql data entry
-			awk '{ print "\""$0"\""}' $WRITEDIR/SEDSELECT.txt > $WRITEDIR/MYSQLFORMAT.txt
-# Replace all new lines with a left bracket for lines terminated setting in mysqlimport.  Since the log does not use this character and neither does Mysql it seems to work for now.
-			awk '{printf("%s{",$0)}' $WRITEDIR/MYSQLFORMAT.txt > $WRITEDIR/LOGLOOP.txt	
-			mysqlimport \
-			--user=$CONFIGDTSD_MYSQLUSER \
-			--password=$CONFIGDTSD_MYSQLPASS \
-			--columns=LOGSTRING \
-			--fields-enclosed-by='"' \
-			--lines-terminated-by='{' \
-			--silent \
-			--local \
-			dtsddb $WRITEDIR/LOGLOOP.txt			
-			OLD_IFS=$IFS
-# This sets the field seperator to use \n next line instead of next space.  This makes it so the array is a whole sentence not a word
-			IFS=$'\n'
-			RESULTARRAY=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe  "SELECT LOGLOOP.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM LOGLOOP, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, LOGLOOP.LOGSTRING) > 0 AND LOGLOOP.line > 0 ORDER BY LOGLOOP.line ASC" ) )
-			IFS=$OLD_IFS		
-			printf "%s\n" "${RESULTARRAY[@]}" >> result.txt
-# Send the array to the lib_resultloop function
-			lib_resultloop RESULTARRAY[@] &
-			log_myerasetable LOGLOOP		
-			LINESTART=$NUMOFLINES
-			#echo ${RESULTARRAY[0]}				
-		fi		
-	sleep 1
-	done
-}
-lib_resultloop() {
-# Declare an array of the passed array placeholder
-	declare -a PASSEDARRAY=("${!1}")
-	ARRAYVALUE=0
-	while [ -n "${PASSEDARRAY[$ARRAYVALUE]+set}" ]
-	do
-		CURRENTRESULTLINE=${PASSEDARRAY[$ARRAYVALUE]}
-		CURRENTARRAY=($CURRENTRESULTLINE)
-		MAXARRAYPOSITION=${#CURRENTARRAY[@]}
-		let "FUNCTIONPOSITION = $MAXARRAYPOSITION - 1"
-		CURENTFUNCTION=${CURRENTARRAY[$FUNCTIONPOSITION]}
-		unset CURRENTARRAY[0]
-		unset CURRENTARRAY[1]
-		unset CURRENTARRAY[$MAXARRAYPOSITION]
-		unset CURRENTARRAY[$FUNCTIONPOSITION]
-		CURRENTSTRING=${CURRENTARRAY[@]}
-		eval $CURENTFUNCTION '$CURRENTSTRING' 
-		#echo $CURRENTRESULTLINE
-				#echo "this is the max of the array $MAXARRAYPOSITION"
-				#echo "this is the function $CURENTFUNCTION"
-				#echo "this is just the string $CURRENTSTRING"
-		let ARRAYVALUE++
-	done
-}
-log_mysql_dtsd() {
-    MYLOGDUMPCOMMAND="${@:1}"
-    lib_myinsert DTSDLOG LOGSTRING $MYLOGDUMPCOMMAND
 }
 
  

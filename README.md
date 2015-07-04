@@ -18,11 +18,17 @@ Shadow is in testing mode only at the moment.  The current target test system is
 Step1 - Get Shadow's files and directories from Github then copy shadow files/dirs to the parent directory of Starmade if it exists.  If it doesn't exist put them in the same directory you plan to install StarMade to.
 
 Step2 - Prerequisites must be installed for the script to function properly.  For Ubuntu you must install Java, Mysql, Zip, Dos2unix, and Screen if they are not installed already 
+	
 	EXAMPLE INSTALL COMMANDS FOR UBUNTU 14.04
+	
 	sudo apt-get install screen
+	
 	sudo apt-get install mysql-server libapache2-mod-auth-mysql php5-mysql
+	
 	sudo apt-get install default-jre
+	
 	sudo apt-get install zip
+	
 	sudo apt-get install dos2unix
 	
 	SPECIAL NOTE:  You must set a root password for Mysql for Shadow to function, do not leave this blank.

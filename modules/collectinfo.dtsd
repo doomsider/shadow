@@ -42,7 +42,7 @@ LOGSEARCH_collect_ship_CURRENTSECTOR="[SERVER-LOCAL-ADMIN] Sector:"
 LOGSEARCH_collect_ship_LASTPOSITION="[SERVER-LOCAL-ADMIN] Local-Pos:"
 
 blueprint_load() {
-# [BLUEPRINT][LOAD] <admin> loaded spawnsave as "spawnship2" in (1, 2, 2)
+# [BLUEPRINT][LOAD] <admin> loaded killership as killership in (2, 2, 2) as faction 0
 LOADBPSTRING="${@:1}"
 echo "This was sent to blueprint load $LOADBPSTRING"
 }

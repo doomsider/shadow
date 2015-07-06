@@ -1,0 +1,86 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions for adding times events to the server through the use of Mysql Events
+
+# In order to use scheduler is must be turned on with SET GLOBAL event_scheduler = ON; issued from root for Mysql
+# Events are created by this format MYSQLEVENT_FREQUENCY_TIMEVALUE_TIMEQUANTITY="EVENT_FUNCTION_NAME"
+
+# Acceptable variable for time quantity are YEAR | QUARTER | MONTH | DAY | HOUR | MINUTE | WEEK | SECOND | YEAR_MONTH | DAY_HOUR | DAY_MINUTE | DAY_SECOND | HOUR_MINUTE | HOUR_SECOND | MINUTE_SECOND
+# Acceptable variable for frequency are REPEAT
+
+MYSQLEVENT_REPEAT_600_SECOND="EVENT1"
+
+core_myscheduler()
+{
+	if [ "$#" -ne "2" ]
+	then
+		echo "Usage:  myscheduler on or off"
+	else
+		case $2 in
+		on)
+		echo "Turning on Mysql Scheduler"
+		  read -p "The password for Mysql root : " INPUT
+            if [ -n "$INPUT" ]
+            then
+				mysql -u root -p$INPUT -e "SET GLOBAL event_scheduler = ON"
+            else
+				"You must use root password to turn on or off scheduler"
+				exit
+            fi
+#		SET GLOBAL event_scheduler = ON;
+		;;
+		off)
+		echo "Turning off Mysql Scheduler"
+		  read -p "The password for Mysql root : " INPUT
+            if [ -n "$INPUT" ]
+            then
+				mysql -u root -p$INPUT -e "SET GLOBAL event_scheduler = OFF"
+            else
+				"You must use root password to turn on or off scheduler"
+				exit
+            fi
+		;;
+		esac
+	fi
+
+}
+core_clearschedule() {
+	echo "Clearing all Schedules"
+	CREATEVAR=( $(compgen -v | grep MYSQLEVENT_ ) )
+	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
+	do
+		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
+		SCHEDULECOMMAND=${!CURRENTSEARCH}
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "drop event $SCHEDULECOMMAND;"
+		let CREATEARRAY++
+	done
+}
+core_addevents() {
+CREATEVAR=( $(compgen -v | grep MYSQLEVENT_ ) )
+CREATEARRAY=0
+	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
+	do
+		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
+		cutstring=${CURRENTSEARCH#*_}
+		SCHEDULETYPE=${cutstring%%_*}
+		cutstring=${cutstring#*_}
+		TIMEVALUE=${cutstring%%_*}
+		TIMEQUANTITY=${cutstring#*_}
+		SCHEDULECOMMAND=${!CURRENTSEARCH}
+		echo "this is SCHEDULETYPE $SCHEDULETYPE TIMEVALUE $TIMEVALUE TIMEQUANTITY $TIMEQUANTITY SCHEDULECOMMAND $SCHEDULECOMMAND"
+		
+		case $SCHEDULETYPE in
+			REPEAT)
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "drop event $SCHEDULECOMMAND;"
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $SCHEDULECOMMAND ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
+			;;
+		esac
+		let CREATEARRAY++
+	done
+
+}
+EVENT1() {
+# A simple server message to send to all players
+lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Message sent from Shadow pre-Alpha database event"
+}
+

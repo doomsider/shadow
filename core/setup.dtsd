@@ -166,6 +166,8 @@ core_setup() {
                         else 
                             echo "Potential administrator user able to log in"
                             ADMINLOOP=NO
+# Turn on Scheduler 		 						
+							mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "SET GLOBAL event_scheduler = ON;" 
                             mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "CREATE DATABASE $CONFIGDTSD_MYSQLDB;" 
                             if mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "SHOW DATABASES;"  | grep $CONFIGDTSD_MYSQLDB >/dev/null
                             then
@@ -270,6 +272,7 @@ core_setup() {
 	lib_mycreate
 	set_ranks_database
 	core_makesearchdb
+	core_addevents
 	echo "Building ID database this may take a minute"
 	lib_pause
 	core_parseblocks

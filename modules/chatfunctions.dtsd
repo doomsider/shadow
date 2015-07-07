@@ -12,6 +12,7 @@ LOGSEARCH_chat_commands="[CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT]"
 
 chat_log() {
     MYCHATSTRING="${@:1}"
+	MYCHATSTRING=${MYCHATSTRING#*]}
 # Below example of Chat string received
 # [CHANNELROUTER] RECEIVED MESSAGE ON Server(0): [CHAT][sender=Doomsider][receiverType=CHANNEL][receiver=all][message=hey]
 # String manipulation with parameter expansion is used here to cut at the first = which reveals the sender 
@@ -41,6 +42,7 @@ chat_log() {
 }
 chat_commands() {
     MYCHATSTRING="${@:1}"
+	MYCHATSTRING=${MYCHATSTRING#*]}
 # String manipulation with parameter expansion is used here to cut at the first = which reveals the sender 
 # followed by the rest of MYCHATSTRING	
 	CUTSTRING=${MYCHATSTRING#*=}
@@ -104,7 +106,7 @@ chat_commands() {
 		done
 		if [ $COMMANDFOUND = false ]
         then
-            lib_screensend $CONFIGDTSD_MAINSCREEN /pm $SENDERNAME "Unknown command. Please use !HELP for alist of the commands you can use"
+            lib_screensend $CONFIGDTSD_MAINSCREEN /pm $SENDERNAME "Unknown command. Please use !HELP for a list of the commands you can use"
         fi
 	fi	
 }

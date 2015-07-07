@@ -44,13 +44,14 @@ LOGSEARCH_collect_ship_LASTPOSITION="[SERVER-LOCAL-ADMIN] Local-Pos:"
 blueprint_load() {
 # [BLUEPRINT][LOAD] <admin> loaded killership as killership in (2, 2, 2) as faction 0
 LOADBPSTRING="${@:1}"
+LOADBPSTRING=${LOADBPSTRING#*]}
 echo "This was sent to blueprint load $LOADBPSTRING"
 }
-
 admin_commandlog() {
 # [ADMIN COMMAND] GIVEID from RegisteredClient: MewGuy (1) connected: true params: [MewGuy, 123, 100]
 # [ADMIN COMMAND] SECTOR_INFO from org.schema.schine.network.server.AdminLocalClient@75c33175 params: [2, 2, 2]
 	ADMINLOGSTRING="${@:1}"
+	ADMINLOGSTRING=${ADMINLOGSTRING#*]}
 	echo "This was sent to admin commandlog $ADMINLOGSTRING"
 	if [[ $ADMINLOGSTRING == *"RegisteredClient"* ]] && [[ $ADMINLOGSTRING != *"SERVERMESSAGE"* ]]
 	then
@@ -79,6 +80,7 @@ entity_destroy() {
 # [SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_SPACESTATION_station_2.ent
 # [SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_FLOATINGROCK_1432202013135_2_2_2_0.ent
 	DESTROYSTRING="${@:1}"
+	DESTROYSTRING=${DESTROYSTRING#*]}
 	echo "This was sent to entity_destroy $DESTROYSTRING"
 	FIRSTCUT=${DESTROYSTRING#*:}
 	CUTSTRING=${FIRSTCUT#*_}
@@ -107,6 +109,7 @@ entity_destroy() {
 # Functions to collect player info
 client_connected() {
 	CLIENTCONNECTSTRING="${@:1}"
+	CLIENTCONNECTSTRING=${CLIENTCONNECTSTRING#*]}
 	cutstring=${CLIENTCONNECTSTRING##*:}
 	CONNECTNAME="${cutstring#"${cutstring%%[![:space:]]*}"}"
 	echo "This was sent to client connected $CLIENTCONNECTSTRING"
@@ -136,6 +139,7 @@ client_logout() {
 }
 collect_player_LASTPOSITION() {
 	PLAYERLASTPOSITIONSTRING="${@:1}"
+	PLAYERLASTPOSITIONSTRING=${PLAYERLASTPOSITIONSTRING#*]}
 	CUTSTRING=${PLAYERLASTPOSITIONSTRING#*\(}
 	CUTSTRING=${CUTSTRING%%)*}
 	CUTSTRING=${CUTSTRING//,/}
@@ -150,6 +154,7 @@ collect_player_LASTPOSITION() {
 }
 collect_player_SECTOR() {
 	PLAYERSECTORSTRING="${@:1}"
+	PLAYERSECTORSTRING=${PLAYERSECTORSTRING#*]}
 	echo "This was send to collect player sector $PLAYERSECTORSTRING"
 	CUTSTRING=${PLAYERSECTORSTRING##*\(}
 	XSECTOR=${CUTSTRING%%,*}
@@ -171,6 +176,7 @@ collect_player_SECTOR() {
 collect_player_CREDITS() {
 	# [SERVER-LOCAL-ADMIN] [PL] CREDITS: 20000
 	COLLECTSTRING="${@:1}"
+	COLLECTSTRING=${COLLECTSTRING#*]}
 	cutstring=${COLLECTSTRING##*:}
 	cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
 	COLLECT_PLAYER_CREDITS="${cutstring%"${cutstring##*[![:space:]]}"}"
@@ -181,6 +187,7 @@ collect_player_CREDITS() {
 collect_player_FACTION() {
 	# [SERVER-LOCAL-ADMIN] [PL] FACTION: null
 	COLLECTSTRING="${@:1}"
+	COLLECTSTRING=${COLLECTSTRING#*]}
 	cutstring=${COLLECTSTRING##*:}
 	cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
 	COLLECT_PLAYER_FACTION="${cutstring%"${cutstring##*[![:space:]]}"}"
@@ -202,6 +209,7 @@ collect_player_CURRENTIP() {
 collect_player_NAME() {
 # [SERVER-LOCAL-ADMIN] [PL] Name: Doomsider
 	COLLECTSTRING="${@:1}"
+	COLLECTSTRING=${COLLECTSTRING#*]}
 	cutstring=${COLLECTSTRING##*:}
 	cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
 	COLLECT_PLAYER_NAME="${cutstring%"${cutstring##*[![:space:]]}"}"
@@ -222,6 +230,7 @@ player_boarding() {
 # [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: SpaceStation[ENTITY_SPACESTATION_test station(151)]
 	echo "Boarding detected"
 	BOARDSTRING="${@:1}"
+	BOARDSTRING=${BOARDSTRING#*]}
 	CUTSTRING=${BOARDSTRING%%;*}
 	CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
 	PLAYERBOARDING=${CUTSTRING##*[}
@@ -275,8 +284,9 @@ sector_entityinfo () {
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SPACESTATION_test_station_10_block, type=Space Station, seed=0, lastModifier=, spawner=, realName=test_station_10_block, touched=true, faction=0, pos=(-285.80713, -22.024189, 56.327763), minPos=(-4, -4, -4), maxPos=(4, 4, 4), creatorID=1]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SHOP_1431965817638, type=Shop, seed=0, lastModifier=, spawner=, realName=Shop, touched=false, faction=0, pos=(0.0, 0.0, 0.0), minPos=(0, -15, 0), maxPos=(0, 15, 0), creatorID=0]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_FLOATINGROCK_1432202013135_2_2_2_0, type=Asteroid, seed=7652247429851126783, lastModifier=, spawner=, realName=undef, touched=false, faction=0, pos=(115.0, -116.0, 76.0), minPos=(-1, -4, -3), maxPos=(2, 2, 2), creatorID=7]
-echo "Entity info detected"
-ENTITYINFOSTRING="${@:1}"
+	echo "Entity info detected"
+	ENTITYINFOSTRING="${@:1}"
+	ENTITYINFOSTRING=${ENTITYINFOSTRING#*]}
 # string="[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLAYERCHARACTER_harry, type=Astronaut]"; string=${string#*=};  string=${string#*_};  string=${string#*_};  string=${string%%,*}; echo ""; echo $string; echo ""
 	FIRSTEQUALCUT=${ENTITYINFOSTRING#*=}
 	CUTSTRING=${FIRSTEQUALCUT#*_}
@@ -355,6 +365,7 @@ sector_info () {
 # string="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](1, 2, 3); Protected: false; Peace: false; Seed: 0; Type: MAIN"; echo ""; string=${string#*\(}; string=${string%\)*}; string=${string//,/}; array=($string); echo $string; echo ""; echo ${array[1]}; echo ${#array[1]}
 	echo "Sector info detected"
 	SECTORINFOSTRING="${@:1}"
+	SECTORINFOSTRING=${SECTORINFOSTRING#*]}
 	CUTSTRING=${SECTORINFOSTRING#*\(}
 	CUTSTRING=${CUTSTRING%\)*}
 	CUTSTRING=${CUTSTRING//,/}
@@ -394,6 +405,7 @@ sector_info () {
 # Functions to collect ship and station info
 collect_ship_LASTPOSITION() {
 	SHIPLASTPOSSTRING="${@:1}"
+	SHIPLASTPOSSTRING=${SHIPLASTPOSSTRING#*]}
 	echo "This sent to last position $SHIPLASTPOSSTRING"
 	FIRSTCUT=${SHIPLASTPOSSTRING#*:}
 	if [ -n "${FIRSTCUT}" ] 
@@ -421,6 +433,7 @@ collect_ship_LASTPOSITION() {
 collect_ship_ATTACHED() {
 #	[SERVER-LOCAL-ADMIN] Attached: [PlS[harry_dude ; id(6)(1)f(0)]]
 	SHIPATTACHEDSTRING="${@:1}"
+	SHIPATTACHEDSTRING=${SHIPATTACHEDSTRING#*]}
 	FIRSTCUT=${SHIPATTACHEDSTRING##*[}
 	SECONDCUT=${FIRSTCUT%]*}
 	if [ -n "${SECONDCUT}" ]
@@ -442,6 +455,7 @@ collect_ship_ATTACHED() {
 collect_ship_DOCKED() {
 # [SERVER-LOCAL-ADMIN] DockedUIDs
 	SHIPDOCKEDSTRING="${@:1}"
+	SHIPDOCKEDSTRING=${SHIPDOCKEDSTRING#*]}
 	FIRSTCUT=${SHIPDOCKEDSTRIN#*:}
 	if [ -n "${FIRSTCUT}" ] 
 	then
@@ -461,6 +475,7 @@ collect_ship_DOCKED() {
 }
 collect_ship_BLOCKS() {
 	SHIPBLOCKSSTRING="${@:1}"
+	SHIPBLOCKSSTRING=${SHIPBLOCKSSTRING#*]}
 #	string="[SEND][SERVERMESSAGE] Blocks: 1 to RegisteredClient: harry_dude (2) connected: true"; string=${string#*:}; string=${string%%t*}; string="${string%"${string##*[![:space:]]}"}"; string="${string#"${string%%[![:space:]]*}"}";echo ""; echo $string; echo ${#string}; echo ""
 	CUTSTRING=${SHIPBLOCKSSTRING#*:}
 	if [ -n "${CUTSTRING}" ] 
@@ -480,6 +495,7 @@ collect_ship_BLOCKS() {
 }
 collect_ship_MASS() {
 	SHIPMASSSTRING="${@:1}"
+	SHIPMASSSTRING=${SHIPMASSSTRING#*]}
 	CUTSTRING=${SHIPMASSSTRING#*:}
 	if [ -n "${CUTSTRING}" ] 
 	then
@@ -499,6 +515,7 @@ collect_ship_MASS() {
 collect_ship_CREATOR() {
     # string="[SEND][SERVERMESSAGE] Creator: ENTITY_PLAYERSTATE_harry_dude to RegisteredClient: harry_dude (3) connected: true"; echo ""; string=${string#*_};  string=${string#*_}; string=${string%%t*}; string="${string%"${string##*[![:space:]]}"}"; echo $string; echo ${#string}; echo 
 	SHIPCREATORSTRING="${@:1}"
+	SHIPCREATORSTRING=${SHIPCREATORSTRING#*]}
 	FIRSTCUT=${SHIPCREATORSTRING#*:}
 	if [ -n "${FIRSTCUT}" ] 
 	then
@@ -518,6 +535,7 @@ collect_ship_CREATOR() {
 }
 collect_ship_CURRENTSECTOR() {
 	COLLECTSHIPSECTORSTRING="${@:1}"
+	COLLECTSHIPSECTORSTRING=${COLLECTSHIPSECTORSTRING#*]}
 	FIRSTCUT=${COLLECTSHIPSECTORSTRING#*:}
 	if [ -n "${FIRSTCUT}" ] 
 	then
@@ -549,6 +567,7 @@ player_changesector() {
 # string="[SERVER] Ship[test ship](132) has players attached. Doing Sector Change for PlS[testdude ; id(3)(1)f(0)]: Sector[4](2, 2, 2) -> Sector[9](1, 2, 2)"; string=${string#*]}; string=${string%%[*}; string="${string#"${string%%[![:space:]]*}"}"; echo ${#string}; echo $string
 	echo "Change sector detected for player"
 	SECTORSTRING="${@:1}"
+	SECTORSTRING=${SECTORSTRING#*]}
 	CUTSTRING=${SECTORSTRING#*]}
 	CUTSTRING=${CUTSTRING%%[*}
 	CHANGESECTORCONTROL="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"

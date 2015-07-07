@@ -14,53 +14,6 @@ MYSQLDTSD_SEARCHDB_SEARCHFUNCTION="VARCHAR(50)"
 
 # The current logging script works by feeding the current starmade log into the database and then searching the database to find matches with search
 # strings and their associated functions
-ONSTART_RUN() {
-	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
-	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
-	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
-	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH taillog
-	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH searchlog
-	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH executelog
-}
-ONINTERVAL_600_announce() {
-	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat This message brought to you by Shadow pre-alpha"
-}
-ONEND_goodbye() {
-echo "Server stopped"
-}
-core_mainloop() {
-    ONSTART=( $(compgen -A function | grep ONSTART_) )
-    ONINTERVAL=( $(compgen -A function | grep ONINTERVAL_) )
-    ONEND=( $(compgen -A function | grep ONEND_) )
-    for func in ${ONSTART[@]}
-    do
-        $func &
-    done
-    curtime=0
-	while lib_check_server_running
-	do
-		for func in ${ONINTERVAL[@]}
-		do
-			#echo "Checking on interval functions"
-# the % operator returns the remainder of a division. when this remainder is 0, that means the time is a while multiple of the interval
-# meaning the function should be ran
-			if [ $(( curtime%$(($(echo $func | cut -d"_" -f2))))) -eq 0 ]
-			then
-				echo "executing interval function $func" 
-				$func &
-			fi
-		done
-		let curtime++
-		#echo "started loop"
-# A tiny sleep to prevent cpu burning overhead
-		sleep 1
-# Uses Cat to calculate the number of lines in the log file
-	done
-	for func in ${ONEND[@]}
-	do
-		$func &
-	done
-}
 core_taillog() {
 # Tail with -F to prevent rollover file from stopping read is extremely fast and lightweight method for feeding log lines into the database
 	tail -F $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 |
@@ -118,12 +71,12 @@ core_executelog() {
 		else
 			EXECTUTEACTIVE=YES
 			RECIEVEDPARAMETER=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PARAMETER from COMMANDDB order by line asc limit 1;")
-			CURRENTARRAY=($RECIEVEDPARAMETER)
-			unset CURRENTARRAY[0]
-			unset CURRENTARRAY[1]
-			FORMATEDPARAMETER=${CURRENTARRAY[@]}
-			echo "executing $RECIEVEDCOMMAND '$FORMATEDPARAMETER'"
-			eval $RECIEVEDCOMMAND '$FORMATEDPARAMETER'
+			#CURRENTARRAY=($RECIEVEDPARAMETER)
+			#unset CURRENTARRAY[0]
+			#unset CURRENTARRAY[1]
+			#FORMATEDPARAMETER=${CURRENTARRAY[@]}
+			echo "executing $RECIEVEDCOMMAND $RECIEVEDPARAMETER"
+			eval $RECIEVEDCOMMAND '$RECIEVEDPARAMETER'
 			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM COMMANDDB order by line asc limit 1;"
 			
 		fi

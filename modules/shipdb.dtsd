@@ -98,3 +98,5 @@ chatcommand_STARTERSHIP(){
 		lib_trigger startership $1 $EXAMPLESTARTERSHIP
 	fi
 }
+
+#/spawn_entity spawnsave testspawn 2 2 2 -1 false

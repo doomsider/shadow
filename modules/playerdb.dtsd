@@ -22,6 +22,7 @@ LOGSEARCH_player_login="[SERVER][SPAWN] SPAWNING NEW CHARACTER FOR PlS"
 player_login() {
 	# Player login is received from a string passed after a player spawns
     PLAYERLOGINSTRING="${@:1}"
+	PLAYERLOGINSTRING=${PLAYERLOGINSTRING#*]}
     # Below is an example of the string received by player_login
     # [SERVER] org.schema.game.server.controller.GameServerController@478b7093 SPAWNING NEW CHARACTER FOR PlS[Doomsider ; id(4)(1)f(0)]
     # Cut everything before the first [

@@ -29,6 +29,7 @@ kill_message() {
 #Server(0) PlS[Victim ; id(154)(2)f(0)] Announcing kill: PlayerCharacter[(ENTITY_PLAYERCHARACTER_Murder)(153)] killed PlS[Victim ; id(154)(2)f(0)]
 #Server(0) PlS[Victim ; id(154)(2)f(0)] Announcing kill: Ship[killership](257) killed PlS[Victim ; id(154)(2)f(0)]
     KILLSTRING="${@:1}"
+	KILLSTRING=${KILLSTRING#*]}
 	echo "This was sent to killstring $KILLSTRING"
 	if [[ $KILLSTRING == *"Announcing kill"* ]]
 	then

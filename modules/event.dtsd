@@ -3,13 +3,13 @@
 # Functions for adding times events to the server through the use of Mysql Events
 
 # In order to use scheduler is must be turned on with SET GLOBAL event_scheduler = ON; issued from root for Mysql
-# Events are created by this format MYSQLEVENT_FREQUENCY_TIMEVALUE_TIMEQUANTITY="EVENT_FUNCTION_NAME"
+# Events are created by this format MYSQLEVENT_EVENTNAME_FREQUENCY_TIMEVALUE_TIMEQUANTITY="EVENT_FUNCTION_NAME"
 
-# Acceptable variable for time quantity are YEAR | QUARTER | MONTH | DAY | HOUR | MINUTE | WEEK | SECOND | YEAR_MONTH | DAY_HOUR | DAY_MINUTE | DAY_SECOND | HOUR_MINUTE | HOUR_SECOND | MINUTE_SECOND
-# Acceptable variable for frequency are REPEAT
+# Acceptable variables for time quantity are YEAR | QUARTER | MONTH | DAY | HOUR | MINUTE | WEEK | SECOND | YEAR_MONTH | DAY_HOUR | DAY_MINUTE | DAY_SECOND | HOUR_MINUTE | HOUR_SECOND | MINUTE_SECOND
+# Acceptable variables for frequency are REPEAT
 
-MYSQLEVENT_REPEAT_600_SECOND="EVENT1"
-
+MYSQLEVENT_REPEAT_600_SECOND_SERVERMESSAGE="EVENT_SERVERMESSAGE"
+MYSQLEVENT_REPEAT_60_SECOND_VOTECHECK="ONINTERVAL_60_VOTECHECK"
 core_myscheduler()
 {
 	if [ "$#" -ne "2" ]
@@ -65,22 +65,36 @@ CREATEARRAY=0
 		SCHEDULETYPE=${cutstring%%_*}
 		cutstring=${cutstring#*_}
 		TIMEVALUE=${cutstring%%_*}
-		TIMEQUANTITY=${cutstring#*_}
+		cutstring=${cutstring#*_}
+		TIMEQUANTITY=${cutstring%%_*}
+		EVENTNAME=${cutstring#*_}
 		SCHEDULECOMMAND=${!CURRENTSEARCH}
-		echo "this is SCHEDULETYPE $SCHEDULETYPE TIMEVALUE $TIMEVALUE TIMEQUANTITY $TIMEQUANTITY SCHEDULECOMMAND $SCHEDULECOMMAND"
+		echo "this is SCHEDULETYPE $SCHEDULETYPE TIMEVALUE $TIMEVALUE TIMEQUANTITY $TIMEQUANTITY SCHEDULECOMMAND $SCHEDULECOMMAND EVENTNAME $EVENTNAME"
 		
 		case $SCHEDULETYPE in
 			REPEAT)
-				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "drop event $SCHEDULECOMMAND;"
-				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $SCHEDULECOMMAND ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "drop event $EVENTNAME;"
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
 			;;
 		esac
 		let CREATEARRAY++
 	done
 
 }
-EVENT1() {
+EVENT_SERVERMESSAGE() {
 # A simple server message to send to all players
 lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Message sent from Shadow pre-Alpha database event"
 }
 
+core_test() {
+
+number=5
+count=0
+while [ "$count" -le "$number" ]
+do
+echo "here is the count $count"
+sleep 5
+let count++
+done
+
+}

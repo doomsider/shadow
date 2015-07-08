@@ -9,8 +9,16 @@
 # Acceptable variables for frequency are REPEAT
 
 MYSQLEVENT_REPEAT_600_SECOND_SERVERMESSAGE="EVENT_SERVERMESSAGE"
+MYSQLEVENT_REPEAT_4320_SECOND_SERVERRESTART="EVENT_SERVERRESTART"
 MYSQLEVENT_REPEAT_60_SECOND_VOTECHECK="ONINTERVAL_60_VOTECHECK"
+MYSQLEVENT_REPEAT_300_SECOND_SERVERSTATUS="EVENT_SERVERSTATUS &"
+
+DTSDHELP_myscheduler="\nMyscheduler usage: shadow.dtsd myscheduler on or off\nTurns the Myql Scheduler on or off.  Requires root password for Mysql\n"
+DTSDHELP_clearschedule="\nClearschedule usage: shadow.dtsd clearschedule\nClears scheduled tasks\n"
+DTSDHELP_addevents="\nAddevents usage: shadow.dtsd addevents\nAdds events from the script to the Mysql database\n"
+
 core_myscheduler()
+# [Turns the Myql Scheduler on or off.  Requires root password for Mysql] myscheduler usage:  shadow.dtsd myscheduler <on/off>
 {
 	if [ "$#" -ne "2" ]
 	then
@@ -45,6 +53,7 @@ core_myscheduler()
 
 }
 core_clearschedule() {
+# [Clears scheduled tasks] clearschedule usage: shadow.dtsd clearschedule
 	echo "Clearing all Schedules"
 	CREATEVAR=( $(compgen -v | grep MYSQLEVENT_ ) )
 	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
@@ -56,6 +65,7 @@ core_clearschedule() {
 	done
 }
 core_addevents() {
+# [Adds events from the script to the Mysql database] usage: shadow.dtsd addevents
 CREATEVAR=( $(compgen -v | grep MYSQLEVENT_ ) )
 CREATEARRAY=0
 	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
@@ -86,15 +96,24 @@ EVENT_SERVERMESSAGE() {
 lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Message sent from Shadow pre-Alpha database event"
 }
 
-core_test() {
+EVENT_SERVERSTATUS() {
+	echo "Checking Server Status"
+	if lib_check_server_running
+	then
+		LASTLINE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
+		CURRENTTIME=$(date +%s)
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
+		
+#		select LOGSTRING from SERVERLOG where LOGSTRING like "%SHADOW_SERVER_CHECK_234234%";
+	else
+		echo "Starmade is not running!"
+		core_softreset
+	fi
 
-number=5
-count=0
-while [ "$count" -le "$number" ]
-do
-echo "here is the count $count"
-sleep 5
-let count++
-done
 
+}
+
+
+EVENT_SERVERRESTART() {
+core_softreset
 }

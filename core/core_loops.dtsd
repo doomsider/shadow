@@ -15,17 +15,17 @@ MYSQLDTSD_SEARCHDB_SEARCHFUNCTION="VARCHAR(50)"
 # The current logging script works by feeding the current starmade log into the database and then searching the database to find matches with search
 # strings and their associated functions
 core_taillog() {
+	log_myerasetable SERVERLOG
 # Tail with -F to prevent rollover file from stopping read is extremely fast and lightweight method for feeding log lines into the database
 	tail -F $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 |
     while read a; do
 # Quotations will cause Mysql to error so they are removed with a in line edit 
-		STRING=$(sed "s/\"//g" <<< "$a")
+		STRING=${a//\"/}
 #		echo "INSERT INTO SERVERLOG LOGSTRING $STRING"
 		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERLOG (LOGSTRING) VALUES (\"$STRING\");"
     done
 }
 core_searchlog() {
-	log_myerasetable SERVERLOG
 	log_myerasetable TRIGGERDB
 	log_myerasetable COMMANDDB
 	while lib_check_server_running

@@ -34,30 +34,6 @@ lib_check_server_running() {
 		return 1
 	fi
 }
-lib_searchline() {
-# Usage lib_searchline line
-# This generates an array of all the search strings and then tests them against a line from the log
-	SEARCHVAR=( $(compgen -v | grep LOGSEARCH_ ) )
-	SEARCHARRAY=0
-	while [ -n "${SEARCHVAR[$SEARCHARRAY]+set}" ]
-	do
-		CURRENTSEARCH=${SEARCHVAR[$SEARCHARRAY]}
-		SEARCHSTRING=${!CURRENTSEARCH}
-		SEARCHFUNCTION=${CURRENTSEARCH#*_}
-		SEARCHCOMMAND="${@:1}"
-		#echo "here is the search command $SEARCHCOMMAND"
-		case "$SEARCHCOMMAND" in
-			*"$SEARCHSTRING"*)
-				echo "match found"
-				eval $SEARCHFUNCTION '$SEARCHCOMMAND' &
-# Not sure if there should be a break here, may save some time after a match has been found
-			;;
-			esac
-		#echo "Search function is $SEARCHFUNCTION"
-		#echo "Search string is ${!CURRENTSEARCH}"
-		let SEARCHARRAY++
-	done
-}
 lib_screenadd() {
 #usage lib_screenadd screenname
 	if ps aux | grep -v grep | grep SCREEN | grep $1 >/dev/null
@@ -81,12 +57,6 @@ lib_screensendback() {
 	STUFFCOMMAND="${@:2}"
 	#echo "trying to send this command $STUFFCOMMAND to the screen $1"
 	screen -p 0 -S $1 -X stuff "$STUFFCOMMAND &"$(printf \\r)
-}
-core_screensendback() {
-	# Temporary core function
-	STUFFCOMMAND="${@:3}"
-	echo "Sending command"
-	lib_screensendback $2 $STUFFCOMMAND
 }
 core_do() {
 	STUFFCOMMAND="${@:2}"
@@ -172,7 +142,13 @@ core_softstart() {
 		lib_screensend $CONFIGDTSD_MAINSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log
 		lib_screensend $CONFIGDTSD_DTSDSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_SCRIPTSCREEN.log
 		lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
-		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mainloop
+		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
+		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
+		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
+		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH addevents
+		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH taillog
+		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH searchlog
+		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH executelog
 	fi
 }
 core_softreset() {

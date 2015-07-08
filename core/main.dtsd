@@ -145,31 +145,35 @@ core_box() {
 }
 core_check() {
 # Manually check for latest version and install it 
-	cd $CONFIGDTSD_INSTALLPATH
-	wget -q -O tmp.html http://files.star-made.org/build/
-	RELEASE_URL=$(cat tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
-	as_user "rm tmp.html"
+	wget -q $CONFIGDTSD_INSTALLPATH/tmp.html http://files.star-made.org/build/
+	RELEASE_URL=$(cat $CONFIGDTSD_INSTALLPATH/tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
+	rm $CONFIGDTSD_INSTALLPATH/tmp.html
+	#starmade-build_20150621_023107.zip
 	#echo $RELEASE_URL
-	SNEWVERSION1=$(echo $RELEASE_URL | cut -d_ -f2)
+	cutstring=${RELEASE_URL#*_}
+	SNEWVERSION1=${cutstring%_*}
 	#echo $SNEWVERSION1
-	SNEWVERSION2=$(echo $RELEASE_URL | cut -d_ -f3 | cut -d. -f1)
+	cutstring=${cutstring#*_}
+	SNEWVERSION2=${cutstring%.*}
 	#echo $SNEWVERSION2
-	CURRENTVER=$(cat $STARTERPATH/StarMade/version.txt)
-	#echo $CURRENTVER
-	OLDSMVER1=$(echo $CURRENTVER | cut -d# -f2 | cut -d_ -f1)
+	CURRENTVER=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
+	#0.19289#20150621_023107
+	cutstring=${CURRENTVER#*#}
+	OLDSMVER1=${cutstring%_*}
 	#echo $OLDSMVER1
-	OLDSMVER2=$(echo $CURRENTVER | cut -d_ -f2)
+	OLDSMVER2=${CURRENTVER#*_}
 	#echo $OLDSMVER2
 	if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
 	then 
 		echo "Newer Version Detected"
-		cd $CONFIGDTSD_INSTALLPATH
+		core_clearschedule
 # At this point the cronjobs and server will need to be stopped and a backup made just in case
 		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat New version detected going down for backup and upgrade"
 		if lib_check_server_running
 		then
 			echo "$SERVICE is running... stopping."
 # Issue Chat and a command to the server to shutdown
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
 			lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Server Going down be back in a bit."
 			lib_screensend $CONFIGDTSD_MAINSCREEN "/shutdown 60"
 # Give the server a chance to gracefully shutdown if not kill it and then seg fault it if necessary
@@ -209,12 +213,16 @@ core_check() {
 		else
 			echo "$CONFIGDTSD_SERVICE not running"
 		fi
-		core_backup
-		wget http://files.star-made.org/build/$RELEASE_URL
-		unzip -o $RELEASE_URL -d $CONFIGDTSD_INSTALLPATH/StarMade
-		rm installed-version
-		touch CONFIGDTSD_INSTALLPATH/installed-version
-		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version
+# Core backup is commented out here but it is a good idea.  As the database grows zipping it up can take a long time so this has been taken into consideration for default config.
+		#core_backup
+		wget -P $CONFIGDTSD_INSTALLPATH http://files.star-made.org/build/$RELEASE_URL
+		unzip -o $CONFIGDTSD_INSTALLPATH/$RELEASE_URL -d $CONFIGDTSD_INSTALLPATH/StarMade
+		rm $CONFIGDTSD_INSTALLPATH/installed-version.txt
+		rm $CONFIGDTSD_INSTALLPATH/$RELEASE_URL
+		touch $CONFIGDTSD_INSTALLPATH/installed-version.txt
+		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version.txt
+		lib_pause
+		core_softreset
 	else
 		echo "No new version detected"
 	fi

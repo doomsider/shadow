@@ -9,7 +9,7 @@ CHATHELP_VOTEPOINTS="[Lists the number of voting points you have] USAGE: !VOTEPO
 CHATHELP_VOTEEXCHANGE="[Exchanges voting points for rewards] USAGE: !VOTEPOINTS"
 
 chatcommand_VOTEPOINTS(){
-    #used to tellt eh suer how many voting points they have
+    #used to tell the user how many voting points they have
     #usage: !VOTEPOINTS
     if [ "$#" -ne "1" ]
 	then

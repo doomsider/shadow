@@ -9,16 +9,16 @@
 # Acceptable variables for frequency are REPEAT
 
 MYSQLEVENT_REPEAT_600_SECOND_SERVERMESSAGE="EVENT_SERVERMESSAGE"
-MYSQLEVENT_REPEAT_4320_SECOND_SERVERRESTART="EVENT_SERVERRESTART"
+MYSQLEVENT_REPEAT_43200_SECOND_SERVERRESTART="EVENT_SERVERRESTART"
 MYSQLEVENT_REPEAT_60_SECOND_VOTECHECK="ONINTERVAL_60_VOTECHECK"
 MYSQLEVENT_REPEAT_300_SECOND_SERVERSTATUS="EVENT_SERVERSTATUS &"
+MYSQLEVENT_REPEAT_3600_SECOND_SERVERVERSION="EVENT_SERVERVERSION"
 
 DTSDHELP_myscheduler="\nMyscheduler usage: shadow.dtsd myscheduler on or off\nTurns the Myql Scheduler on or off.  Requires root password for Mysql\n"
 DTSDHELP_clearschedule="\nClearschedule usage: shadow.dtsd clearschedule\nClears scheduled tasks\n"
 DTSDHELP_addevents="\nAddevents usage: shadow.dtsd addevents\nAdds events from the script to the Mysql database\n"
 
-core_myscheduler()
-{
+core_myscheduler() {
 # [Turns the Myql Scheduler on or off.  Requires root password for Mysql] myscheduler usage:  shadow.dtsd myscheduler <on/off>
 	if [ "$#" -ne "2" ]
 	then
@@ -49,7 +49,6 @@ core_myscheduler()
 		;;
 		esac
 	fi
-
 }
 core_clearschedule() {
 # [Clears scheduled tasks] clearschedule usage: shadow.dtsd clearschedule
@@ -58,7 +57,7 @@ core_clearschedule() {
 	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
 	do
 		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
-		SCHEDULECOMMAND=${!CURRENTSEARCH}
+		SCHEDULECOMMAND=${CURRENTSEARCH##*_}
 		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "drop event $SCHEDULECOMMAND;"
 		let CREATEARRAY++
 	done
@@ -92,7 +91,7 @@ CREATEARRAY=0
 }
 EVENT_SERVERMESSAGE() {
 # A simple server message to send to all players
-lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Message sent from Shadow pre-Alpha database event"
+	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Message sent from Shadow pre-Alpha database event"
 }
 EVENT_SERVERSTATUS() {
 	echo "Checking Server Status"
@@ -126,4 +125,88 @@ EVENT_SERVERSTATUS() {
 }
 EVENT_SERVERRESTART() {
 core_softreset
+}
+EVENT_SERVERVERSION() {
+# Manually check for latest version and install it 
+	wget -q -O $CONFIGDTSD_INSTALLPATH/tmp.html http://files.star-made.org/build/
+	RELEASE_URL=$(cat $CONFIGDTSD_INSTALLPATH/tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
+	rm $CONFIGDTSD_INSTALLPATH/tmp.html
+	#starmade-build_20150621_023107.zip
+	#echo $RELEASE_URL
+	cutstring=${RELEASE_URL#*_}
+	SNEWVERSION1=${cutstring%_*}
+	#echo $SNEWVERSION1
+	cutstring=${cutstring#*_}
+	SNEWVERSION2=${cutstring%.*}
+	#echo $SNEWVERSION2
+	CURRENTVER=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
+	#0.19289#20150621_023107
+	cutstring=${CURRENTVER#*#}
+	OLDSMVER1=${cutstring%_*}
+	#echo $OLDSMVER1
+	OLDSMVER2=${CURRENTVER#*_}
+	#echo $OLDSMVER2
+	if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
+	then 
+		echo "Newer Version Detected"
+		core_clearschedule
+# At this point the cronjobs and server will need to be stopped and a backup made just in case
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat New version detected going down for backup and upgrade"
+		if lib_check_server_running
+		then
+			echo "$SERVICE is running... stopping."
+# Issue Chat and a command to the server to shutdown
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Server Going down be back in a bit."
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/shutdown 60"
+# Give the server a chance to gracefully shutdown if not kill it and then seg fault it if necessary
+			sleep 60
+			for LOOPNO in {0..30}
+			do
+				if lib_check_server_running
+				then
+					sleep 1
+				else
+					echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+				break
+				fi
+			done
+		fi
+		if lib_check_server_running
+		then
+			echo $CONFIGDTSD_SERVICE is taking too long to close and may be frozen. Forcing shut down
+			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+			kill $PID
+			for LOOPNO in {0..30}
+			do
+				if lib_check_server_running
+				then
+					sleep 1
+				else
+					echo $CONFIGDTSD_SERVICE took $(($LOOPNO + 30)) seconds to close, and had to be force shut down
+			break
+				fi
+			done
+		fi
+		if lib_check_server_running 
+		then
+			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+			kill -9 $PID			
+			$CONFIGDTSD_SERVICE took too long to close. $CONFIGDTSD_SERVICE had to be killed
+		else
+			echo "$CONFIGDTSD_SERVICE not running"
+		fi
+# Core backup is commented out here but it is a good idea.  As the database grows zipping it up can take a long time so this has been taken into consideration for default config.
+		#core_backup
+		wget -P $CONFIGDTSD_INSTALLPATH http://files.star-made.org/build/$RELEASE_URL
+		unzip -o $CONFIGDTSD_INSTALLPATH/$RELEASE_URL -d $CONFIGDTSD_INSTALLPATH/StarMade
+		rm $CONFIGDTSD_INSTALLPATH/installed-version.txt
+		rm $CONFIGDTSD_INSTALLPATH/$RELEASE_URL
+		touch $CONFIGDTSD_INSTALLPATH/installed-version.txt
+		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version.txt
+		lib_pause
+		core_softreset
+	else
+		echo "No new version detected"
+	fi
 }

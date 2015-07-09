@@ -85,6 +85,7 @@ lib_softstop() {
 				return 1
 			fi
 		done
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Stopped\");"
 		return 0
 	fi
 	return 1
@@ -95,6 +96,7 @@ lib_hardstop(){
 		echo $CONFIGDTSD_SERVICE is taking too long to close and may be frozen. Forcing shut down
 		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
 		kill $PID
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Kill\");"
 		for LOOPNO in {0..30}
 		do
 			if lib_check_server_running
@@ -114,6 +116,7 @@ lib_forcestop(){
 	then
 		PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
 		kill -9 $PID
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Forcekill\");"
 		echo $CONFIGDTSD_SERVICE took too long to close. $CONFIGDTSD_SERVICE had to be killed
 		return 1
 	fi
@@ -143,6 +146,7 @@ core_softstart() {
 		lib_screensend $CONFIGDTSD_DTSDSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_SCRIPTSCREEN.log
 		lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Starting\");"
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH addevents
@@ -169,6 +173,7 @@ core_softreset() {
 				echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
 			fi
 		done
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Stopped\");"
 	fi
 # Main screen must be killed off to ensure no running process left
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null
@@ -190,6 +195,7 @@ core_softstop() {
 			lib_forcestop
 		fi
 	fi
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Stopped\");"
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null
 	then
 		echo "Screen(s) identified by $CONFIGDTSD_MAINSCREEN detected and will be closed"

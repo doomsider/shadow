@@ -100,3 +100,4 @@ chatcommand_STARTERSHIP(){
 }
 
 #/spawn_entity spawnsave testspawn 2 2 2 -1 false
+#Remove player from quarantined ship /change_sector_for_copy schema 2 3 4 

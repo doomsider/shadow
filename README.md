@@ -93,9 +93,7 @@ Current Worklist(no particular order):
 	Shop Restock automated
 	Shop replace default shops
 	Ship quarantine for going over block size or other set parameters
-	Fleshing out timed events for server upgrade, restart, backup, etc
 	Faction DB and tracking faction statistics
-	Rewrite current timer function to use Mysql events
 	
 
 Ideas (feel free to edit/add):

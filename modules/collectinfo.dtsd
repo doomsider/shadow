@@ -7,6 +7,9 @@ MYSQLDTSD_ADMINLOG_NAME="VARCHAR(25)"
 MYSQLDTSD_ADMINLOG_COMMAND="VARCHAR(50)"
 MYSQLDTSD_ADMINLOG_TIME=TIMESTAMP
 
+MYSQLDTSD_SERVERSTATUS_STATUS="VARCHAR(50)"
+MYSQLDTSD_SERVERSTATUS_TIME=TIMESTAMP
+
 MYSQLDTSD_GUESTBOOK_NAME="VARCHAR(25)"
 MYSQLDTSD_GUESTBOOK_STATUS="VARCHAR(20)"
 MYSQLDTSD_GUESTBOOK_IP="VARCHAR(15) DEFAULT 'Not Collected'"
@@ -43,9 +46,18 @@ LOGSEARCH_collect_ship_LASTPOSITION="[SERVER-LOCAL-ADMIN] Local-Pos:"
 
 blueprint_load() {
 # [BLUEPRINT][LOAD] <admin> loaded killership as killership in (2, 2, 2) as faction 0
-LOADBPSTRING="${@:1}"
-LOADBPSTRING=${LOADBPSTRING#*]}
-echo "This was sent to blueprint load $LOADBPSTRING"
+# [BLUEPRINT][LOAD] <system> loaded Isanth Type-Zero Cc as MOB_Isanth Type-Zero Cc_1435850965418_0 in (2, 2, 2) as faction -1
+	LOADBPSTRING="${@:1}"
+	LOADBPSTRING=${LOADBPSTRING#*]}
+	
+	echo "This was sent to blueprint load $LOADBPSTRING"
+}
+
+blueprint_buy() {
+# [BLUEPRINT][BUY] Doomsider bought blueprint from metaItem: 2blockship as 2blockshipspawn; Price: 1125; to sector: (2, 2, 2) (loadTime: 19ms, spawnTime: 14ms)
+	BUYBPSTRING="${@:1}"
+	BUYBPSTRING=${LOADBPSTRING#*]}
+	echo "This was sent to blueprint load $BUYBPSTRING"
 }
 admin_commandlog() {
 # [ADMIN COMMAND] GIVEID from RegisteredClient: MewGuy (1) connected: true params: [MewGuy, 123, 100]
@@ -610,8 +622,13 @@ player_changesector() {
 		echo "Player changed sector"
 	;;
 	esac
-
 }
+
+
+#
+#[SERVER][LOGIN] login failed (ERROR_ALREADY_LOGGED_IN): SET CLIENT TO NULL
+
+
 
 #Temporary holding spot for search strings, these will be placed in their respective functions
 #	SEARCHLOGIN="[SERVER][LOGIN] login received. returning login info for RegisteredClient: "

@@ -335,30 +335,30 @@ core_download() {
 }
 core_dump() {
 # Do a java dump for bug hunting
-if command -v jstack >/dev/null
-then
-if lib_check_server_running
-then
-if [ "$#" -ne "2" ] 
-then
-echo "Usage - smdump <amount of thread dumps> <amount of delay between dumps> smdump 2 10"
-exit 
-fi
-PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')    
-count=$2
-delay=$3
-while [ $count -gt 0 ]
-do
-jstack $PID >> $CONFIGDTSD_INSTALLPATH/threaddump$(date +%H%M%S.%N).log
-sleep $delay
-let count--
-done
-else
-echo "$SERVICE not running"
-fi
-else
-echo "Please install Java JDK (ie: openjdk-7-jdk) to make dumps"
-fi
+	if command -v jstack >/dev/null
+	then
+		if lib_check_server_running
+		then
+			if [ "$#" -ne "2" ] 
+			then
+				echo "Usage - smdump <amount of thread dumps> <amount of delay between dumps> smdump 2 10"
+				exit 
+			fi
+			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')    
+			count=$2
+			delay=$3
+			while [ $count -gt 0 ]
+			do
+				jstack $PID >> $CONFIGDTSD_INSTALLPATH/threaddump$(date +%H%M%S.%N).log
+				sleep $delay
+				let count--
+				done
+		else
+			echo "$SERVICE not running"
+		fi
+	else
+		echo "Please install Java JDK (ie: openjdk-7-jdk) to make dumps"
+	fi
 }
 core_ebrake() {
 # Ebrake shuts down the server when it is locked up and makes a Java dump for error collecting
@@ -440,6 +440,7 @@ core_kill() {
 		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN | awk '{print $2}') )   
 		echo "Trying to kill these ${PIDS[@]}"		
 		kill ${PIDS[@]}
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Kill\");"
 	fi
   
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN >/dev/null
@@ -448,6 +449,7 @@ core_kill() {
 		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN | awk '{print $2}') )   
 	echo "Trying to kill these ${PIDS[@]}"		
 	kill ${PIDS[@]}
+	core_clearschedule
     core_cleanup
 	fi
 }
@@ -505,6 +507,7 @@ core_start() {
 		lib_screensend $CONFIGDTSD_MAINSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log
 		lib_screensend $CONFIGDTSD_DTSDSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_SCRIPTSCREEN.log
 		lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Starting\");"
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb

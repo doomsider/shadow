@@ -3,7 +3,7 @@
 # Functions for adding times events to the server through the use of Mysql Events
 
 # In order to use scheduler is must be turned on with SET GLOBAL event_scheduler = ON; issued from root for Mysql
-# Events are created by this format MYSQLEVENT_EVENTNAME_FREQUENCY_TIMEVALUE_TIMEQUANTITY="EVENT_FUNCTION_NAME"
+# Events are created by this format MYSQLEVENT_FREQUENCY_TIMEVALUE_TIMEQUANTITY_EVENTNAME="EVENT_FUNCTION_NAME"
 
 # Acceptable variables for time quantity are YEAR | QUARTER | MONTH | DAY | HOUR | MINUTE | WEEK | SECOND | YEAR_MONTH | DAY_HOUR | DAY_MINUTE | DAY_SECOND | HOUR_MINUTE | HOUR_SECOND | MINUTE_SECOND
 # Acceptable variables for frequency are REPEAT
@@ -113,17 +113,21 @@ EVENT_SERVERSTATUS() {
 			if [ -n "$CHECKSERVER" ]
 			then
 				echo "Sever appears to be running"
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Server Running\");"
 			else
 				echo "Server appears to be down"
-			core_softreset
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart server frozen\");"
+				core_softreset
 			fi
 		fi
 	else
 		echo "Starmade is not running!"
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart no server detected\");"
 		core_softreset
 	fi
 }
 EVENT_SERVERRESTART() {
+mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart\");"
 core_softreset
 }
 EVENT_SERVERVERSION() {
@@ -148,6 +152,7 @@ EVENT_SERVERVERSION() {
 	#echo $OLDSMVER2
 	if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
 	then 
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"New Version Detected\");"
 		echo "Newer Version Detected"
 		core_clearschedule
 # At this point the cronjobs and server will need to be stopped and a backup made just in case
@@ -200,13 +205,15 @@ EVENT_SERVERVERSION() {
 		#core_backup
 		wget -P $CONFIGDTSD_INSTALLPATH http://files.star-made.org/build/$RELEASE_URL
 		unzip -o $CONFIGDTSD_INSTALLPATH/$RELEASE_URL -d $CONFIGDTSD_INSTALLPATH/StarMade
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"New Version Installed\");"
 		rm $CONFIGDTSD_INSTALLPATH/installed-version.txt
 		rm $CONFIGDTSD_INSTALLPATH/$RELEASE_URL
 		touch $CONFIGDTSD_INSTALLPATH/installed-version.txt
 		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version.txt
-		lib_pause
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart after update\");"
 		core_softreset
 	else
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Version current\");"
 		echo "No new version detected"
 	fi
 }

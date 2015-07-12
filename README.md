@@ -87,14 +87,17 @@ Add a web admin panel to control the game server remotely.
 Current Worklist(no particular order):
 	
 	AI Guards
-	Collect info for new spawning entities
 	Reduce the size of the universe by deleting unused sectors
+	Rewrite/Rework Vote function
+	Faction Bank Accounts for credits and faction points
 	Tooltips
 	Shop Restock automated
 	Shop replace default shops
+	Cool down for user chat commands
 	Ship quarantine for going over block size or other set parameters
 	Faction DB and tracking faction statistics
-	
+	Basic PHP connection examples to extract information with a web page
+	Arena and Duelling
 
 Ideas (feel free to edit/add):
 

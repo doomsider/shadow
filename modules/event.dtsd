@@ -136,20 +136,20 @@ EVENT_SERVERVERSION() {
 	RELEASE_URL=$(cat $CONFIGDTSD_INSTALLPATH/tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
 	rm $CONFIGDTSD_INSTALLPATH/tmp.html
 	#starmade-build_20150621_023107.zip
-	#echo $RELEASE_URL
+	#echo "RELEASE_URL $RELEASE_URL"
 	cutstring=${RELEASE_URL#*_}
 	SNEWVERSION1=${cutstring%_*}
-	#echo $SNEWVERSION1
+	#echo "NEWVERSION1 $SNEWVERSION1"
 	cutstring=${cutstring#*_}
 	SNEWVERSION2=${cutstring%.*}
-	#echo $SNEWVERSION2
+	#echo "NEWVERSION2 $SNEWVERSION2"
 	CURRENTVER=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
 	#0.19289#20150621_023107
 	cutstring=${CURRENTVER#*#}
 	OLDSMVER1=${cutstring%_*}
-	#echo $OLDSMVER1
+	#echo "OLDSMVER1 $OLDSMVER1"
 	OLDSMVER2=${CURRENTVER#*_}
-	#echo $OLDSMVER2
+	#echo "OLDSMVER2 $OLDSMVER2"
 	if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
 	then 
 		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"New Version Detected\");"

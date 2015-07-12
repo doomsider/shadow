@@ -2,7 +2,6 @@
 # Shadow .01 Based off of DTSD
 # Database to store info from entities
 
-
 MYSQLDTSD_ADMINLOG_NAME="VARCHAR(25)"
 MYSQLDTSD_ADMINLOG_COMMAND="VARCHAR(50)"
 MYSQLDTSD_ADMINLOG_TIME=TIMESTAMP
@@ -28,6 +27,7 @@ LOGSEARCH_admin_commandlog="[ADMIN COMMAND]"
 LOGSEARCH_client_connected="[SERVER][LOGIN] new client connected"
 LOGSEARCH_client_logout="[SERVER] SETTING LOGOUT SPAWNING POINT"
 LOGSEARCH_blueprint_load="[BLUEPRINT][LOAD]"
+LOGSEARCH_blueprint_buy="[BLUEPRINT][BUY]"
 
 LOGSEARCH_collect_player_CREDITS="[SERVER-LOCAL-ADMIN] [PL] CREDITS:"
 LOGSEARCH_collect_player_FACTION="[SERVER-LOCAL-ADMIN] [PL] FACTION:"
@@ -43,21 +43,60 @@ LOGSEARCH_collect_ship_MASS="[SERVER-LOCAL-ADMIN] Mass:"
 LOGSEARCH_collect_ship_CREATOR="[SERVER-LOCAL-ADMIN] Creator:"
 LOGSEARCH_collect_ship_CURRENTSECTOR="[SERVER-LOCAL-ADMIN] Sector:"
 LOGSEARCH_collect_ship_LASTPOSITION="[SERVER-LOCAL-ADMIN] Local-Pos:"
+LOGSEARCH_collect_ship_UID="[SERVER-LOCAL-ADMIN] UID:"
 
 blueprint_load() {
 # [BLUEPRINT][LOAD] <admin> loaded killership as killership in (2, 2, 2) as faction 0
 # [BLUEPRINT][LOAD] <system> loaded Isanth Type-Zero Cc as MOB_Isanth Type-Zero Cc_1435850965418_0 in (2, 2, 2) as faction -1
 	LOADBPSTRING="${@:1}"
 	LOADBPSTRING=${LOADBPSTRING#*]}
-	
 	echo "This was sent to blueprint load $LOADBPSTRING"
+	CUTSTRING=${LOADBPSTRING#*\(}
+	CUTSTRING=${CUTSTRING%%)*}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+# Quick way to parse the ship names because the possible spaces in the ship names have to be accounted for.  This method will fail if the ship has " as " in the BP name.	
+	CUTSTRING="${LOADBPSTRING/ as /.}"
+	CUTSTRING="${CUTSTRING/> loaded /.}"
+	CUTSTRING="${CUTSTRING/ in (/.}"
+	CUTSTRING="${CUTSTRING#*.}"
+	BPNAME="${CUTSTRING%%.*}"
+	CUTSTRING="${CUTSTRING#*.}"
+	SPAWNNAME="${CUTSTRING%%.*}"
+	STRING="${LOADBPSTRING##*n}"
+	FACTIONID="${STRING#"${STRING%%[![:space:]]*}"}"
+# Introduces a problem of not knowing what DB to put the entity in to, this will have to be addressed automatically in the collect script by including entity type for ships and stations and cross checking to make sure they are in the right database.
+	lib_myinsert SHIPDB NAME $SPAWNNAME
+	lib_myupdate SHIPDB FACTION $FACTIONID NAME $SPAWNNAME
+	lib_trigger shipinfo SHIPDB $SPAWNNAME
 }
-
 blueprint_buy() {
 # [BLUEPRINT][BUY] Doomsider bought blueprint from metaItem: 2blockship as 2blockshipspawn; Price: 1125; to sector: (2, 2, 2) (loadTime: 19ms, spawnTime: 14ms)
 	BUYBPSTRING="${@:1}"
-	BUYBPSTRING=${LOADBPSTRING#*]}
+	BUYBPSTRING=${BUYBPSTRING#*]}
 	echo "This was sent to blueprint load $BUYBPSTRING"
+	CUTSTRING=${BUYBPSTRING#*\(}
+	CUTSTRING=${CUTSTRING%%)*}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+# Quick way to parse the ship names because the possible spaces in the ship names have to be accounted for.  This method will fail if the ship has " as " in the BP name.	
+	CUTSTRING="${BUYBPSTRING/ as /.}"
+	CUTSTRING="${CUTSTRING/metaItem: /.}"
+	CUTSTRING="${CUTSTRING#*.}"
+	BPNAME="${CUTSTRING%%.*}"
+	CUTSTRING="${CUTSTRING#*.}"
+	SPAWNNAME="${CUTSTRING%%;*}"
+	lib_myinsert SHIPDB NAME $SPAWNNAME
+	lib_myupdate SHIPDB FACTION 0 NAME $SPAWNNAME
+	lib_trigger shipinfo SHIPDB $SPAWNNAME
 }
 admin_commandlog() {
 # [ADMIN COMMAND] GIVEID from RegisteredClient: MewGuy (1) connected: true params: [MewGuy, 123, 100]
@@ -280,9 +319,13 @@ player_boarding() {
 		lib_trigger shipinfo STATIONDB $BOARDSTATIONNAME	
 	;;
 	*"PlayerCharacter"*)
+# Need to release ship from CONTROLLING here if it exists
 		echo "Astronaut in space"
+		CONTROLLING=$(lib_myvalueretrieve CONTROLLING PLAYERDB $PLAYERBOARDING)
+		
 		lib_myupdate PLAYERDB CONTROLLING Spacesuit NAME $PLAYERBOARDING
 		lib_myupdate PLAYERDB CONTROLTYPE Astronaut NAME $PLAYERBOARDING
+		
 	;;
 	esac
 }
@@ -415,6 +458,19 @@ sector_info () {
 	lib_release sectorinfo $SECTORNAME
 }
 # Functions to collect ship and station info
+collect_ship_UID() {
+# [SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_ship_testdude_6block
+	SHIPUIDSTRING="${@:1}"
+	SHIPUIDSTRING=${SHIPUIDSTRING#*]}
+	CUTSTRING=${SHIPUIDSTRING#*_}
+	ENTITYTYPE=${CUTSTRING%%_*}
+	echo "This is the entity type from UID $ENTITYTYPE"
+	COLLECTSHIPNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from requestinfodb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from requestinfodb $COLLECTDB"
+	lib_myupdate $COLLECTDB ENTITYTYPE $ENTITYTYPE NAME $COLLECTSHIPNAME	
+}
 collect_ship_LASTPOSITION() {
 	SHIPLASTPOSSTRING="${@:1}"
 	SHIPLASTPOSSTRING=${SHIPLASTPOSSTRING#*]}
@@ -441,6 +497,15 @@ collect_ship_LASTPOSITION() {
 	echo "This is the db collect from requestinfodb $COLLECTDB"
 	lib_myupdate $COLLECTDB LASTPOSITION $POSITIONNAME NAME $COLLECTSHIPNAME	
 	lib_release shipinfo $COLLECTSHIPNAME
+# This check was added for spawning blueprint information collect because there is no way to determine whether it is a ship or station initially.	
+	CHECKENTITYTYPE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select ENTITYTYPE from SHIPDB where NAME='$COLLECTSHIPNAME';")
+	echo "This is the check for entity type $CHECKENTITYTYPE"
+	if [[ $CHECKENTITYTYPE == "SPACESTATION" ]]
+	then
+		echo "Spacestation found in ship database"
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "insert into STATIONDB (NAME, CURRENTSECTOR, ATTACHED, DOCKED, BLOCK, MASS, CREATOR, LASTPOSITION, FACTION, LASTCONTROLLER, ENTITYTYPE) select NAME, CURRENTSECTOR, ATTACHED, DOCKED, BLOCK, MASS, CREATOR, LASTPOSITION, FACTION, LASTCONTROLLER, ENTITYTYPE from SHIPDB where NAME='$COLLECTSHIPNAME';"
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "delete from SHIPDB where NAME like '$COLLECTSHIPNAME';"
+	fi
 }
 collect_ship_ATTACHED() {
 #	[SERVER-LOCAL-ADMIN] Attached: [PlS[harry_dude ; id(6)(1)f(0)]]
@@ -624,35 +689,8 @@ player_changesector() {
 	esac
 }
 
-
-#
 #[SERVER][LOGIN] login failed (ERROR_ALREADY_LOGGED_IN): SET CLIENT TO NULL
 
-
-
-#Temporary holding spot for search strings, these will be placed in their respective functions
-#	SEARCHLOGIN="[SERVER][LOGIN] login received. returning login info for RegisteredClient: "
-#		SEARCHREMOVE="[SERVER][DISCONNECT] Client 'RegisteredClient:"
-#		SEARCHCHAT="[CHAT]"
-#		SEARCHCHANGE="has players attached. Doing Sector Change for PlS"
-#		SEARCHBUY="[BLUEPRINT][BUY]"
-#		SEARCHBOARD="[CONTROLLER][ADD-UNIT]"
-#		SEARCHDOCK="NOW REQUESTING DOCK FROM"
-#		SEARCHUNDOCK="NOW UNDOCKING:"
-#		SEARCHADMIN="[ADMIN COMMAND]"
-#		SEARCHKILL="Announcing kill:"
-#		SEARCHDESTROY="PERMANENTLY DELETING ENTITY:"
-#		SEARCHINIT="SPAWNING NEW CHARACTER FOR PlS"
-#collect_ship_NAME() {
-#	SHIPNAMESTRING="${@:1}"
-#	[SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_new ship 
-#	FIRSTUNDERCUTSTRING=${SHIPNAMESTRING#*_}
-#	COLLECTENTITYTYPE=${FIRSTUNDERCUTSTRING%%_*}
-#	COLLECT_SHIP_NAME=${FIRSTUNDERCUTSTRING#*_}
-#	echo "This is entity type from collect_ship_name $COLLECTENTITYTYPE"
-#	echo "This is ship name from collect_ship_name $COLLECT_SHIP_NAME"
-#	lib_myinsert SHIPDB NAME "$COLLECT_SHIP_NAME"	
-#}
 # Strings to retrieve for Ship and Station info
 #Received after /sector_info not loaded
 #[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SHIP_space ship, sectorPos=(2, 2, 2), type=5, seed=0, lastModifier=, spawner=<admin>, realName=space ship, touched=true, faction=0, pos=(440.3829, 2.4231818, -369.9619), minPos=(-2, -1, -1), maxPos=(1, 0, 1), creatorID=0]

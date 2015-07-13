@@ -233,12 +233,22 @@ echo "OLDSMVER1 $OLDSMVER1"
 			CURRENTSTRING=${releaseindex[$LINECOUNT]}
 			#echo $CURRENTSTRING
 # Format the current line by removing everything after the first space and then removing ./ in the beginning of the name		
-			cutstring=${CURRENTSTRING%%[[:space:]]*}
+			cutstring=${CURRENTSTRING%[[:space:]]*}
+			cutstring=${cutstring%[[:space:]]*}
 			CURRENTFILE=${cutstring/.\//}
-# Download the new file and then copy it into the proper location
-			echo ""
-			echo $CURRENTFILE	
-			curl http://files.star-made.org"$newversion"/$CURRENTFILE > $CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE
+			cutstring=${CURRENTSTRING%[[:space:]]*}
+				cutstring=${cutstring##*[[:space:]]}
+			CURRENTCKSUM=${cutstring%%[[:space:]]*}
+			OLDCKSUMSTRING=$(cksum "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE")
+			cutstring=${OLDCKSUMSTRING#*[[:space:]]}
+			OLDCKSUM=${cutstring%%[[:space:]]*}
+			echo "CURRENTFILE $CURRENTFILE CURRENTCKSUM $CURRENTCKSUM OLDCKSUM $OLDCKSUM"
+# Check to see if the cksums differ
+			if [ "$CURRENTCKSUM" -ne "$OLDCKSUM" ]
+			then
+# Download the new file and then copy it into the proper location		
+				curl "http://files.star-made.org$newversion/$CURRENTFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+			fi
 			let LINECOUNT++
 		done
 	else

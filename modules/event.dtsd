@@ -30,7 +30,7 @@ core_myscheduler() {
 		  read -p "The password for Mysql root : " INPUT
             if [ -n "$INPUT" ]
             then
-				mysql -u root -p$INPUT -e "SET GLOBAL event_scheduler = ON"
+				mysql -u root -p$INPUT -e "SET GLOBAL event_scheduler = ON;"
             else
 				"You must use root password to turn on or off scheduler"
 				exit
@@ -41,7 +41,7 @@ core_myscheduler() {
 		  read -p "The password for Mysql root : " INPUT
             if [ -n "$INPUT" ]
             then
-				mysql -u root -p$INPUT -e "SET GLOBAL event_scheduler = OFF"
+				mysql -u root -p$INPUT -e "SET GLOBAL event_scheduler = OFF;"
             else
 				"You must use root password to turn on or off scheduler"
 				exit
@@ -214,19 +214,29 @@ oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
 		IFS=$OLD_IFS
 # Set line count to 0 then go through the array line by line until the array index is unset		
 		LINECOUNT=0
-		while [ -n "${releaseindex[$LINECOUNT]+set}" ] 
-		do
-			CURRENTSTRING=${releaseindex[$LINECOUNT]}
-			#echo $CURRENTSTRING
+			while [ -n "${releaseindex[$LINECOUNT]+set}" ] 
+	do
+		CURRENTSTRING=${releaseindex[$LINECOUNT]}
+		#echo $CURRENTSTRING
 # Format the current line by removing everything after the first space and then removing ./ in the beginning of the name		
-			cutstring=${CURRENTSTRING%%[[:space:]]*}
-			CURRENTFILE=${cutstring/.\//}
-# Download the new file and then copy it into the proper location
-			echo ""
-			echo $CURRENTFILE	
-			curl http://files.star-made.org"$newversion"/$CURRENTFILE > $CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE
-			let LINECOUNT++
-		done
+		cutstring=${CURRENTSTRING%[[:space:]]*}
+		cutstring=${cutstring%[[:space:]]*}
+		CURRENTFILE=${cutstring/.\//}
+		cutstring=${CURRENTSTRING%[[:space:]]*}
+		cutstring=${cutstring##*[[:space:]]}
+		CURRENTCKSUM=${cutstring%%[[:space:]]*}
+		OLDCKSUMSTRING=$(cksum "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE")
+		cutstring=${OLDCKSUMSTRING#*[[:space:]]}
+		OLDCKSUM=${cutstring%%[[:space:]]*}
+		echo "CURRENTFILE $CURRENTFILE CURRENTCKSUM $CURRENTCKSUM OLDCKSUM $OLDCKSUM"
+# Check to see if the cksums differ
+		if [ "$CURRENTCKSUM" -ne "$OLDCKSUM" ]
+		then
+# Download the new file and then copy it into the proper location		
+			curl "http://files.star-made.org$newversion/$CURRENTFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+		fi
+		let LINECOUNT++
+	done
 		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart after update\");"
 		core_softreset
 	else

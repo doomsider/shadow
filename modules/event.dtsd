@@ -78,7 +78,6 @@ CREATEARRAY=0
 		EVENTNAME=${cutstring#*_}
 		SCHEDULECOMMAND=${!CURRENTSEARCH}
 		echo "this is SCHEDULETYPE $SCHEDULETYPE TIMEVALUE $TIMEVALUE TIMEQUANTITY $TIMEQUANTITY SCHEDULECOMMAND $SCHEDULECOMMAND EVENTNAME $EVENTNAME"
-		
 		case $SCHEDULETYPE in
 			REPEAT)
 				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "drop event $EVENTNAME;"
@@ -102,13 +101,13 @@ EVENT_SERVERSTATUS() {
 		CURRENTTIME=$(date +%s)
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
 		sleep 10
-		SERVERREPAIR=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%Database Repairing itself%\" and SERVERLOG.line >= $LASTLINE") 
+		SERVERREPAIR=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%Database Repairing itself%\" and SERVERLOG.line >= $LASTLINE";) 
 		if [ -n "$SERVERREPAIR" ]
 			then
 			echo "Sever appears to be repairing database"
 		else
 			echo "Server is not repairing database "
-			CHECKSERVER=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%SHADOW_SERVER_CHECK_$CURRENTTIME%\"")
+			CHECKSERVER=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%SHADOW_SERVER_CHECK_$CURRENTTIME%\";")
 			echo "CHECKSERVER $CHECKSERVER"
 			if [ -n "$CHECKSERVER" ]
 			then
@@ -132,25 +131,30 @@ core_softreset
 }
 EVENT_SERVERVERSION() {
 # Manually check for latest version and install it 
-	wget -q -O $CONFIGDTSD_INSTALLPATH/tmp.html http://files.star-made.org/build/
-	RELEASE_URL=$(cat $CONFIGDTSD_INSTALLPATH/tmp.html | grep -o -E "[^<>]*?.zip" | tail -1)
-	rm $CONFIGDTSD_INSTALLPATH/tmp.html
-	#starmade-build_20150621_023107.zip
-	#echo "RELEASE_URL $RELEASE_URL"
-	cutstring=${RELEASE_URL#*_}
-	SNEWVERSION1=${cutstring%_*}
-	#echo "NEWVERSION1 $SNEWVERSION1"
-	cutstring=${cutstring#*_}
-	SNEWVERSION2=${cutstring%.*}
-	#echo "NEWVERSION2 $SNEWVERSION2"
-	CURRENTVER=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
-	#0.19289#20150621_023107
-	cutstring=${CURRENTVER#*#}
+# Grab the releaseindex as a very long string variable
+	releaseindex=$(curl http://files.star-made.org/releasebuildindex)
+# Go to the end of the variable at the last .
+	newversion=${releaseindex##*.}
+	echo "newversion $newversion"
+# Get the first version to compare
+	cutstring=${newversion#*_}
+	NEWSMVERSION1=${cutstring%_*}
+	echo "NEWSMVERSION1 $NEWSMVERSION1"
+# Get the second version to compare
+	NEWSMVERSION2=${cutstring#*_}
+	echo "NEWSMVERSION2 $NEWSMVERSION2"
+# Gather the old version from the version.txt file in StarMade
+oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
+	echo "oldversion $oldversion"
+# Get the first version to compare
+	cutstring=${oldversion#*#}
 	OLDSMVER1=${cutstring%_*}
-	#echo "OLDSMVER1 $OLDSMVER1"
-	OLDSMVER2=${CURRENTVER#*_}
-	#echo "OLDSMVER2 $OLDSMVER2"
-	if [ "$SNEWVERSION1" -gt "$OLDSMVER1" ] || [ "$SNEWVERSION2" -gt "$OLDSMVER2" ]
+	echo "OLDSMVER1 $OLDSMVER1"
+# Get the second version to compare
+	OLDSMVER2=${cutstring#*_}
+	echo "OLDSMVER2 $OLDSMVER2"
+# If the first or second newversion exceeds the first or second old version
+	if [ "$NEWSMVERSION1" -gt "$OLDSMVER1" ] || [ "$NEWSMVERSION2" -gt "$OLDSMVER2" ]
 	then 
 		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"New Version Detected\");"
 		echo "Newer Version Detected"
@@ -203,13 +207,26 @@ EVENT_SERVERVERSION() {
 		fi
 # Core backup is commented out here but it is a good idea.  As the database grows zipping it up can take a long time so this has been taken into consideration for default config.
 		#core_backup
-		wget -P $CONFIGDTSD_INSTALLPATH http://files.star-made.org/build/$RELEASE_URL
-		unzip -o $CONFIGDTSD_INSTALLPATH/$RELEASE_URL -d $CONFIGDTSD_INSTALLPATH/StarMade
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"New Version Installed\");"
-		rm $CONFIGDTSD_INSTALLPATH/installed-version.txt
-		rm $CONFIGDTSD_INSTALLPATH/$RELEASE_URL
-		touch $CONFIGDTSD_INSTALLPATH/installed-version.txt
-		echo $RELEASE_URL >> $CONFIGDTSD_INSTALLPATH/installed-version.txt
+# Set the field seperator to new line and then store the chucksums as an array with each element being a line
+		OLD_IFS=$IFS
+		IFS=$'\n'
+		releaseindex=( $(curl http://files.star-made.org"$newversion"/checksums) )
+		IFS=$OLD_IFS
+# Set line count to 0 then go through the array line by line until the array index is unset		
+		LINECOUNT=0
+		while [ -n "${releaseindex[$LINECOUNT]+set}" ] 
+		do
+			CURRENTSTRING=${releaseindex[$LINECOUNT]}
+			#echo $CURRENTSTRING
+# Format the current line by removing everything after the first space and then removing ./ in the beginning of the name		
+			cutstring=${CURRENTSTRING%%[[:space:]]*}
+			CURRENTFILE=${cutstring/.\//}
+# Download the new file and then copy it into the proper location
+			echo ""
+			echo $CURRENTFILE	
+			curl http://files.star-made.org"$newversion"/$CURRENTFILE > $CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE
+			let LINECOUNT++
+		done
 		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart after update\");"
 		core_softreset
 	else

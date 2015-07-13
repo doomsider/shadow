@@ -12,7 +12,7 @@ lib_myinsert() {
 # Usage lib_myinsert table column value 
 	INSERTVALUE="${@:3}"
 	#echo "INSERT INTO $1 ($2) VALUES ('$INSERTVALUE')"
-	lib_mysend "INSERT INTO $1 ($2) VALUES (\"$INSERTVALUE\")"
+	lib_mysend "INSERT INTO $1 ($2) VALUES (\"$INSERTVALUE\");"
 }
 lib_myupdate() {
 # This command replaces a value in a column in a row containing a value
@@ -42,8 +42,8 @@ lib_mycreate() {
 		#echo "Table name is $MYSQLTABLENAME"
 		#echo "Search function is $SEARCHFUNCTION"
 		#echo "Datatype is ${!CURRENTSEARCH}"
-		lib_mysend "CREATE TABLE IF NOT EXISTS $MYSQLTABLENAME ( line INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(line) )" 
-		lib_mysend "ALTER TABLE $MYSQLTABLENAME ADD $MYSQLCOLUMNNAME $MYSQLDATATYPE"
+		lib_mysend "CREATE TABLE IF NOT EXISTS $MYSQLTABLENAME ( line INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(line) );" 
+		lib_mysend "ALTER TABLE $MYSQLTABLENAME ADD $MYSQLCOLUMNNAME $MYSQLDATATYPE;"
 		let CREATEARRAY++
 	done
 # This was added to address the issue of having a unique index for Mysql.  This allows for columns like players' names
@@ -62,7 +62,7 @@ lib_mycreate() {
 		#echo "Search function is $SEARCHFUNCTION"
 		#echo "Datatype is ${!CURRENTSEARCH}"
 		#echo "Send this ALTER TABLE $MYSQLTABLENAME ADD $MYSQLDATATYPE ($MYSQLCOLUMNNAME)"
-		lib_mysend "ALTER TABLE $MYSQLTABLENAME ADD $MYSQLDATATYPE ($MYSQLCOLUMNNAME)"
+		lib_mysend "ALTER TABLE $MYSQLTABLENAME ADD $MYSQLDATATYPE ($MYSQLCOLUMNNAME);"
 		let CREATEARRAY++
 	done
 }
@@ -73,20 +73,20 @@ lib_myvalueretrieve() {
 # Usage: lib_mysend [column to search] [table column is in] [value in column]
     MYVALUERETRIEVENAME="${@:3}"
 	#echo "This is name $MYVALUERETRIEVENAME"
-    mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where NAME='$MYVALUERETRIEVENAME'"
+    mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where NAME='$MYVALUERETRIEVENAME';"
 }
 lib_mycolumnretrieve() {
 # Retrieves an entire column
 # Usage:  lib_mycolumnretrieve [table] [row]
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -se "select $2 from $1"
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -se "select $2 from $1;"
 }
 lib_columnretrievesearch() {
 # Like myvalueretrieve only tries to grab all values from a column rather than just one from a column with a unique index
 # Usage: columnretrievesearch column_to_display table column_containing_search search_string
     searchval="${@:4}"
     #echo "this is column to retrieve from $1 from this table $2 searching from this column $3 containing this string $searchval"
-    mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where $3 like '%$searchval%'"
+    mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where $3 like '%$searchval%';"
 }	
 log_myerasetable() { 
-    lib_mysend "TRUNCATE TABLE $1"
+    lib_mysend "TRUNCATE TABLE $1;"
 }

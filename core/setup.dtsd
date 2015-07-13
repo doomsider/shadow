@@ -62,7 +62,14 @@ core_setup() {
 	else
 		FOUNDDOS2UNIX=NO
 	fi
-	if [[ $FOUNDSCREEN == NO ]] || [[ $FOUNDMYSQL == NO ]] || [[ $FOUNDJAVA == NO ]] || [[ $FOUNDZIP == NO ]] || [[ $FOUNDSTARMADE == NO ]]
+	if command -v curl >/dev/null
+	then
+		echo "curl was found"
+		FOUNDCURL=YES
+	else
+		FOUNDCURL=NO
+	fi
+	if [[ $FOUNDSCREEN == NO ]] || [[ $FOUNDMYSQL == NO ]] || [[ $FOUNDJAVA == NO ]] || [[ $FOUNDZIP == NO ]] || [[ $FOUNDSTARMADE == NO ]] || [[ $FOUNDDOS2UNIX == NO ]] || [[ $FOUNDCURL == NO ]]
 	then
 		if [[ $FOUNDSTARMADE == NO ]]
 		then
@@ -87,6 +94,10 @@ core_setup() {
 		if [[ $FOUNDDOS2UNIX == NO ]]
 		then
 			echo "Please install dos2unix.  IE: for Ubuntu type - sudo apt-get install dos2unix"
+		fi
+		if [[ $FOUNDCURL == NO ]]
+		then
+			echo "Please install curl.  IE: for Ubuntu type - sudo apt-get install curl"
 		fi
 		exit
 	fi

@@ -237,14 +237,26 @@ collect_player_CREDITS() {
 }
 collect_player_FACTION() {
 	# [SERVER-LOCAL-ADMIN] [PL] FACTION: null
+	# [2015-07-13 00:15:52] [SERVER-LOCAL-ADMIN] [PL] FACTION: Faction [id=10001, name=Testers, description=a faction, size: 2; FP: 2916]
 	COLLECTSTRING="${@:1}"
 	COLLECTSTRING=${COLLECTSTRING#*]}
-	cutstring=${COLLECTSTRING##*:}
-	cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
-	COLLECT_PLAYER_FACTION="${cutstring%"${cutstring##*[![:space:]]}"}"
-	echo "This was send to collect player faction $COLLECT_PLAYER_FACTION"
-	COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
-	lib_myupdate PLAYERDB FACTION $COLLECT_PLAYER_FACTION NAME $COLLECTPLAYERNAME
+	cutstring=${COLLECTSTRING#*:}
+	if [[ $cutstring == *"null"* ]]
+	then
+		COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+		lib_myupdate PLAYERDB FACTION null NAME $COLLECTPLAYERNAME
+		echo "This was send to collect player faction null" 
+	fi
+	if [[ $cutstring == *"Faction"* ]]
+	then
+		cutstring=${cutstring#*=}
+		COLLECT_PLAYER_FACTION=${cutstring%%,*}
+		cutstring=${cutstring#*=}
+		COLLECT_PLAYER_FACTIONAME=${cutstring%%,*}
+		COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+		lib_myupdate PLAYERDB FACTION $COLLECT_PLAYER_FACTION NAME $COLLECTPLAYERNAME
+		echo "This was send to collect player faction $COLLECT_PLAYER_FACTION $COLLECT_PLAYER_FACTIONAME" 
+	fi
 }
 collect_player_CURRENTIP() {
 # [SERVER-LOCAL-ADMIN] [PL] IP: /192.168.1.9

@@ -149,21 +149,21 @@ core_check() {
 	releaseindex=$(curl http://files.star-made.org/releasebuildindex)
 # Go to the end of the variable at the last .
 	newversion=${releaseindex##*.}
-echo "newversion $newversion"
+	echo "newversion $newversion"
 # Get the first version to compare
 	cutstring=${newversion#*_}
 	NEWSMVERSION1=${cutstring%_*}
-echo "NEWSMVERSION1 $NEWSMVERSION1"
+	echo "NEWSMVERSION1 $NEWSMVERSION1"
 # Get the second version to compare
 	NEWSMVERSION2=${cutstring#*_}
-echo "NEWSMVERSION2 $NEWSMVERSION2"
+	echo "NEWSMVERSION2 $NEWSMVERSION2"
 # Gather the old version from the version.txt file in StarMade
-	oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
-echo "oldversion $oldversion"
+oldversion=$(cat StarMade/version.txt)
+	echo "oldversion $oldversion"
 # Get the first version to compare
 	cutstring=${oldversion#*#}
 	OLDSMVER1=${cutstring%_*}
-echo "OLDSMVER1 $OLDSMVER1"
+	echo "OLDSMVER1 $OLDSMVER1"
 # Get the second version to compare
 	OLDSMVER2=${cutstring#*_}
 	echo "OLDSMVER2 $OLDSMVER2"
@@ -220,36 +220,46 @@ echo "OLDSMVER1 $OLDSMVER1"
 		fi
 # Core backup is commented out here but it is a good idea.  As the database grows zipping it up can take a long time so this has been taken into consideration and is commented out.
 		#core_backup
-		echo "Newer Version Detected"check
+		echo "Newer Version Detected"
 # Set the field separator to new line and then store the chucksums as an array with each element being a line
 		OLD_IFS=$IFS
 		IFS=$'\n'
-		releaseindex=( $(curl http://files.star-made.org"$newversion"/checksums) )
+		releaseindex=( $(curl http://files.star-made.org$newversion/checksums) )
 		IFS=$OLD_IFS
 # Set line count to 0 then go through the array line by line until the array index is unset		
 		LINECOUNT=0
 		while [ -n "${releaseindex[$LINECOUNT]+set}" ] 
 		do
 			CURRENTSTRING=${releaseindex[$LINECOUNT]}
-			#echo $CURRENTSTRING
+		#echo $CURRENTSTRING
 # Format the current line by removing everything after the first space and then removing ./ in the beginning of the name		
-			cutstring=${CURRENTSTRING%[[:space:]]*}
-			cutstring=${cutstring%[[:space:]]*}
-			CURRENTFILE=${cutstring/.\//}
-			cutstring=${CURRENTSTRING%[[:space:]]*}
-				cutstring=${cutstring##*[[:space:]]}
-			CURRENTCKSUM=${cutstring%%[[:space:]]*}
-			OLDCKSUMSTRING=$(cksum "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE")
+		cutstring=${CURRENTSTRING%[[:space:]]*}
+		cutstring=${cutstring%[[:space:]]*}
+		CURRENTFILE=${cutstring/.\//}
+		cutstring=${CURRENTSTRING%[[:space:]]*}
+		cutstring=${cutstring##*[[:space:]]}
+		CURRENTCKSUM=${cutstring%%[[:space:]]*}
+		OLDCKSUMSTRING=$(cksum "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE")
+# Check to see if OLDCKSUMSTRING is set, if not this indicates the file does not exist
+		if [ -z "$OLDCKSUMSTRING" ]
+		then
+			echo "No existing file found - downloading file"
+			curl "http://files.star-made.org$newversion/$CURRENTFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+		else
 			cutstring=${OLDCKSUMSTRING#*[[:space:]]}
 			OLDCKSUM=${cutstring%%[[:space:]]*}
 			echo "CURRENTFILE $CURRENTFILE CURRENTCKSUM $CURRENTCKSUM OLDCKSUM $OLDCKSUM"
 # Check to see if the cksums differ
 			if [ "$CURRENTCKSUM" -ne "$OLDCKSUM" ]
 			then
-# Download the new file and then copy it into the proper location		
+# Download the new file and then copy it into the proper location
+				echo "Updated file detected - downloading file"
 				curl "http://files.star-made.org$newversion/$CURRENTFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+			else
+				echo "Current file detected - no action"
 			fi
-			let LINECOUNT++
+		fi
+		let LINECOUNT++
 		done
 	else
 		echo "No new version detected"

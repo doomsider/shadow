@@ -230,12 +230,13 @@ oldversion=$(cat StarMade/version.txt)
 		LINECOUNT=0
 		while [ -n "${releaseindex[$LINECOUNT]+set}" ] 
 		do
-			CURRENTSTRING=${releaseindex[$LINECOUNT]}
+		CURRENTSTRING=${releaseindex[$LINECOUNT]}
 		#echo $CURRENTSTRING
 # Format the current line by removing everything after the first space and then removing ./ in the beginning of the name		
 		cutstring=${CURRENTSTRING%[[:space:]]*}
 		cutstring=${cutstring%[[:space:]]*}
 		CURRENTFILE=${cutstring/.\//}
+		FORMATFILE=${CURRENTFILE// /%20}
 		cutstring=${CURRENTSTRING%[[:space:]]*}
 		cutstring=${cutstring##*[[:space:]]}
 		CURRENTCKSUM=${cutstring%%[[:space:]]*}
@@ -244,7 +245,13 @@ oldversion=$(cat StarMade/version.txt)
 		if [ -z "$OLDCKSUMSTRING" ]
 		then
 			echo "No existing file found - downloading file"
-			curl "http://files.star-made.org$newversion/$CURRENTFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+# Makes sure directory structure is created if it does not exist for the file write
+			if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ]
+			then
+				mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+				rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+			fi
+			curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
 		else
 			cutstring=${OLDCKSUMSTRING#*[[:space:]]}
 			OLDCKSUM=${cutstring%%[[:space:]]*}
@@ -252,9 +259,15 @@ oldversion=$(cat StarMade/version.txt)
 # Check to see if the cksums differ
 			if [ "$CURRENTCKSUM" -ne "$OLDCKSUM" ]
 			then
+# Makes sure directory structure is created if it does not exist for the file write
+			if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ] 
+			then
+				mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+				rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+			fi
 # Download the new file and then copy it into the proper location
 				echo "Updated file detected - downloading file"
-				curl "http://files.star-made.org$newversion/$CURRENTFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+				curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
 			else
 				echo "Current file detected - no action"
 			fi

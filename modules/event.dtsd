@@ -222,6 +222,7 @@ oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
 			cutstring=${CURRENTSTRING%[[:space:]]*}
 			cutstring=${cutstring%[[:space:]]*}
 			CURRENTFILE=${cutstring/.\//}
+			FORMATFILE=${CURRENTFILE// /%20}
 			cutstring=${CURRENTSTRING%[[:space:]]*}
 			cutstring=${cutstring##*[[:space:]]}
 			CURRENTCKSUM=${cutstring%%[[:space:]]*}
@@ -230,7 +231,13 @@ oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
 			if [ -z "$OLDCKSUMSTRING" ]
 			then
 				echo "No existing file found - downloading file"
-				curl "http://files.star-made.org$newversion/$CURRENTFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+# Makes sure directory structure is created if it does not exist for the file write
+				if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ] 
+				then
+					mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+					rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+				fi
+				curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
 			else
 				cutstring=${OLDCKSUMSTRING#*[[:space:]]}
 				OLDCKSUM=${cutstring%%[[:space:]]*}
@@ -240,7 +247,13 @@ oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
 				then
 # Download the new file and then copy it into the proper location
 					echo "Updated file detected - downloading file"
-					curl "http://files.star-made.org$newversion/$CURRENTFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+# Makes sure directory structure is created if it does not exist for the file write
+					if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ] 
+					then
+						mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+						rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+					fi
+					curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
 				else
 					echo "Current file detected - no action"
 				fi

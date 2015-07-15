@@ -65,9 +65,9 @@ else
 		do
 			if [ "${USERCOMMANDS[$COREARRAY]}" = "$1" ]
 			then
-#				echo "Command found"				
+				#echo "Command found"				
 				ADDCOMMAND="core_$1"
-#				echo "Here is adjusted command $ADDCOMMAND $@"
+				#echo "Here is adjusted command $ADDCOMMAND $@"
 # Execute the command that was found
 				eval $ADDCOMMAND $@
 				let COREARRAY++

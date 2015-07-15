@@ -17,7 +17,7 @@ Shadow is in testing mode only at the moment.  The current target test system is
 
 Step1 - Get Shadow's files and directories from Github then copy shadow files/dirs to the parent directory of Starmade if it exists.  If it doesn't exist put them in the same directory you plan to install StarMade to.
 
-Step2 - Prerequisites must be installed for the script to function properly.  For Ubuntu you must install Java, Mysql, Zip, Dos2unix, and Screen if they are not installed already 
+Step2 - Prerequisites must be installed for the script to function properly.  For Ubuntu you must install Java, Mysql, Zip, Dos2unix, Curl, and Screen if they are not installed already 
 	
 	EXAMPLE INSTALL COMMANDS FOR UBUNTU 14.04
 	
@@ -30,6 +30,8 @@ Step2 - Prerequisites must be installed for the script to function properly.  Fo
 	sudo apt-get install zip
 	
 	sudo apt-get install dos2unix
+	
+	sudo apt-get install curl
 	
 	SPECIAL NOTE:  You must set a root password for Mysql for Shadow to function, do not leave this blank.
 	
@@ -77,7 +79,8 @@ Naming Conventions - Shadow looks at its own functions' names to determine speci
 	
 	Any variable that starts with LOGSEARCH_ will automatically entered into the search database and then the result will be returned to the specified function.  The format is LOGSEARCH_functioname="String match in log".
 
-
+	Any variable that starts with MYSQLEVENT_ will be added to the running Mysql events.  Mysql event manager must be turned on for these to work.  The format is MYSQLEVENT_FREQUENCY_TIMEVALUE_TIMEQUANTITY_EVENTNAME="EVENT_FUNCTION_NAME".
+	
 Future Goals (feel free to edit/add):
 
 Enhance server web pages with information from the database.
@@ -97,7 +100,11 @@ Current Worklist(no particular order):
 	Ship quarantine for going over block size or other set parameters
 	Faction DB and tracking faction statistics
 	Basic PHP connection examples to extract information with a web page
-	Arena and Duelling
+	Duelling
+	Arena
+	Off-Limits
+	Trap
+	
 
 Ideas (feel free to edit/add):
 

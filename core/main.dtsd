@@ -22,7 +22,71 @@ DTSDHELP_start="\nStart usage: shadow.dtsd start\nStart the server\n"
 DTSDHELP_status="\nStatus usage: shadow.dtsd status\nCheck to see if server process is active\n"
 DTSDHELP_stop="\nStop usage: shadow.dtsd stop\nShutdown server with a warning message to players\n"
 DTSDHELP_universebackup="\nUniversebackup usage: shadow.dtsd universebackup\nBacks up just the universe of a running server\n"
+DTSDHELP_updateshadow="\nUpdateshadow usage: shadow.dtsd uupdateshadow\nUpdates Shadow.  Saves new downloads and old files in shadow directory.  This will overwrite all existing file so be warned you will have to copy back any custom settings.\n"
+DTSDHELP_force="\nFroce usage: shadow.dtsd force\nForces an install of StarMade.  Can be used to repair an install.\n"
 
+core_updateshadow() {
+# Updates Shadow.  Saves new downloads and old files in shadow directory.  This will overwrite all existing files so be warned you will have to copy back any custom settings.
+	if [ ! -d "$CONFIGDTSD_INSTALLPATH/shadow" ]
+	then
+		mkdir $CONFIGDTSD_INSTALLPATH/shadow
+	fi
+	current_time=$(date "+%Y.%m.%d-%H.%M.%S")
+	if [ -d "$CONFIGDTSD_INSTALLPATH/modules" ] 
+	then
+		mkdir  $CONFIGDTSD_INSTALLPATH/shadow/shadow_backup_$current_time
+		mkdir  $CONFIGDTSD_INSTALLPATH/shadow/shadow_backup_$current_time/modules
+		cp $CONFIGDTSD_INSTALLPATH/modules/* $CONFIGDTSD_INSTALLPATH/shadow/shadow_backup_$current_time/modules
+	else
+		mkdir $CONFIGDTSD_INSTALLPATH/modules
+	fi
+	if [ -d "$CONFIGDTSD_INSTALLPATH/core" ]
+	then
+		mkdir  $CONFIGDTSD_INSTALLPATH/shadow/shadow_backup_$current_time
+		mkdir  $CONFIGDTSD_INSTALLPATH/shadow/shadow_backup_$current_time/core
+		cp $CONFIGDTSD_INSTALLPATH/core/* $CONFIGDTSD_INSTALLPATH/shadow/shadow_backup_$current_time/core
+		cp $CONFIGDTSD_INSTALLPATH/* $CONFIGDTSD_INSTALLPATH/shadow/shadow_backup_$current_time
+	else
+		mkdir $CONFIGDTSD_INSTALLPATH/core
+	fi
+	mkdir $CONFIGDTSD_INSTALLPATH/shadow/shadow_download_$current_time
+	git clone https://github.com/doomsider/shadow.git $CONFIGDTSD_INSTALLPATH/shadow/shadow_download_$current_time
+	yes | cp -f $CONFIGDTSD_INSTALLPATH/shadow/shadow_download_$current_time/* $CONFIGDTSD_INSTALLPATH
+	yes | cp -f $CONFIGDTSD_INSTALLPATH/shadow/shadow_download_$current_time/core/* $CONFIGDTSD_INSTALLPATH/core
+	yes | cp -f $CONFIGDTSD_INSTALLPATH/shadow/shadow_download_$current_time/modules/* $CONFIGDTSD_INSTALLPATH/modules
+}
+
+core_force () {
+	mkdir $CONFIGDTSD_INSTALLPATH/StarMade
+# Grab the releaseindex as a very long string variable
+	releaseindex=$(curl http://files.star-made.org/releasebuildindex)
+# Go to the end of the variable at the last .
+	newversion=${releaseindex##*.}
+# Set the field seperator to new line and then store the chucksums as an array with each element being a line
+	OLD_IFS=$IFS
+	IFS=$'\n'
+	releaseindex=( $(curl http://files.star-made.org$newversion/checksums) )
+	IFS=$OLD_IFS
+	LINECOUNT=0
+	while [ -n "${releaseindex[$LINECOUNT]+set}" ] 
+	do
+		CURRENTSTRING=${releaseindex[$LINECOUNT]}
+		#echo $CURRENTSTRING
+# Format the current line by removing everything after the first space and then removing ./ in the beginning of the name		
+		cutstring=${CURRENTSTRING%[[:space:]]*}
+		cutstring=${cutstring%[[:space:]]*}
+		CURRENTFILE=${cutstring/.\//}
+# Makes sure directory structure is created if it does not exist for the file write
+		if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ]; then
+			mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+			rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+		fi
+		FORMATFILE=${CURRENTFILE// /%20}
+		echo -e "\n Downloading $CURRENTFILE"
+		curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+		let LINECOUNT++
+	done
+}
 core_backup() {
 # Backups current Starmade directory into backupdir with the below backupname and a timestamp
     BACKUPNAME="starmade_backup_"
@@ -327,8 +391,8 @@ core_download() {
 	else
 		echo "Downloading Starmade  !!Upgrade may hang at the end and you will have to ctrl-c to get out!! "
 		lib_pause
-		cd $SCRIPTDIR
-		if [ -f $SCRIPTDIR/StarMade-Starter.jar ]
+		cd $CONFIGDTSD_INSTALLPATH
+		if [ -f $CONFIGDTSD_INSTALLPATH/StarMade-Starter.jar ]
 		then
 			echo "Starter file found running install"
 			java -jar StarMade-Starter.jar -nogui
@@ -338,7 +402,7 @@ core_download() {
 # Grab the starmade starter file for Linux - This location may need to be updated in the future
 			wget http://files.star-made.org/StarMade-Starter.jar
 # Execute the starters update routine for a headless server
-			if [ -f $SCRIPTDIR/StarMade-Starter.jar ]
+			if [ -f $CONFIGDTSD_INSTALLPATH/StarMade-Starter.jar ]
 			then
 				echo "Download successful, running update/install routine"
 				java -jar StarMade-Starter.jar -nogui

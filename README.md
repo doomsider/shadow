@@ -10,8 +10,21 @@ Shadow is written and tested with StarMade in mind but will be flexible enough t
 Development:
 Adding useful modifications and testing towards an Alpha release
 
+Install Easy:
+	Download https://drive.google.com/file/d/0B519td3ku8G1dVVPNURCbzBJcGM/view?usp=sharing and copy to the directory you wish to install StarMade to.
+	
+	or
+	
+	wget http://104.223.107.159/forum/uploads/local/install.sh in the directory Starmade is or will be.
+	
+	chmod +x install.sh
+	
+	./install.sh
+	
+	Follow the on screen instructions and be sure to go through all the steps
+	
 
-Install:
+Install Manual:
 
 Shadow is in testing mode only at the moment.  The current target test system is Ubuntu 14.04.  If you want to test shadow on other operating systems or configurations I cannot offer support during testing.  
 
@@ -32,6 +45,8 @@ Step2 - Prerequisites must be installed for the script to function properly.  Fo
 	sudo apt-get install dos2unix
 	
 	sudo apt-get install curl
+	
+	sudo apt-get install git
 	
 	SPECIAL NOTE:  You must set a root password for Mysql for Shadow to function, do not leave this blank.
 	

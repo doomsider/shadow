@@ -55,7 +55,6 @@ core_updateshadow() {
 	yes | cp -f $CONFIGDTSD_INSTALLPATH/shadow/shadow_download_$current_time/core/* $CONFIGDTSD_INSTALLPATH/core
 	yes | cp -f $CONFIGDTSD_INSTALLPATH/shadow/shadow_download_$current_time/modules/* $CONFIGDTSD_INSTALLPATH/modules
 }
-
 core_force () {
 	mkdir $CONFIGDTSD_INSTALLPATH/StarMade
 # Grab the releaseindex as a very long string variable

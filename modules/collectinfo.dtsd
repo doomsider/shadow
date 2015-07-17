@@ -698,6 +698,8 @@ player_changesector() {
 		lib_myupdate PLAYERDB CURRENTSECTOR $CURRENTCHANGESECTOR NAME $CHANGEPLAYERNAME
 		lib_myupdate SHIPDB CURRENTSECTOR $CURRENTCHANGESECTOR NAME $CHANGESHIPNAME
 		lib_trigger sectorinfo $CURRENTCHANGESECTOR Sector
+# Universe related functions could get messy if set outside of the universeboarder or if set next to each other.  This will have to be addressed later
+		universejail $OLDX $OLDY $OLDZ $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
 		universeofflimits $OLDX $OLDY $OLDZ $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
 		universeboarder $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
 	;;

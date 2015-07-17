@@ -9,10 +9,17 @@ MYSQLDTSD_SECTORDB_NAME="VARCHAR(8)"
 MYSQLALTER_SECTORDB_NAME="UNIQUE INDEX"
 
 MYSQLDTSD_OFFLIMIT_SECTOR="VARCHAR(8)"
-MYSQLDTSD_OFFLIMIT_PLAYER="VARCHAR(8)"
+MYSQLDTSD_OFFLIMIT_PLAYER="VARCHAR(25)"
 
+MYSQLDTSD_JAIL_SECTOR="VARCHAR(8)"
+MYSQLDTSD_JAIL_PLAYER="VARCHAR(25)"
 
 LOGSEARCH_sector_initiallogin="[SERVER][GALAXY] SENDING SYSTEM BACK TO CLIENT"
+
+CHATHELP_JAIL="[Jails or keeps player in certain sectors] Usage: !JAIL x y z playername"
+CHATHELP_GETOUT="[Releases a player from jail and being confined to certain sector] USAGE: !getout playername"
+CHATHELP_OFFLIMITS="[Sets a sector offlimits to everyone but the creator and who they allow in the sector] USAGE: !offlimits <add or remove> <sector> <playername>"
+
 
 UNIVERSECENTER="2_2_2" #Set the center of the universe boarder
 UNIVERSERADIUS=50 #Set the radius of the universe boarder around 
@@ -32,14 +39,50 @@ sector_initiallogin() {
 	lib_trigger sectorinfo $SECTORNAME Sector
 }
 
+chatcommand_JAIL() {
+# Jails or keeps player(s) in certain sectors
+# Usage: !jail x y z playername
+	CHECKPLAYERDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select NAME from PLAYERDB where NAME='$5';")
+	SECTORNAME="$2"_"$3"_"$4"
+	if [ -z "$CHECKPLAYERDB" ]
+	then
+		echo "No existing player to add to jail"
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No player $5 found in database to put in jail in sector $2 $3 $4
+	else
+		CHECKPLAYERJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PLAYER from JAIL where PLAYER='$5' and SECTOR='$SECTORNAME'")
+		if [ -z "$CHECKPLAYERJAIL" ]
+		then
+			echo "Player not already in jail"
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO JAIL (SECTOR, PLAYER) VALUES (\"$SECTORNAME\",\"$5\");"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Player $5 found in database and put in jail in sector $2 $3 $4
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Player $5 appears to already be in jail in sector $2 $3 $4
+		fi
+	fi
+}
+chatcommand_GETOUT() {
+# Releases a player from jail and being confined to certain sector(s)
+# Usage: !getout playername
+ CHECKPLAYERJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PLAYER from JAIL where PLAYER='$2'")
+	if [ -z "$CHECKPLAYERJAIL" ]
+ 	then
+		echo "No player to let out of jail"
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Player $2 appears to not be in jail
+	else
+		
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Releasing Player $2 from jail
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM JAIL where PLAYER='$2';"
+	fi
+}
+
 chatcommand_OFFLIMITS(){
 # Sets a sector offlimits to everyone but the creator and who they allow in the sector
 # This command can be changed to use current sector as context and allow players to set their own sectors to offlimits.
-# Usage: offlimits <add or remove> <sector> <playername>
-# !offlimits add 2 2 2
+# Usage: !offlimits <add or remove> <sector> <playername>
+# !offlimits add 2 2 2 - This will add offlimits to the sector and set the player to the current user
 # !offlimits add 2 2 2 Newguy
 # !offlimits remove 2 2 2 Newguy
-# !offlimits remove 2 2 2
+# !offlimits remove 2 2 2 - This will remove all entries for selected sector
 	OFFLIMITSSTRING="${@:1}"
 	echo "This sent to OFFLIMITS $OFFLIMITSSTRING"
 	CURRENTSECTOR="$3"_"$4"_"$5"
@@ -103,7 +146,47 @@ chatcommand_OFFLIMITS(){
 		fi
 	fi
 }
-
+universejail() {
+# Universe jail keeps a player in designated sectors
+# Usage: universejail x y z x y z playername - 1st x y z represent the old sector and 2nd is the new sector
+	UNIVERSEJAILSTRING="${@:1}"
+	echo "This sent to OFFLIMITS $UNIVERSEJAILSTRING"
+	CHECKJAILSTATUS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PLAYER from JAIL where PLAYER='$7';")
+	if [ -z "$CHECKJAILSTATUS" ]
+	then
+		echo "No jail found for player $7"
+	else
+		ORIGINALSECTOR="$1"_"$2"_"$3"
+		ENTEREDSECTOR="$4"_"$5"_"$6"
+		STILLINJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from JAIL where PLAYER='$7' and SECTOR='$ENTEREDSECTOR' ORDER BY line ASC LIMIT 1;")
+		if [ -z "$STILLINJAIL" ]
+		then
+			echo "Player has attempted to leave jail"
+			OLDSECTORINJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from JAIL where PLAYER='$7' and SECTOR='$ORIGINALSECTOR' ORDER BY line ASC LIMIT 1;")
+			if [ -z "$OLDSECTORINJAIL" ]
+			then
+			echo "Player has left the jail and cannot return to previous sector"
+			SECTORJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from JAIL where PLAYER='$7' ORDER BY line ASC LIMIT 1;")
+			cutstring=${SECTORJAIL//_/ }
+			COLLECTSECTORARRAY=($cutstring)
+			COLLECTX=${COLLECTSECTORARRAY[0]}
+			COLLECTY=${COLLECTSECTORARRAY[1]}
+			COLLECTZ=${COLLECTSECTORARRAY[2]}
+			sleep 4
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /pm $7 It appears you are stuck in this sector...
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $7 $COLLECTX $COLLECTY $COLLECTZ
+			else
+			echo "Player has left the jail and will be returned to their previous sector"
+			sleep 4
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /pm $7 It appears you are stuck in this sector...
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $7 $1 $2 $3
+			fi
+		else
+			echo "Player is moving around in jail"
+			
+		fi		
+	fi
+}
 universeofflimits() {
 # Universeofflimits set a portion of the universe off limits and prevents a player from entering it without permission
 # Usage: universeofflimits x y z x y z name - first xyz is the original sectors and the second xyz is the sector entered

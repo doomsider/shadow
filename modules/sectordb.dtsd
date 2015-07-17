@@ -8,6 +8,10 @@ MYSQLDTSD_SECTORDB_TYPE="VARCHAR(25)"
 MYSQLDTSD_SECTORDB_NAME="VARCHAR(8)"
 MYSQLALTER_SECTORDB_NAME="UNIQUE INDEX"
 
+MYSQLDTSD_OFFLIMIT_SECTOR="VARCHAR(8)"
+MYSQLDTSD_OFFLIMIT_PLAYER="VARCHAR(8)"
+
+
 LOGSEARCH_sector_initiallogin="[SERVER][GALAXY] SENDING SYSTEM BACK TO CLIENT"
 
 UNIVERSECENTER="2_2_2" #Set the center of the universe boarder
@@ -27,6 +31,115 @@ sector_initiallogin() {
 	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
 	lib_trigger sectorinfo $SECTORNAME Sector
 }
+
+chatcommand_OFFLIMITS(){
+# Sets a sector offlimits to everyone but the creator and who they allow in the sector
+# This command can be changed to use current sector as context and allow players to set their own sectors to offlimits.
+# Usage: offlimits <add or remove> <sector> <playername>
+# !offlimits add 2 2 2
+# !offlimits add 2 2 2 Newguy
+# !offlimits remove 2 2 2 Newguy
+# !offlimits remove 2 2 2
+	OFFLIMITSSTRING="${@:1}"
+	echo "This sent to OFFLIMITS $OFFLIMITSSTRING"
+	CURRENTSECTOR="$3"_"$4"_"$5"
+	echo "Sector in offlimits set to $CURRENTSECTOR"
+	CHECKSECTOREXISTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from OFFLIMIT where SECTOR='$CURRENTSECTOR' ORDER BY line ASC LIMIT 1;")
+	echo "Check sector exists for offlimits .$CHECKSECTOREXISTS."
+	if [ "$#" -le "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !OFFLIMITS add or remove xsector ysector zsector player
+	else
+		if [ "$#" -ge "6" ]
+		then
+			CHECKPLAYERDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select NAME from PLAYERDB where NAME='$6';")
+			CHECKPLAYEROFF=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PLAYER from OFFLIMIT where PLAYER='$6' ORDER BY line ASC LIMIT 1;")
+			echo "The player exists in database .$CHECKPLAYERDB. the player exists in offlimits .$CHECKPLAYEROFF."
+			case $2 in 
+				add)
+					if [ -z "$CHECKPLAYERDB" ]
+					then
+						echo "No existing player to add to sector offlimits"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No player $6 found in database to add to offlimits sector $3 $4 $5 
+					else
+						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO OFFLIMIT (SECTOR, PLAYER) VALUES (\"$CURRENTSECTOR\",\"$6\");"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Adding player $6 to allowed list of sector $3 $4 $5
+					fi
+				;;
+				remove)
+					if [ -z "$CHECKPLAYEROFF" ]
+					then
+						echo "No existing player to remove in sector offlimits"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No player $6 found in offlimits to remove from sector $3 $4 $5 
+					else
+						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM OFFLIMIT where PLAYER='$6';"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Removing player $6 from allowed list for sector $3 $4 $5
+					fi
+				;;
+			esac
+		else
+			case $2 in 
+				add)
+					if [ -z "$CHECKSECTOREXISTS" ]
+					then
+						echo "No existing sector found for add sector to offlimits"
+						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO OFFLIMIT (SECTOR, PLAYER) VALUES (\"$CURRENTSECTOR\",\"$1\");"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Setting sector $3 $4 $5 offlimits to everyone but $1
+					else
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The sector $3 $4 $5 is already in offlimit
+					fi
+				;;
+				remove)
+					if [ -z "$CHECKSECTOREXISTS" ]
+					then
+						echo "No existing sector found to remove sector in offlimits"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The sector $3 $4 $5 does not appear to be in offlimits
+					else
+						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM OFFLIMIT where SECTOR='$CURRENTSECTOR';"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Removing sector $3 $4 $5 from offlimits
+					fi
+				;;
+			esac
+		fi
+	fi
+}
+
+universeofflimits() {
+# Universeofflimits set a portion of the universe off limits and prevents a player from entering it without permission
+# Usage: universeofflimits x y z x y z name - first xyz is the original sectors and the second xyz is the sector entered
+	UNIVERSEOFFSTRING="${@:1}"
+	echo "This sent to OFFLIMITS $UNIVERSEOFFSTRING"
+	ORIGINALX=$1
+	ORIGINALY=$2
+	ORIGINALZ=$3
+	ENTEREDX=$4
+	ENTEREDY=$5
+	ENTEREDZ=$6
+	ORIGINALSECTOR="$1"_"$2"_"$3"
+	ENTEREDSECTOR="$4"_"$5"_"$6"
+	echo "Off limits entered sector $ENTEREDSECTOR original sector $ORIGINALSECTOR"
+	CHECKSECTOROFF=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from OFFLIMIT where SECTOR='$ENTEREDSECTOR' ORDER BY line ASC LIMIT 1;")
+	echo "Here is CHECKSECTOROFF .$CHECKSECTOROFF."
+	CHECKPLAYEROFF=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from OFFLIMIT where SECTOR='$ENTEREDSECTOR' AND PLAYER='$7' ORDER BY line ASC LIMIT 1;")
+	echo "Here is CHECKPLAYEROFF .$CHECKPLAYEROFF."
+	if [ -z "$CHECKSECTOROFF" ]
+	then
+		echo "No offlimits sector found"
+	else
+		echo "Offlimit sector found"
+		if [ -z "$CHECKPLAYEROFF" ]
+		then
+			echo "Player not allowed to be in sector"
+			sleep 4
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /pm $7 You have been returned to you original sector! It appears you do not have permission to be there
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $7 $ORIGINALX $ORIGINALY $ORIGINALZ
+		else
+			echo "Player allowed in Sector"
+		fi
+	fi
+		
+}
+
 universeboarder() {
 # Universeboarder set limits and wraps players around once they have reached then end of the universe
 # Usage: universeboarder x y z name
@@ -95,7 +208,7 @@ universeboarder() {
 				NEWY=$YCENTER
 				NEWZ=$ZCENTER
 			fi
-		sleep 4
+			sleep 4
 			lib_screensend $CONFIGDTSD_MAINSCREEN  /pm $4 You have warped to the opposite side of the universe! It appears you cant go further out...
 			lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $4 $NEWX $NEWY $NEWZ
 		fi

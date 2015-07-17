@@ -409,7 +409,7 @@ chatcommand_WHITEADD(){
 # #Functional Commands
 # chatcommand_PLAYERWHITELIST(){
 # #Adds or removes players from your personal whitelist, allowing them to use your jumpgates
-# #USAGE: !PLAYERWHITELIST <+/-> <Player/All>
+#USAGE: !PLAYERWHITELIST <+/-> <Player/All>
 	# if [ "$#" -ne "3" ]
 	# then
 		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !PLAYERWHITELIST <+/-> <PlayerName/All>

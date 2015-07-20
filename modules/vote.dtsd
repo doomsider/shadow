@@ -2,60 +2,287 @@
 # Shadow .01 Based off of DTSD
 # Contains function for voting
 
-MYSQLDTSD_PLAYERDB_CURRENTVOTE="INT DEFAULT '0'"
-MYSQLDTSD_PLAYERDB_TOTALVOTE="INT DEFAULT '0'"
 
+MYSQLDTSD_VOTEDB_CURRENTVOTE="INT DEFAULT '0'"
+MYSQLDTSD_VOTEDB_VOTEPOINTS="INT DEFAULT '0'"
+MYSQLDTSD_VOTEDB_TOTALPOINTS="INT DEFAULT '0'"
+MYSQLDTSD_VOTEDB_ALIAS="VARCHAR(25)"
+MYSQLDTSD_VOTEDB_NAME="VARCHAR(25)"
+MYSQLALTER_VOTEDB_NAME="UNIQUE INDEX"
+
+MYSQLDTSD_VOTELOG_NAME="VARCHAR(25)"
+MYSQLDTSD_VOTELOG_INFO="VARCHAR(128)"
+MYSQLDTSD_VOTELOG_TIME=TIMESTAMP
+
+
+CHATHELP_VOTEALIAS="[Assign a player name to the voting database] USAGE: !VOTEALIAS voter_name"
 CHATHELP_VOTEPOINTS="[Lists the number of voting points you have] USAGE: !VOTEPOINTS"
-CHATHELP_VOTEEXCHANGE="[Exchanges voting points for rewards] USAGE: !VOTEPOINTS"
+CHATHELP_VOTEEXCHANGE="[Exchanges voting points for rewards] !VOTEEXCHANGE list to list packages or !VOTEEXCHANGE Package_name to receive a package "
 
+VOTEPACKAGE_CREDITS="[CREDITS] Exchange 1 point for 1 million credits"
+VOTEPACKAGE_SHIP="[SHIP] Exchange 1 point for a ship"
+
+DTSDHELP_votecheck="\nVotecheck usage: shadow.dtsd votecheck\nParses API at Starmadservers with given key and adds information to database\n"
+DTSDHELP_setupvote="\nSetupvote usage: shadow.dtsd setupvote <on or off>\nTurns on or off the voting system\n"
+
+core_votecheck(){
+# Parses response from Starmade Servers API and records voters to the Mysql database.  When Votes increase points are awarded to the player.  Player should use their in-game name for voting.  
+    if [[ $CONFIGDTSD_VOTING -eq true ]]
+	then
+# Capture all results of the html request as a xml array
+		#CAPTUREVOTES=( $(curl 'https://starmade-servers.com/api/?object=servers&element=voters&key=pq41ihl8jra8g9elpoyl9gwqjfypnivcvd&month=current&format=xml') );
+		CAPTUREVOTES="<?xml version="1.0" encoding="UTF-8"?> <server> <name>Aetherion</name> <address>aetherion.h4v3n.com</address> <port>4242</port> <month>201507</month> <voters> <voter> <nickname>Doomsider</nickname> <votes>8</votes> </voter> <voter> <nickname>Rymac</nickname> <votes>5</votes> </voter> <voter> <nickname>bobarit0</nickname> <votes>4</votes> </voter> <voter> <nickname>Xielvanic</nickname> <votes>3</votes> </voter> <voter> <nickname>CreamJ</nickname> <votes>3</votes> </voter> <voter> <nickname>stantboard</nickname> <votes>2</votes> </voter> <voter> <nickname>GuidoFTW</nickname> <votes>2</votes> </voter> <voter> <nickname>SneakZee</nickname> <votes>2</votes> </voter> <voter> <nickname>thompsonx2</nickname> <votes>1</votes> </voter> <voter> <nickname>gigi year</nickname> <votes>1</votes> </voter> <voter> <nickname>Bongojones</nickname> <votes>1</votes> </voter> <voter> <nickname>pankahn</nickname> <votes>1</votes> </voter> <voter> <nickname>dikkasmasha</nickname> <votes>1</votes> </voter> <voter> <nickname>Marf50</nickname> <votes>1</votes> </voter> <voter> <nickname>astidonius</nickname> <votes>1</votes> </voter> <voter> <nickname>leion247</nickname> <votes>1</votes> </voter> </voters> </server>"
+		CAPTUREVOTES=($CAPTUREVOTES)		
+		CAPTUREARRAY=0
+		while [ -n "${CAPTUREVOTES[$CAPTUREARRAY]+set}" ]
+		do
+			CURRENTSTRING=${CAPTUREVOTES[$CAPTUREARRAY]}
+#			echo "current string is $CURRENTSTRING"
+			case $CURRENTSTRING in
+			*"nickname"*) 
+				echo "Voter name detected"
+				if [[ $CURRENTSTRING == *"/nickname"* ]]
+				then
+					echo $CURRENTSTRING
+					cutstring=${CURRENTSTRING%<*}
+					VOTERNAME=${cutstring#*>}
+					echo "This is the Voter Name $VOTERNAME"
+				else
+# Method works great except if there are two or more spaces concurrent in the name.  If someone does this they would not be able to match to a Starmade name anyway as no spaces allowed
+					echo "Name with space in it"
+					unset GATHERNAME
+					GATHERNAME[0]=$CURRENTSTRING
+					NAMEARRAY=0
+					while [[ ${GATHERNAME[$NAMEARRAY]} != *"/nickname"* ]]
+					do
+						let NAMEARRAY++
+						let CAPTUREARRAY++
+						GATHERNAME[$NAMEARRAY]=${CAPTUREVOTES[$CAPTUREARRAY]}
+					done
+					echo ${GATHERNAME[@]}
+					CURRENTSTRING="${GATHERNAME[*]}"
+					cutstring=${CURRENTSTRING%<*}
+					VOTERNAME=${cutstring#*>}
+					echo "This is the Voter Name $VOTERNAME"
+				fi
+				;;
+			*"votes"*) 
+				echo "Votes detected"
+				echo $CURRENTSTRING
+				cutstring=${CURRENTSTRING%<*}
+				VOTENUMBER=${cutstring#*>}
+				echo "This is the vote number $VOTENUMBER and the voter $VOTERNAME"
+				CHECKFORVOTES=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select CURRENTVOTE from VOTEDB where NAME='$VOTERNAME';")
+# If currentvote does not exist add the user and give them a point, this is because regardless of when the voting system is setup we can always assume that if a person appears in the xml then they have voted.  This may give a user a free vote under if they have not voted that day but that month and the script is ran for the first time.
+				if [ -z "$CHECKFORVOTES" ]
+				then
+					echo "New voter added to database"
+					CHECKFORALIAS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select ALIAS from VOTEDB where ALIAS='$VOTERNAME';")
+					if [ -z "$CHECKFORALIAS" ]
+					then
+						echo "No existing Alias found for new user entry into VOTEDB"
+					else
+						echo "Existing Alias found in VOTEDB removing it"
+						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET ALIAS=null where ALIAS='$VOTERNAME'"
+					fi
+					lib_myinsert VOTEDB NAME $VOTERNAME
+					lib_myupdate VOTEDB CURRENTVOTE $VOTENUMBER NAME $VOTERNAME
+					echo "Added a voter point for $VOTERNAME"
+# Limit the increase to only one point to prevent any issues. 
+					mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET VOTEPOINTS = VOTEPOINTS + 1 WHERE NAME = '$VOTERNAME';"
+					mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO VOTELOG (NAME, INFO) VALUES (\"$VOTERNAME\",\"Received 1 point\");"
+					mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET TOTALPOINTS = TOTALPOINTS + 1 WHERE NAME = '$VOTERNAME' or  ALIAS = '$VOTERNAME' ;"
+					lib_screensend $CONFIGDTSD_MAINSCREEN "/chat $VOTERNAME received 1 voting point just now from voting"
+				else
+					echo "Existing voter found"
+# If the value does exist but is different we assume that a new vote has happened.  This effectively deals with vote points resetting once a month.  There is a possible issue if a person only voted once in a month and then once again the next month their vote would not be added to vote points.
+					if [ "$VOTENUMBER" -ne "$CHECKFORVOTES" ]
+					then
+						echo "Added a voter point for $VOTERNAME"
+						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET VOTEPOINTS = VOTEPOINTS + 1 WHERE NAME = '$VOTERNAME' or  ALIAS = '$VOTERNAME' ;"
+						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET TOTALPOINTS = TOTALPOINTS + 1 WHERE NAME = '$VOTERNAME' or  ALIAS = '$VOTERNAME' ;"
+						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO VOTELOG (NAME, INFO) VALUES (\"$VOTERNAME\",\"Received 1 point\");"
+						lib_myupdate VOTEDB CURRENTVOTE $VOTENUMBER NAME $VOTERNAME
+						lib_screensend $CONFIGDTSD_MAINSCREEN "/chat $VOTERNAME received 1 voting point just now from voting"
+					fi					
+				fi
+				;;	
+			esac
+			let CAPTUREARRAY++
+		done	
+	fi
+}
+core_setupvote(){
+# Turns on or off voting
+# Usage:  shadow.dtsd setupvote <on or off>
+	if [ ! -e "$CONFIGDTSD_INSTALLPATH/core/config.dtsd" ]
+	then
+		echo "No config file found please run shadow.dtsd setup"
+	else
+		CURRENTVOTESETTING=$(grep CONFIGDTSD_VOTEKEY $CONFIGDTSD_INSTALLPATH/core/config.dtsd)
+		CURRENTKEYSETTING=$(grep CONFIGDTSD_VOTING $CONFIGDTSD_INSTALLPATH/core/config.dtsd)
+		case $1 in
+		on)
+			read -p "The server key for accessing votes on starmade-servers.com : " INPUT
+			if [ -n "$INPUT" ]
+			then
+				if [ -z "$CURRENTVOTESETTING" ]
+				then
+					SETVOTE="CONFIGDTSD_VOTING=true"
+					echo $SETVOTE >> $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+				else
+					CURRENTVOTESETTING=${CURRENTVOTESETTING#*=}
+					echo "Current value CURRENTVOTESETTING $CURRENTVOTESETTING"
+# Replace the current value with the one choosen by user
+					sed -i 's/CONFIGDTSD_VOTING=$CURRENTVOTESETTING/CONFIGDTSD_VOTING=true/g' $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+					echo " CONFIGDTSD_VOTING value changed to true"
+				fi
+				if [ -z "$CURRENTKEYSETTING" ]
+				then
+					SETKEY="CONFIGDTSD_VOTEKEY=$INPUT"
+					echo $SETKEY >> $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+				else
+					CURRENTKEYSETTING=${CURRENTKEYSETTING#*=}
+					echo "Current value CURRENTKEYSETTING $CURRENTKEYSETTING"
+# Replace the current value with the one choosen by user
+					sed -i 's/CONFIGDTSD_VOTEKEY=$CURRENTKEYSETTING/CONFIGDTSD_VOTEKEY=$INPUT/g' $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+					echo "CONFIGDTSD_VOTEKEY value changed to $INPUT"
+				fi
+			else
+				echo "You must input a server key to setup voting please see "
+			fi
+		;;
+		off)
+			if [ -z "$CURRENTVOTESETTING" ]
+			then
+                SETVOTE="CONFIGDTSD_VOTING=false"
+				echo $SETVOTE >> $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+			else
+				sed -i 's/CONFIGDTSD_VOTING=$CURRENTVOTESETTING/CONFIGDTSD_VOTING=flase/g' $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+				echo " CONFIGDTSD_VOTING value changed to false"
+			fi
+			if [ -z "$CURRENTKEYSETTING" ]
+			then
+				SETKEY="CONFIGDTSD_VOTEKEY=false"
+				echo $SETKEY >> $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+			else
+				sed -i 's/CONFIGDTSD_VOTEKEY=$CURRENTKEYSETTING/CONFIGDTSD_VOTEKEY=flase/g' $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+				echo "CONFIGDTSD_VOTEKEY value changed to false"
+			fi
+		;;
+		esac
+	fi
+}
 chatcommand_VOTEPOINTS(){
-    #used to tell the user how many voting points they have
-    #usage: !VOTEPOINTS
+# Used to tell the user how many voting points they have
+# Usage: !VOTEPOINTS
     if [ "$#" -ne "1" ]
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Invalid parameters. Please use !VOTEPOINTS"
 	else
-        PLAYERVOTES=$(lib_myvalueretrieve TOTALVOTE PLAYERDB $1)
-        lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "You have $PLAYERVOTES voting point(s) to spend"
+        CHECKFORPOINTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VOTEPOINTS from VOTEDB where NAME='$1' or ALIAS='$1';")
+		if [ -z "$CHECKFORPOINTS" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "It does not appear that you have voted, if you voted under another name try VOTEALIAS so you can collect your points"
+        else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "You have $CHECKFORPOINTS voting point(s) to spend"
+		fi
     fi
 }
-
-chatcommand_VOTEEXCHANGE(){
-    #Used to buy a certain voting reward package from the server
-    #USAGE: !VOTEEXCHANGE <Package>
-    if [ "$#" -ne "2" ]
+chatcommand_VOTEALIAS() {
+#Assign a player name to the voting database 
+#Usage: !VOTEALIAS <votername>
+	VOTEALIASSTRING="${@:1}"
+	VOTEALIASSTRING=${VOTEALIASSTRING#*]}
+	echo "This was sent to VOTEALIASSTRING $VOTEALIASSTRING"
+	if [ "$#" -eq "2" ]
 	then
-		if [ "$#" -ne "1" ]
-        then
-            lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Invalid parameters. Please use !VOTEEXCHANGE <Package>"
-        else
-            VOTINGPACKAGES=( $(compgen -A function | grep VOTEREWARD_) )
+		ALIASLIST=$(lib_mycolumnretrieve VOTEDB ALIAS)
+		VOTERLIST=$(lib_mycolumnretrieve VOTEDB NAME)
+		PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
+		ALIASLIST=($ALIASLIST)
+		VOTERLIST=($VOTERLIST)
+		PLAYERLIST=($PLAYERLIST)
+		if lib_arraycontains VOTERLIST $1
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Voter list contains your playername $1 already please vote under this name"
+		else
+			if lib_arraycontains VOTERLIST $2
+			then
+				if lib_arraycontains ALIASLIST $1
+				then
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Votealias already exists for your player name see admin if this is a mistake"
+				else
+					if [ "$2" = "$1" ]
+					then
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Votealias cannot be set to your playername"
+					else
+						if lib_arraycontains PLAYERLIST $2
+						then
+							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Votealias cannot be set to an existing playername"
+						else
+							CHECKALIAS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select ALIAS from VOTEDB where ALIAS='$2';")
+							if [ -z "$CHECKALIAS" ]
+							then
+								lib_myupdate VOTEDB ALIAS $1 NAME $2
+								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Votealias has been set to $1 for voter name $2"
+							else
+								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Votealias has already been set for this name see admin for help"
+							fi
+						fi	
+					fi
+				fi
+			else
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Votealias cannot find existing votername $2"
+			fi	
+		fi
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Please use !VOTEALIAS <votername>"
+	fi
+}
+chatcommand_VOTEEXCHANGE(){
+# Used to buy a certain voting reward package from the server
+# USAGE: !VOTEEXCHANGE list to list packages or !VOTEEXCHANGE <Package name> to receive a package
+    if [ "$#" -eq "2" ]
+	then
+		case $2 in
+		list*)
+			VOTINGPACKAGES=( $(compgen -A function | grep VOTEREWARD_) )
             declare -a PACKAGENAMES
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "The available packages are:"
             for index in ${!VOTINGPACKAGES[@]}
             do
-                PACKAGE=$(echo ${VOTINGPACKAGES[$index]} | cut -d"_" -f2-)
-                PACKAGENAMES=("${PACKAGENAMES[@]}" "$PACKAGE"", ")
-            done
-            lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "The available packages are ${PACKAGENAMES[@]}"
-        fi
+				CURRENTPACKAGE=${VOTINGPACKAGES[$index]}
+				CURRENTPACKAGE=${CURRENTPACKAGE#*_}
+				echo "CURRENTPACKAGE $CURRENTPACKAGE"
+				VOTEMESSAGE="VOTEPACKAGE_$CURRENTPACKAGE"
+				echo "VOTEMESSAGE $VOTEMESSAGE"
+				echo -e "${!VOTEMESSAGE}"
+                lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "${!VOTEMESSAGE}"
+            done 
+		;;
+		*)
+			REWARDFUNCTION="VOTEREWARD_$2"
+			REWARDFUNCTION=${REWARDFUNCTION^^}
+			if lib_function_exists "$REWARDFUNCTION"
+			then
+				eval $REWARDFUNCTION $1
+			else
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "The package $2 does not exist"
+			fi
+		;;
+		esac
 	else
-        if lib_function_exists "VOTEREWARD_$(echo $2 | tr 'a-z' 'A-Z')"
-        then
-            VOTEREWARD_$(echo $2 | tr 'a-z' 'A-Z') $1
-        else
-            lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "The package $2 doesnt exist"
-        fi
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Please use !VOTEEXCHANGE list to list packages or !VOTEEXCHANGE Packagename to receive a package"
     fi
 }
-
 VOTEREWARD_CREDITS(){
-    if $(votes_deduct $1 1)
-    then
-        lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 1000000
-        lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "You have converted 1 voting point into 1 million credits. Enjoy!"
-    else
-        lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Insufficent voting points to claim this reward. You require 1 point"
-    fi
+	if $(votes_deduct $1 1)
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 1000000
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "You have converted 1 voting point into 1 million credits. Enjoy!"
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO VOTELOG (NAME, INFO) VALUES (\"$1\",\"Spent 1 point on CREDITS\");"
+	fi
 }
 VOTEREWARD_A(){
 echo A
@@ -69,68 +296,8 @@ echo C
 VOTEREWARD_D(){
 echo D
 }
-
-votes_deduct(){
-    #usage:
-    #votes_deduct PlayerName Amount
-    #Returns True/False
-    PLAYERVOTES=$(lib_myvalueretrieve TOTALVOTE PLAYERDB $1)
-    if [ $(($PLAYERVOTES - $2)) -ge 0 ]
-    then
-        lib_myupdate PLAYERDB TOTALVOTE $(($PLAYERVOTES - $2)) NAME $1
-        return 0
-    else
-        return 1
-    fi
-}
-
-ONINTERVAL_60_VOTECHECK(){
-    if [[ $CONFIGDTSD_VOTING -eq true ]]
-    then
-        KEYURL="http://starmade-servers.com/api/?object=servers&element=voters&key=$CONFIGDTSD_VOTEKEY&month=current&format=xml"
-        ALLVOTES="$(wget -q -O - $KEYURL)"
-        #echo all the voting data $ALLVOTES
-        VOTERS=$(echo $ALLVOTES | cut -d">" -f12- | rev | cut -d"<" -f3- | rev)
-        #echo these are the voters $VOTERS
-        NUMOFVOTERS=$(( $(echo $VOTERS | grep -o '/' | wc -l) / 3 ))
-        #echo this is the number of voters $NUMOFVOTERS
-        if [ $NUMOFVOTERS -gt 0 ]
-        then
-            curvoter=1
-            while [ $curvoter -le $NUMOFVOTERS ]
-            do
-                VOTER=$(echo $VOTERS | cut -d">" -f$(($curvoter * 6 - 5))-$(($curvoter * 6)))
-                #echo this is the voter being processed $VOTER
-                VOTERNAME=$(echo $VOTER | cut -d">" -f3 | cut -d"<" -f1)
-                VOTERVOTES=$(echo $VOTER | cut -d">" -f5 | cut -d"<" -f1)
-                #echo this is the voter name and the voters vote count for this month $VOTERNAME $VOTERVOTES
-                CURVOTES=$(lib_myvalueretrieve CURRENTVOTE PLAYERDB $VOTERNAME)
-                TOTALVOTES=$(lib_myvalueretrieve TOTALVOTE PLAYERDB $VOTERNAME)
-                #echo this is the voters current votes for this month $CURVOTES
-                #echo this is the total votes of all time $TOTALVOTES
-                if [ ! -z "$CURVOTES" ]
-                then
-                    if [ $VOTERVOTES -gt $CURVOTES ]
-                    then
-                        TOTALVOTES=$(( $TOTALVOTES + $VOTERVOTES - $CURVOTES ))
-                    elif [ $VOTERVOTES -lt $CURVOTES ]
-                    then
-                        TOTALVOTES=$(( $TOTALVOTES + $VOTERVOTES ))
-                    else
-                        continue
-                    fi
-                    echo this is the new total $TOTALVOTES
-                    lib_myupdate PLAYERDB CURRENTVOTE $VOTERVOTES NAME $VOTERNAME
-                    lib_myupdate PLAYERDB TOTALVOTE $TOTALVOTES NAME $VOTERNAME
-                    lib_screensend $CONFIGDTSD_MAINSCREEN /chat $VOTERNAME just voted for the server and has recieved voting points as a reward!
-                fi
-                let curvoter++
-            done
-        fi
-    fi
-}
-
 SETUP_VOTING(){
+# Used in shadow.dtsd setup to install voting system
     read -p "Do you wish to set up voting rewards? [y/N] : " INPUT
 	case $INPUT in
 		[YesyesYESYy]* ) 
@@ -148,4 +315,18 @@ SETUP_VOTING(){
 			CONFIGDTSD_VOTING=false
 		;;
 	esac
+}
+votes_deduct(){
+# Checks to see if there are enough voting points, deducts if so, and then returns True/False
+# usage: votes_deduct PlayerName Amount
+	CHECKFORPOINTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VOTEPOINTS from VOTEDB where NAME='$1' or ALIAS='$1';")
+    if [ $(($CHECKFORPOINTS - $2)) -ge 0 ]
+    then
+		TOTALVOTE=$(($CHECKFORPOINTS - $2))
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET VOTEPOINTS='$TOTALVOTE' WHERE NAME='$1' or ALIAS='$1'"
+        return 0
+    else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "It appears you are short on voting points you have $CHECKFORPOINTS points but the cost is $2 points"
+        return 1
+    fi
 }

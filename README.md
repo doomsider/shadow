@@ -27,7 +27,7 @@ Install Easy:
 
 Install Manual:
 
-Shadow is in testing mode only at the moment.  The current target test system is Ubuntu 14.04.  If you want to test shadow on other operating systems or configurations I cannot offer support during testing.  
+Shadow is in testing mode only at the moment.  The current target test system is Ubuntu 14.04 and Mysql 5.5.  If you want to test shadow on other operating systems or configurations I cannot offer support during testing.  
 
 Step1 - Get Shadow's files and directories from Github then copy shadow files/dirs to the parent directory of Starmade if it exists.  If it doesn't exist put them in the same directory you plan to install StarMade to.
 
@@ -96,6 +96,10 @@ Naming Conventions - Shadow looks at its own functions' names to determine speci
 	Any variable that starts with LOGSEARCH_ will automatically entered into the search database and then the result will be returned to the specified function.  The format is LOGSEARCH_functioname="String match in log".
 
 	Any variable that starts with MYSQLEVENT_ will be added to the running Mysql events.  Mysql event manager must be turned on for these to work.  The format is MYSQLEVENT_FREQUENCY_TIMEVALUE_TIMEQUANTITY_EVENTNAME="EVENT_FUNCTION_NAME".
+	
+
+Known Issues:
+	Mysql 5.6+ is not compatible with this script at this time
 	
 Future Goals (feel free to edit/add):
 

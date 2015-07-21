@@ -38,7 +38,6 @@ sector_initiallogin() {
 	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
 	lib_trigger sectorinfo $SECTORNAME Sector
 }
-
 chatcommand_JAIL() {
 # Jails or keeps player(s) in certain sectors
 # Usage: !jail x y z playername
@@ -74,7 +73,6 @@ chatcommand_GETOUT() {
 		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM JAIL where PLAYER='$2';"
 	fi
 }
-
 chatcommand_OFFLIMITS(){
 # Sets a sector offlimits to everyone but the creator and who they allow in the sector
 # This command can be changed to use current sector as context and allow players to set their own sectors to offlimits.
@@ -222,78 +220,84 @@ universeofflimits() {
 	fi
 		
 }
-
 universeboarder() {
 # Universeboarder set limits and wraps players around once they have reached then end of the universe
 # Usage: universeboarder x y z name
 	if [ "$UNIVERSEBOARDER" = "YES" ]
 	then
-		UCENTER=$UNIVERSECENTER
-		echo "UCENTER $UCENTER"
-		UCENTER=${UCENTER//_/ }
-		UCENTER=($UCENTER)
-		XCENTER=${UCENTER[0]}
-		YCENTER=${UCENTER[1]}
-		ZCENTER=${UCENTER[2]}
-		XCOORD=$1
-		YCOORD=$2
-		ZCOORD=$3
-		XULIMIT=$(($XCENTER + $UNIVERSERADIUS))
-		YULIMIT=$(($YCENTER + $UNIVERSERADIUS))
-		ZULIMIT=$(($ZCENTER + $UNIVERSERADIUS))
-		XLLIMIT=$(($XCENTER - $UNIVERSERADIUS))
-		YLLIMIT=$(($YCENTER - $UNIVERSERADIUS))
-		ZLLIMIT=$(($ZCENTER - $UNIVERSERADIUS))
-		XUEXCESS=$(($XULIMIT + 2))
-		YUEXCESS=$(($YULIMIT + 2))
-		ZUEXCESS=$(($ZULIMIT + 2))
-		XLEXCESS=$(($XLLIMIT - 2))
-		YLEXCESS=$(($YLLIMIT - 2))
-		ZLEXCESS=$(($ZLLIMIT - 2))
-		echo "Universe board active with XCENTER $XCENTER YCENTER $YCENTER ZCENTER $ZCENTER XCOORD $XCOORD YCOORD $YCOORD ZCOORD $ZCOORD XULIMIT $XULIMIT YULIMIT $YULIMIT ZULIMIT $ZULIMIT"
-		echo "XLLIMIT $XLLIMIT YLLIMIT $YLLIMIT ZLLIMIT $ZLLIMIT XUEXCESS $XUEXCESS YUEXCESS $YUEXCESS ZUEXCESS $ZUEXCESS XLEXCESS $XLEXCESS YLEXCESS $YLEXCESS ZLEXCESS $ZLEXCESS"
-		if [ "$XCOORD" -ge "$XULIMIT" ] || [ "$YCOORD" -ge "$YULIMIT" ] || [ "$ZCOORD" -ge "$ZULIMIT" ] || [ "$XCOORD" -lt "$XLLIMIT" ] || [ "$YCOORD" -lt "$YLLIMIT" ] || [ "$ZCOORD" -lt "$ZLLIMIT" ]
+# Add a check to make sure the player is not in jail which can be set up outside of universe boundaries 
+		CHECKJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PLAYER from JAIL where PLAYER='$4';")
+		if [ -z "$CHECKJAIL" ]
 		then
-# X-Coord Checking
-			if [ "$XCOORD" -ge "$XULIMIT" ]
+			UCENTER=$UNIVERSECENTER
+			echo "UCENTER $UCENTER"
+			UCENTER=${UCENTER//_/ }
+			UCENTER=($UCENTER)
+			XCENTER=${UCENTER[0]}
+			YCENTER=${UCENTER[1]}
+			ZCENTER=${UCENTER[2]}
+			XCOORD=$1
+			YCOORD=$2
+			ZCOORD=$3
+			XULIMIT=$(($XCENTER + $UNIVERSERADIUS))
+			YULIMIT=$(($YCENTER + $UNIVERSERADIUS))
+			ZULIMIT=$(($ZCENTER + $UNIVERSERADIUS))
+			XLLIMIT=$(($XCENTER - $UNIVERSERADIUS))
+			YLLIMIT=$(($YCENTER - $UNIVERSERADIUS))
+			ZLLIMIT=$(($ZCENTER - $UNIVERSERADIUS))
+			XUEXCESS=$(($XULIMIT + 2))
+			YUEXCESS=$(($YULIMIT + 2))
+			ZUEXCESS=$(($ZULIMIT + 2))
+			XLEXCESS=$(($XLLIMIT - 2))
+			YLEXCESS=$(($YLLIMIT - 2))
+			ZLEXCESS=$(($ZLLIMIT - 2))
+			echo "Universe board active with XCENTER $XCENTER YCENTER $YCENTER ZCENTER $ZCENTER XCOORD $XCOORD YCOORD $YCOORD ZCOORD $ZCOORD XULIMIT $XULIMIT YULIMIT $YULIMIT ZULIMIT $ZULIMIT"
+			echo "XLLIMIT $XLLIMIT YLLIMIT $YLLIMIT ZLLIMIT $ZLLIMIT XUEXCESS $XUEXCESS YUEXCESS $YUEXCESS ZUEXCESS $ZUEXCESS XLEXCESS $XLEXCESS YLEXCESS $YLEXCESS ZLEXCESS $ZLEXCESS"
+			if [ "$XCOORD" -ge "$XULIMIT" ] || [ "$YCOORD" -ge "$YULIMIT" ] || [ "$ZCOORD" -ge "$ZULIMIT" ] || [ "$XCOORD" -lt "$XLLIMIT" ] || [ "$YCOORD" -lt "$YLLIMIT" ] || [ "$ZCOORD" -lt "$ZLLIMIT" ]
 			then
-				NEWX=$(($XCOORD - $XULIMIT + $XLLIMIT))
-			elif [ "$XCOORD" -lt "$XLLIMIT" ]
-			then
-				NEWX=$(($XCOORD - $XLLIMIT + $XULIMIT))
-			else
-				NEWX=$XCOORD
+	# X-Coord Checking
+				if [ "$XCOORD" -ge "$XULIMIT" ]
+				then
+					NEWX=$(($XCOORD - $XULIMIT + $XLLIMIT))
+				elif [ "$XCOORD" -lt "$XLLIMIT" ]
+				then
+					NEWX=$(($XCOORD - $XLLIMIT + $XULIMIT))
+				else
+					NEWX=$XCOORD
+				fi
+	# Y-Coord checking
+				if [ "$YCOORD" -ge "$YULIMIT" ]
+				then
+					NEWY=$(($YCOORD - $YULIMIT + $YLLIMIT))
+				elif [ "$YCOORD" -lt "$YLLIMIT" ]
+				then
+					NEWY=$(($YCOORD - $YLLIMIT + $YULIMIT))
+				else
+					NEWY=$YCOORD
+				fi
+	# Z-Coord Checking
+				if [ "$ZCOORD" -ge "$ZULIMIT" ]
+				then
+					NEWZ=$(($ZCOORD - $ZULIMIT + $ZLLIMIT))
+				elif [ "$ZCOORD" -lt "$ZLLIMIT" ]
+				then
+					NEWZ=$(($ZCOORD - $ZLLIMIT + $ZULIMIT))
+				else
+					NEWZ=$ZCOORD
+				fi
+	# Checks if they are too far outside of the boarder, and overrides the previous checks if they are
+				if [ "$XCOORD" -ge "$XUEXCESS" ] || [ "$XCOORD" -le "$XLEXCESS" ] || [ "$YCOORD" -ge "$YUEXCESS" ] || [ "$YCOORD" -le "$YLEXCESS" ] || [ "$ZCOORD" -ge "$ZUEXCESS" ] || [ "$ZCOORD" -le "$ZLEXCESS" ]
+				then
+					NEWX=$XCENTER
+					NEWY=$YCENTER
+					NEWZ=$ZCENTER
+				fi
+				sleep 4
+				lib_screensend $CONFIGDTSD_MAINSCREEN  /pm $4 You have warped to the opposite side of the universe! It appears you cant go further out...
+				lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $4 $NEWX $NEWY $NEWZ
 			fi
-# Y-Coord checking
-			if [ "$YCOORD" -ge "$YULIMIT" ]
-			then
-				NEWY=$(($YCOORD - $YULIMIT + $YLLIMIT))
-			elif [ "$YCOORD" -lt "$YLLIMIT" ]
-			then
-				NEWY=$(($YCOORD - $YLLIMIT + $YULIMIT))
-			else
-				NEWY=$YCOORD
-			fi
-# Z-Coord Checking
-			if [ "$ZCOORD" -ge "$ZULIMIT" ]
-			then
-				NEWZ=$(($ZCOORD - $ZULIMIT + $ZLLIMIT))
-			elif [ "$ZCOORD" -lt "$ZLLIMIT" ]
-			then
-				NEWZ=$(($ZCOORD - $ZLLIMIT + $ZULIMIT))
-			else
-				NEWZ=$ZCOORD
-			fi
-# Checks if they are too far outside of the boarder, and overrides the previous checks if they are
-			if [ "$XCOORD" -ge "$XUEXCESS" ] || [ "$XCOORD" -le "$XLEXCESS" ] || [ "$YCOORD" -ge "$YUEXCESS" ] || [ "$YCOORD" -le "$YLEXCESS" ] || [ "$ZCOORD" -ge "$ZUEXCESS" ] || [ "$ZCOORD" -le "$ZLEXCESS" ]
-			then
-				NEWX=$XCENTER
-				NEWY=$YCENTER
-				NEWZ=$ZCENTER
-			fi
-			sleep 4
-			lib_screensend $CONFIGDTSD_MAINSCREEN  /pm $4 You have warped to the opposite side of the universe! It appears you cant go further out...
-			lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $4 $NEWX $NEWY $NEWZ
+		else
+			echo "Bypassing universe boarder user in jail sector"
 		fi
 	fi
 }

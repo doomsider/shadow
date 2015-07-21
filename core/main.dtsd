@@ -563,7 +563,7 @@ core_setplayermax() {
 	CURRENTMAXPLAYER=$(grep MAX_CLIENTS $CONFIGDTSD_INSTALLPATH/StarMade/server.cfg | tail -1 | cut -d = -f2 | cut -d / -f1 | tr -d ' ') 
 	echo "Current value is $CURRENTMAXPLAYER"
 # Replace the current value with the one choosen by user
-	sed -i 's/MAX_CLIENTS = $CURRENTMAXPLAYER/MAX_CLIENTS = $2/g' $CONFIGDTSD_INSTALLPATH/StarMade/server.cfg
+	sed -i "s/MAX_CLIENTS = $CURRENTMAXPLAYER/MAX_CLIENTS = $2/g" $CONFIGDTSD_INSTALLPATH/StarMade/server.cfg
 	echo "Max player value changed to $2"
 }
 core_start() {

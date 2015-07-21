@@ -21,7 +21,7 @@ MYSQLDTSD_GARAGEDB_SHIP="VARCHAR(50)"
 MYSQLALTER_GARAGEDB_SHIP="UNIQUE INDEX"
 
 
-EXAMPLESTARTERSHIP="Isanth Type-Zero Cc"
+EXAMPLESTARTERSHIP="Isanth-VI"
 
 CHATHELP_STARTERSHIP="[Gives a Player a designated starter ship] USAGE: !STARTERSHIP"
 CHATHELP_GARAGE="[Puts a ship away into your garage or retrieves one from the garage] USAGE: !GARAGE <add or remove> <shipname>"

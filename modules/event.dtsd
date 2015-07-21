@@ -95,7 +95,6 @@ EVENT_SERVERMESSAGE() {
 EVENT_VOTECHECK() {
 core_votecheck
 }
-
 EVENT_SERVERSTATUS() {
 	echo "Checking Server Status"
 	if lib_check_server_running

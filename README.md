@@ -111,7 +111,6 @@ Current Worklist(no particular order):
 	
 	AI Guards
 	Reduce the size of the universe by deleting unused sectors
-	Rewrite/Rework Vote function
 	Faction Bank Accounts for credits and faction points
 	Tooltips
 	Shop Restock automated
@@ -122,9 +121,6 @@ Current Worklist(no particular order):
 	Basic PHP connection examples to extract information with a web page
 	Duelling
 	Arena
-	Off-Limits
-	Trap
-	
 
 Ideas (feel free to edit/add):
 

@@ -107,12 +107,13 @@ Enhance server web pages with information from the database.
 
 Add a web admin panel to control the game server remotely.
 
-Current Worklist(no particular order):
+Current Work list(no particular order):
 	
 	AI Guards
 	Reduce the size of the universe by deleting unused sectors
 	Faction Bank Accounts for credits and faction points
 	Tooltips
+	Custom color message box integration
 	Shop Restock automated
 	Shop replace default shops
 	Cool down for user chat commands
@@ -136,5 +137,5 @@ Ability to reduce database by removing unused sectors by cross checking player c
 Faction Maintenance:
 Be able to tax factions based on their total block count (all ships combined) as a system to prevent build-up and also to keep factions active
 
-Alient Races:
+Alien Races:
 Script to simulate a universe generation combined with alien race stations and ships.

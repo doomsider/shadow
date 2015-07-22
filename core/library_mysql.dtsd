@@ -90,3 +90,6 @@ lib_columnretrievesearch() {
 log_myerasetable() { 
     lib_mysend "TRUNCATE TABLE $1;"
 }
+core_myserverstart() {
+mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Starting\");"
+}

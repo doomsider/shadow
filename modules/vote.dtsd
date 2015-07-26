@@ -29,7 +29,7 @@ core_votecheck(){
     if [ "$CONFIGDTSD_VOTING" = "true" ]
 	then
 # Capture all results of the html request as a xml array
-		CAPTUREVOTES=( $(curl 'https://starmade-servers.com/api/?object=servers&element=voters&key=$CONFIGDTSD_VOTEKEY&month=current&format=xml') );
+		CAPTUREVOTES=( $(curl "https://starmade-servers.com/api/?object=servers&element=voters&key=$CONFIGDTSD_VOTEKEY&month=current&format=xml") );
 		CAPTUREARRAY=0
 		if [ "${CAPTUREVOTES[0]}" = "Error:" ]
 		then 

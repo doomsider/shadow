@@ -1,6 +1,6 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
-# User database will contain all values related to a player
+# User database will contain all values related to a player and player related functions
 
 MYSQLDTSD_PLAYERDB_NAME="VARCHAR(25) BINARY"
 MYSQLDTSD_PLAYERDB_CONTROLLING="VARCHAR(50) DEFAULT 'Spacesuit'"
@@ -15,9 +15,249 @@ MYSQLDTSD_PLAYERDB_LASTUPDATE=TIMESTAMP
 MYSQLDTSD_PLAYERDB_CURRENTSECTOR="VARCHAR(36)"
 MYSQLDTSD_PLAYERDB_LASTPOSITION="VARCHAR(50)"
 MYSQLALTER_PLAYERDB_NAME="UNIQUE INDEX"
+
+MYSQLDTSD_DUEL_CHALLENGER="VARCHAR(50) BINARY"
+MYSQLDTSD_DUEL_CHALLENGERSHIP="VARCHAR(50) BINARY"
+MYSQLDTSD_DUEL_CHALLENGERSHIPBLOCKS="BIGINT"
+MYSQLDTSD_DUEL_CHALLENGERSHIPMASS="BIGINT"
+MYSQLDTSD_DUEL_CHALLENGERAGREE="VARCHAR(1)"
+MYSQLDTSD_DUEL_DEFENDER="VARCHAR(50) BINARY"
+MYSQLDTSD_DUEL_DEFENDERSHIP="VARCHAR(50) BINARY"
+MYSQLDTSD_DUEL_DEFENDERSHIPBLOCKS="BIGINT"
+MYSQLDTSD_DUEL_DEFENDERSHIPMASS="BIGINT"
+MYSQLDTSD_DUEL_DEFENDERAGREE="VARCHAR(1)"
+MYSQLDTSD_DUEL_TYPE="VARCHAR(50)"
+
+MYSQLDTSD_DUELRESULTS_CHALLENGER="VARCHAR(50) BINARY"
+MYSQLDTSD_DUELRESULTS_CHALLENGERSHIP="VARCHAR(50) BINARY"
+MYSQLDTSD_DUELRESULTS_CHALLENGERSHIPBLOCKS="BIGINT"
+MYSQLDTSD_DUELRESULTS_CHALLENGERSHIPMASS="BIGINT"
+MYSQLDTSD_DUELRESULTS_DEFENDER="VARCHAR(50) BINARY"
+MYSQLDTSD_DUELRESULTS_DEFENDERSHIP="VARCHAR(50) BINARY"
+MYSQLDTSD_DUELRESULTS_DEFENDERSHIPBLOCKS="BIGINT"
+MYSQLDTSD_DUELRESULTS_DEFENDERSHIPMASS="BIGINT"
+MYSQLDTSD_DUELRESULTS_VICTOR="VARCHAR(50) BINARY"
+MYSQLDTSD_DUELRESULTS_BYWAYOF="VARCHAR(50)"
+
+MYSQLDTSD_BOUNTYDB_NAME="VARCHAR(50) BINARY"
+MYSQLDTSD_BOUNTYDB_BOUNTY="BIGINT DEFAULT '0'"
+MYSQLDTSD_BOUNTYDB_DEATHS="BIGINT DEFAULT '0'"
+MYSQLDTSD_BOUNTYDB_KILLS="BIGINT DEFAULT '0'"
+MYSQLDTSD_BOUNTYDB_KILLEDBY="VARCHAR(50) DEFAULT 'none'"
+MYSQLDTSD_BOUNTYDB_LASTKILL="VARCHAR(50) DEFAULT 'none'"
+MYSQLALTER_BOUNTYDB_NAME="UNIQUE INDEX"
+
+MYSQLDTSD_KILLDB_KILLER="VARCHAR(50) BINARY"
+MYSQLDTSD_KILLDB_VICTIM="VARCHAR(50) BINARY"
+MYSQLDTSD_KILLDB_KILLTIME=TIMESTAMP
+
+MYSQLDTSD_BOUNTYLOG_WANTED="VARCHAR(50)"
+MYSQLDTSD_BOUNTYLOG_AMOUNT="BIGINT"
+MYSQLDTSD_BOUNTYLOG_POSTER="VARCHAR(50)"
+MYSQLDTSD_BOUNTYLOG_TIME=TIMESTAMP
+
+LOGSEARCH_kill_message="Server(0) PlS"
 LOGSEARCH_player_login="[SERVER][SPAWN] SPAWNING NEW CHARACTER FOR PlS"
 
+CHATHELP_POSTBOUNTY="[Places a bounty on the player specified, by taking the specified amount of credits from your account USAGE: !POSTBOUNTY <Player> <Amount>"
+CHATHELP_LISTBOUNTY="[Lists all players with bounties, and how much they are worth] USAGE: !LISTBOUNTY"
 
+
+
+# Duel Commands
+chatcommand_DUEL() {
+# Allows players to challenge each other to a duel.  To challenge a player get in the ship you wish to fight in and for example !DUEL challenge ship Doomsider
+# Usage: !DUEL <accept, challenge, decline, ignore or list> <challenge_type>  <playername>
+# Usage: !DUEL challenge ship Schema
+# Usage: !DUEL list 
+# Usage: !DUEL list challenges
+# Usage: !DUEL accept playername
+# Usage: !DUEL decline playername
+# Usage: !DUEL ignore playername
+	DUELSTRING="${@:1}"
+	echo "Sent to DUELSTRING $DUELSTRING"
+	case $2 in
+	challenge)
+		echo "Challenged issued for duel"
+		if [ "$1" = "$4" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You cannot challenge yourself
+		else
+			CHALLENGEEXISTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select CHALLENGER from DUEL where CHALLENGER='$1' and DEFENDER='$4';")
+			echo "CHALLENGEEXISTS $CHALLENGEEXISTS"
+			if [ -n "$CHALLENGEEXISTS" ]
+			then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have already challenged this person
+			else
+				CURRENTSHIP=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select CONTROLLING from PLAYERDB where NAME='$1';")
+				echo "CURRENTSHIP $CURRENTSHIP"
+				if [ "$CURRENTSHIP" = "Spacesuit" ]
+				then
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have to be in and remain in your ship during a challenge
+				else
+					DEFENDERONLINE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select ONLINE from PLAYERDB where NAME='$4';")
+					echo "DEFENDERONLINE $DEFENDERONLINE"
+					if [ "$DEFENDERONLINE" = "n" ]
+					then
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 That person is not online, you can only challenge someone who is online
+					elif [ -z "$DEFENDERONLINE" ]
+					then
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 That person does not appear to exist
+					else
+						case $3 in
+						ship)
+							CHALLENGETYPE=ship
+							FIGHTTERMS="winner takes ship from loser"				
+						;;
+						credits)
+							CHALLENGETYPE=credits
+							FIGHTTERMS="winner takes credits equal to block count of losers ship"
+						;;
+						faction)
+							CHALLENGETYPE=faction
+							FIGHTTERMS="winner gets 10 faction points"
+						;;
+						honor)
+							CHALLENGETYPE=honor
+							FIGHTTERMS="winner gets the honor of knowing they have defeated their adversary"
+						;;
+						*)
+							CHALLENGETYPE=none
+						;;
+						esac
+						if [ "$CHALLENGETYPE" = "none" ] ||  [ -z "$CHALLENGETYPE" ]
+						then
+							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You must select a challenge type: ship credits faction or honor must be used
+						else
+							CHALLENGERMASS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select MASS from SHIPDB where NAME='$CURRENTSHIP';")
+							CHALLENGERBLOCK=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select BLOCK from SHIPDB where NAME='$CURRENTSHIP';")
+
+							mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO DUEL (CHALLENGER, CHALLENGERSHIP, CHALLENGERSHIPBLOCKS, CHALLENGERSHIPMASS, TYPE, DEFENDER) VALUES (\"$1\",\"$CURRENTSHIP\",\"$CHALLENGERBLOCK\",\"$CHALLENGERMASS\",\"$3\",\"$4\");"
+							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have challenged $4 to a duel
+							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $4 You have been challenged to a duel by $1 in $CURRENTSHIP containing $CHALLENGERBLOCK blocks and weighing in at $CHALLENGERMASS mass under terms of $FIGHTTERMS
+						fi
+					fi
+				fi
+			fi
+		fi
+	;;
+	accept)
+		echo "Challenged issued for duel"
+		CHALLENGEEXISTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select DEFENDER from DUEL where CHALLENGER='$3' and DEFENDER='$1';")
+		if [ -z "$CHALLENGEEXISTS" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 There does not appear to be a challenge from that player please used duel list
+		else
+			CURRENTSHIP=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select CONTROLLING from PLAYERDB where NAME='$1';")
+			if [ "$CURRENTSHIP" = "Spacesuit" ]
+			then
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have to be in and remain in your ship during a challenge
+			else
+				if [ "$CHALLENGEEXISTS" = "$1" ]
+				then
+					echo "Defender agreed to terms"
+					DEFENDERMASS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select MASS from SHIPDB where NAME='$CURRENTSHIP';")
+					DEFENDERBLOCK=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select BLOCK from SHIPDB where NAME='$CURRENTSHIP';")
+					mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO DUEL (DEFENDERAGREE, DEFENDERSHIPBLOCKS, DEFENDERSHIPMASS) VALUES (\"y\",\"$DEFENDERBLOCK\",\"$DEFENDERMASS\");"
+				else
+					echo "Challenger agreed to terms"
+					mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO DUEL (CHALLENGERAGREE) VALUES (\"y\");"
+				fi
+				
+			fi
+		fi
+		
+		
+	;;
+	decline)
+	echo "Challenged issued for duel"
+	;;
+	ignore)
+	echo "Challenged issued for duel"
+	;;
+	list)
+	echo "Challenged issued for duel"
+	;;
+	*)
+	echo "Unknown second parameter issued to Duel"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Unkown second parameter please use challenge accept ignore or list
+	;;
+	esac
+	
+}
+# Bounty Commands
+chatcommand_POSTBOUNTY(){ 
+#Places a bounty on the player specified, by taking the specified amount of credits from your account.
+#USAGE: !POSTBOUNTY <Player> <Amount>
+	if [ "$#" -ne "3" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !POSTBOUNTY player amount
+	else
+		BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
+		echo "Current bank credits are $BALANCECREDITS"
+		if [ "$1" = "$2" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC COMMAND - You cannot post a bounty on yourself
+		else
+			if ! test "$3" -gt 0 2> /dev/null
+			then
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
+			else
+				PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
+				PLAYERLIST=($PLAYERLIST)
+				if lib_arraycontains PLAYERLIST $2
+				then
+					lib_myinsert BOUNTYDB NAME $2
+					if [ "$3" -le "$BALANCECREDITS" ]
+					then
+						OLDBOUNTY=$(lib_myvalueretrieve BOUNTY BOUNTYDB $2)
+						echo "The old bounty is $OLDBOUNTY"
+						CURRENTBOUNTY=$(( $OLDBOUNTY + $3 ))
+						echo "The current new bounty will be $CURRENTBOUNTY"
+						NEWBALANCE=$(( $BALANCECREDITS - $3 ))
+						lib_myupdate BOUNTYDB BOUNTY $CURRENTBOUNTY NAME $2
+						lib_myupdate PLAYERDB BANKCREDITS $NEWBALANCE NAME $1
+						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO BOUNTYLOG (WANTED, AMOUNT, POSTER) VALUES (\"$2\",\"$3\",\"$1\");"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC COMMAND - You have placed a bounty of $3 on $2
+					else 
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Not enough credits in your bank account. Please use !DEPOSIT Amount
+					fi	
+				else
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC COMMAND - This person does not exist
+				fi
+			fi
+		fi	
+	fi
+}
+chatcommand_LISTBOUNTY(){ 
+#Lists all players with bounties, and how much they are worth
+#USAGE: !LISTBOUNTY
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !LISTBOUNTY
+	else
+		BOUNTYLIST=$(lib_mycolumnretrieve BOUNTYDB NAME)
+		BOUNTYLIST=($BOUNTYLIST)
+		BOUNTYTOTAL=${#BOUNTYLIST[@]}
+		BARRAY=0
+		BOUNTYFOUND=NO
+		while [ -n "${BOUNTYLIST[$BARRAY]+set}" ] 
+		do
+			BOUNTYNAME=${BOUNTYLIST[$BARRAY]}
+			BOUNTYRETRIEVE=$(lib_myvalueretrieve BOUNTY BOUNTYDB $BOUNTYNAME)
+			if [ "$BOUNTYRETRIEVE" -ne "0" ]
+			then
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $BOUNTYNAME - $BOUNTYRETRIEVE credits
+				BOUNTYFOUND=YES
+			fi
+			let BARRAY++
+		done
+		if [ "$BOUNTYFOUND" = "NO" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No bounties detected
+		fi
+	fi
+}
 player_login() {
 # Player login is received from a string passed after a player spawns
     PLAYERLOGINSTRING="${@:1}"
@@ -34,9 +274,82 @@ player_login() {
 	lib_trigger playerinfo $LOGINPLAYERNAME Astronaut
 	lib_trigger guestbookip $LOGINPLAYERNAME Spawned
 }
-chatcommand_DUEL() {
-# Allows players to challenge each other to a duel
-# Usage: !DUEL <accept, challenge, list, or arena> <playername>
-	CHATCOMMANDSTRING="${@:1}"
-	CHATCOMMANDSTRING=${PLAYERLOGINSTRING#*]}
+kill_message() {
+#String to collect
+#Server(0) PlS[Victim ; id(154)(2)f(0)] Announcing kill: PlayerCharacter[(ENTITY_PLAYERCHARACTER_Murder)(153)] killed PlS[Victim ; id(154)(2)f(0)]
+#Server(0) PlS[Victim ; id(154)(2)f(0)] Announcing kill: Ship[killership](257) killed PlS[Victim ; id(154)(2)f(0)]
+    KILLSTRING="${@:1}"
+	KILLSTRING=${KILLSTRING#*]}
+	echo "This was sent to killstring $KILLSTRING"
+	if [[ $KILLSTRING == *"Announcing kill"* ]]
+	then
+		echo "Kill string found"
+		cutstring=${KILLSTRING#*:}
+		cutstring=${cutstring%%[*}
+		KILLTYPE="${cutstring#"${cutstring%%[![:space:]]*}"}"
+		echo "The was the kill type collected $KILLTYPE"
+		cutstring=${KILLSTRING##*[}
+		cutstring=${cutstring%;*}
+		VICTIMNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+		echo "This was the victim $VICTIMNAME"
+		case "$KILLTYPE" in 
+		*PlayerCharacter*)
+			echo "Player killed in personal combat"
+			cutstring=${KILLSTRING##*_}
+			KILLER=${cutstring%%)*}
+			echo "The killer is $KILLER"
+			lib_myinsert BOUNTYDB NAME $KILLER
+			lib_myupdate BOUNTYDB LASTKILL $VICTIMNAME NAME $KILLER
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET KILLS = KILLS + 1 WHERE NAME = '$KILLER';"
+			lib_myinsert BOUNTYDB NAME $VICTIMNAME
+			lib_myupdate BOUNTYDB KILLEDBY $KILLER NAME $VICTIMNAME
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET DEATHS = DEATHS + 1 WHERE NAME = '$VICTIMNAME';"
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO KILLDB (KILLER, VICTIM) VALUES (\"$KILLER\",\"$VICTIMNAME\");"
+			BOUNTYONVICTIM=$(lib_myvalueretrieve BOUNTY BOUNTYDB $VICTIMNAME)
+			if [ "$BOUNTYONVICTIM" -gt "0" ]
+			then
+				echo "bounty found"
+				BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $KILLER)
+				NEWBALANCE=$(( $BALANCECREDITS + $BOUNTYONVICTIM ))
+				echo "bounty of $BOUNTYONVICTIM added to existing $BALANCECREDITS for a new total of $NEWBALANCE"
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET BOUNTY='0' WHERE NAME='$VICTIMNAME';"
+				lib_myupdate PLAYERDB BANKCREDITS $NEWBALANCE NAME $KILLER
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $KILLER GALACTIC COMMAND - You have been awarded $BOUNTYONVICTIM credits for killing $VICTIMNAME
+				
+			else
+				echo "no bounty on victim"
+			fi
+		;;
+		*Ship*)
+			echo "Player destroyed by a ship"
+			cutstring=${KILLSTRING#*:}
+			cutstring=${cutstring%%]*}
+			KILLERSHIP=${cutstring#*[}
+			 -sNe "select NAME from PLAYERDB where CONTROLLING='$KILLERSHIP' ORDER BY LASTUPDATE DESC LIMIT 1;"
+			# Order by lastupdate desc is used to return the newest result to the last person to be updated.  This prevents players that have been disconnect and still control the ship in the database erroneously 
+			KILLER=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select NAME from PLAYERDB where CONTROLLING='$KILLERSHIP' ORDER BY LASTUPDATE DESC LIMIT 1;")
+			echo "The killing ship is $KILLERSHIP and is piloted by $KILLER"
+			lib_myinsert BOUNTYDB NAME $KILLER
+			lib_myupdate BOUNTYDB LASTKILL $VICTIMNAME NAME $KILLER
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET KILLS = KILLS + 1 WHERE NAME = '$KILLER';"
+			lib_myinsert BOUNTYDB NAME $VICTIMNAME
+			lib_myupdate BOUNTYDB KILLEDBY $KILLER NAME $VICTIMNAME
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET DEATHS = DEATHS + 1 WHERE NAME = '$VICTIMNAME';"
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO KILLDB (KILLER, VICTIM) VALUES (\"$KILLER\",\"$VICTIMNAME\");"
+			BOUNTYONVICTIM=$(lib_myvalueretrieve BOUNTY BOUNTYDB $VICTIMNAME)
+			if [ "$BOUNTYONVICTIM" -gt "0" ]
+			then
+				echo "bounty found"
+				BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $KILLER)
+				NEWBALANCE=$(( $BALANCECREDITS + $BOUNTYONVICTIM ))
+				echo "bounty of $BOUNTYONVICTIM added to existing $BALANCECREDITS for a new total of $NEWBALANCE"
+				lib_myupdate PLAYERDB BANKCREDITS $NEWBALANCE NAME $KILLER
+				lib_myupdate BOUNTYDB BOUNTY 0 NAME $VICTIMNAME
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $KILLER GALACTIC COMMAND - You have been awarded $BOUNTYONVICTIM credits for killing $VICTIMNAME
+			else
+				echo "no bounty on victim"
+			fi
+		;;
+		esac
+	fi
 }

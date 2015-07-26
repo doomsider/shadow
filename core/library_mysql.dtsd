@@ -43,6 +43,7 @@ lib_mycreate() {
 		#echo "Search function is $SEARCHFUNCTION"
 		#echo "Datatype is ${!CURRENTSEARCH}"
 		lib_mysend "CREATE TABLE IF NOT EXISTS $MYSQLTABLENAME ( line INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(line) );" 
+# This needs to be re-written to look to see if table exists and if it does are the properties the same if not then create the column		
 		lib_mysend "ALTER TABLE $MYSQLTABLENAME ADD $MYSQLCOLUMNNAME $MYSQLDATATYPE;"
 		let CREATEARRAY++
 	done

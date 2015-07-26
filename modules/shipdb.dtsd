@@ -20,11 +20,15 @@ MYSQLDTSD_GARAGEDB_PLAYER="VARCHAR(50)"
 MYSQLDTSD_GARAGEDB_SHIP="VARCHAR(50)"
 MYSQLALTER_GARAGEDB_SHIP="UNIQUE INDEX"
 
+LOGSEARCH_player_boarding="[CONTROLLER][ADD-UNIT] (Server(0)): PlS"
 
 EXAMPLESTARTERSHIP="Isanth-VI"
 
 CHATHELP_STARTERSHIP="[Gives a Player a designated starter ship] USAGE: !STARTERSHIP"
 CHATHELP_GARAGE="[Puts a ship away into your garage or retrieves one from the garage] USAGE: !GARAGE <add or remove> <shipname>"
+
+#/spawn_entity spawnsave testspawn 2 2 2 -1 false
+#Remove player from quarantined ship /change_sector_for_copy schema 2 3 4 
 
 
 chatcommand_GARAGE(){
@@ -85,7 +89,6 @@ chatcommand_GARAGE(){
 		lib_trigger garageremove $1 $SHIPTOREMOVE
 	;;
 	esac
-
 }
 chatcommand_STARTERSHIP(){
 # Gives a Player a designated starter ship
@@ -99,6 +102,49 @@ chatcommand_STARTERSHIP(){
 		lib_trigger startership $1 $EXAMPLESTARTERSHIP
 	fi
 }
-
-#/spawn_entity spawnsave testspawn 2 2 2 -1 false
-#Remove player from quarantined ship /change_sector_for_copy schema 2 3 4 
+player_boarding() {
+# SEARCHBOARD="[CONTROLLER][ADD-UNIT]"
+# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: Ship[test ship](132)
+# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: PlayerCharacter[(ENTITY_PLAYERCHARACTER_testdude)(131)]
+# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: SpaceStation[ENTITY_SPACESTATION_test station(151)]
+	echo "Boarding detected"
+	BOARDSTRING="${@:1}"
+	CUTSTRING=${BOARDSTRING%;*}
+	CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+	PLAYERBOARDING=${CUTSTRING##*[}
+	CUTSTRING=${BOARDSTRING##*:}
+	CONTROLLER=${CUTSTRING%[*}
+	lib_myinsert PLAYERDB NAME $PLAYERBOARDING
+	case "$CONTROLLER" in
+	*"Ship"*) 
+		echo "Ship boarding detected"
+		echo "Player boarding $PLAYERBOARDING"
+		echo "Player controlling a $CONTROLLER"
+		CUTSTRING=${BOARDSTRING##*[}
+		CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+		BOARDSHIPNAME=${CUTSTRING%]*}
+		echo "Player boarding ship $BOARDSHIPNAME"
+		lib_myinsert SHIPDB NAME $BOARDSHIPNAME
+		lib_myupdate PLAYERDB CONTROLLING "$BOARDSHIPNAME" NAME $PLAYERBOARDING
+		lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
+		lib_myinsert REQUESTINFODB NAME $BOARDSHIPNAME
+		lib_myupdate REQUESTINFODB TYPE $CONTROLLER NAME $BOARDSHIPNAME
+		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSHIPNAME\"
+	;;
+	*"SpaceStation"*)
+		echo "Station boarding detected"
+		CUTSTRING=${BOARDSTRING%(*}
+		BOARDSTATIONNAME=${CUTSTRING##*_}
+		echo "Station boarded is $BOARDSTATIONNAME"
+		lib_myinsert STATIONDB NAME $BOARDSTATIONNAME
+		lib_myupdate PLAYERDB CONTROLLING "$BOARDSTATIONNAME" NAME $PLAYERBOARDING
+		lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
+		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSTATIONNAME\"		
+	;;
+	*"PlayerCharacter"*)
+		echo "Astronaut in space"
+		lib_myupdate PLAYERDB CONTROLLING Spacesuit NAME $PLAYERBOARDING
+		lib_myupdate PLAYERDB CONTROLTYPE Astronaut NAME $PLAYERBOARDING
+	;;
+	esac
+}

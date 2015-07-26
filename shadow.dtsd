@@ -34,7 +34,7 @@ fi
 # Load all the scripts associated with DTSD.  Grep -v is used here to remove shadow.dtsd itself to prevent a never ending loop
 # echo ${SOURCES[@]}
 # Go through the sources array and then source each .dtsd file to load all the related scripts
-for MODULE in $(find ./core/*.dtsd -type f) $(find ./modules/*.dtsd -type f) 
+for MODULE in $(find $SCRIPTDIR/core/*.dtsd -type f) $(find $SCRIPTDIR/modules/*.dtsd -type f) 
 do
 # The check below that is commented out is useful to troubleshoot what scripts are loading successfully
 #	echo "loading module $MODULE"	

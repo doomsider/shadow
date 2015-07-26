@@ -80,6 +80,7 @@ CREATEARRAY=0
 		echo "this is SCHEDULETYPE $SCHEDULETYPE TIMEVALUE $TIMEVALUE TIMEQUANTITY $TIMEQUANTITY SCHEDULECOMMAND $SCHEDULECOMMAND EVENTNAME $EVENTNAME"
 		case $SCHEDULETYPE in
 			REPEAT)
+# Rather than just drop the event here in case there are changes in the script it would be better to compare to see if there are differences, if so drop the old event.  This way existing timers could remain counting
 				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "drop event $EVENTNAME;"
 				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
 			;;
@@ -103,7 +104,7 @@ EVENT_SERVERSTATUS() {
 		LASTLINE=$(($LASTLINE - 5))
 		CURRENTTIME=$(date +%s)
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
-		sleep 10
+		sleep 60
 		SERVERREPAIR=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%Database Repairing itself%\" and SERVERLOG.line >= $LASTLINE";) 
 		if [ -n "$SERVERREPAIR" ]
 			then

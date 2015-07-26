@@ -1,53 +1,6 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
 # Function for boarding
+# Moved to SHIPDB
 
-#		SEARCHBOARD="[CONTROLLER][ADD-UNIT]"
-# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: Ship[test ship](132)
-# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: PlayerCharacter[(ENTITY_PLAYERCHARACTER_testdude)(131)]
-# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: SpaceStation[ENTITY_SPACESTATION_test station(151)]
 
-LOGSEARCH_player_boarding="[CONTROLLER][ADD-UNIT] (Server(0)): PlS"
-
-player_boarding() {
-	echo "Boarding detected"
-	BOARDSTRING="${@:1}"
-	CUTSTRING=${BOARDSTRING%%;*}
-	CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
-	PLAYERBOARDING=${CUTSTRING##*[}
-	CUTSTRING=${BOARDSTRING##*:}
-	CONTROLLER=${CUTSTRING%[*}
-	lib_myinsert PLAYERDB NAME $PLAYERBOARDING
-	case "$CONTROLLER" in
-	*"Ship"*) 
-		echo "Ship boarding detected"
-		echo "Player boarding $PLAYERBOARDING"
-		echo "Player controlling a $CONTROLLER"
-		CUTSTRING=${BOARDSTRING##*[}
-		CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
-		BOARDSHIPNAME=${CUTSTRING%]*}
-		echo "Player boarding ship $BOARDSHIPNAME"
-		lib_myinsert SHIPDB NAME $BOARDSHIPNAME
-		lib_myupdate PLAYERDB CONTROLLING "$BOARDSHIPNAME" NAME $PLAYERBOARDING
-		lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
-		lib_myinsert REQUESTINFODB NAME $BOARDSHIPNAME
-		lib_myupdate REQUESTINFODB TYPE $CONTROLLER NAME $BOARDSHIPNAME
-		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSHIPNAME\"
-	;;
-	*"SpaceStation"*)
-		echo "Station boarding detected"
-		CUTSTRING=${BOARDSTRING%(*}
-		BOARDSTATIONNAME=${CUTSTRING##*_}
-		echo "Station boarded is $BOARDSTATIONNAME"
-		lib_myinsert STATIONDB NAME $BOARDSTATIONNAME
-		lib_myupdate PLAYERDB CONTROLLING $BOARDSTATIONNAME NAME $PLAYERBOARDING
-		lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
-		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSTATIONNAME\"		
-	;;
-	*"PlayerCharacter"*)
-		echo "Astronaut in space"
-		lib_myupdate PLAYERDB CONTROLLING Spacesuit NAME $PLAYERBOARDING
-		lib_myupdate PLAYERDB CONTROLTYPE Astronaut NAME $PLAYERBOARDING
-	;;
-	esac
-}

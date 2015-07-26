@@ -342,7 +342,7 @@ player_boarding() {
 	esac
 }
 # Functions to collect from sector info
-sector_entityinfo () {
+sector_entityinfo() {
 #[ADMIN COMMAND] SECTOR_INFO from org.schema.schine.network.server.AdminLocalClient@614b3189 params: [3, -1, 3]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLAYERCHARACTER_harry, type=Astronaut]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANETCORE_6_8_-6, type=Planet Core]
@@ -428,7 +428,7 @@ sector_entityinfo () {
 	;;
 	esac
 }
-sector_info () {
+sector_info() {
 # string="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](1, 2, 3); Protected: false; Peace: false; Seed: 0; Type: MAIN"; echo ""; string=${string#*\(}; string=${string%\)*}; string=${string//,/}; array=($string); echo $string; echo ""; echo ${array[1]}; echo ${#array[1]}
 	echo "Sector info detected"
 	SECTORINFOSTRING="${@:1}"
@@ -668,8 +668,8 @@ player_changesector() {
 		CHANGESHIPNAME=${CUTSTRING%%]*}
 		echo "this is the shipname $CHANGESHIPNAME"
 		CUTSTRING=${SECTORSTRING%;*}
-		CUTSTRING=${CUTSTRING##*[}
-		CHANGEPLAYERNAME="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+		CUTSTRING=${CUTSTRING%[[:space:]]*}
+		CHANGEPLAYERNAME="${CUTSTRING##*[}"
 		echo "this is the playername $CHANGEPLAYERNAME"
 		OLDSECTORCUT=${SECTORSTRING#*:}
 		CUTSTRING=${OLDSECTORCUT#*\(}
@@ -693,7 +693,6 @@ player_changesector() {
 		CHANGESECTORZ="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
 		echo "sector z $CHANGESECTORZ"
 		CURRENTCHANGESECTOR="$CHANGESECTORX"_"$CHANGESECTORY"_"$CHANGESECTORZ"
-		lib_myinsert SECTORDB NAME $CURRENTCHANGESECTOR
 		lib_myinsert SHIPDB NAME $CHANGESHIPNAME
 		lib_myupdate PLAYERDB CURRENTSECTOR $CURRENTCHANGESECTOR NAME $CHANGEPLAYERNAME
 		lib_myupdate SHIPDB CURRENTSECTOR $CURRENTCHANGESECTOR NAME $CHANGESHIPNAME

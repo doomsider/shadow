@@ -25,7 +25,7 @@ core_taillog() {
 		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERLOG (LOGSTRING) VALUES (\"$STRING\");"
     done
 }
-core_searchlog() {
+core_search_executelog() {
 	log_myerasetable TRIGGERDB
 	log_myerasetable COMMANDDB
 	while true
@@ -51,35 +51,25 @@ core_searchlog() {
 			let LINESTART++
 			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO COMMANDDB (PARAMETER, COMMAND) SELECT SERVERLOG.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM SERVERLOG, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, SERVERLOG.LOGSTRING) > 0 AND SERVERLOG.line <= $NUMOFLINES AND SERVERLOG.line >= $LINESTART ORDER BY SERVERLOG.line ASC"
 			LINESTART=$NUMOFLINES
-			LOGACTIVE=YES
 		fi
-		if [ "$LOGACTIVE" = "NO" ]
-		then
-			sleep 1
-		fi
-		
-	done
-}
-core_executelog() {
-# Goes through the command database one line at a time and execute the command plus parameter with eval.  This would be a good spot for a job scheduler
-	while true
-	do 
-		RECIEVEDCOMMAND=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select COMMAND from COMMANDDB order by line asc limit 1;")
-		if [ -z "$RECIEVEDCOMMAND" ]
-		then
-			EXECTUTEACTIVE=NO
-		else
-			EXECTUTEACTIVE=YES
-			RECIEVEDPARAMETER=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PARAMETER from COMMANDDB order by line asc limit 1;")
+		OLD_IFS=$IFS
+		IFS=$'\n'
+		RECIEVEDCOMMAND=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select COMMAND from COMMANDDB order by line asc;") )
+		RECIEVEDPARAMETER=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PARAMETER from COMMANDDB order by line asc;") )
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "truncate table COMMANDDB;"
+		IFS=$OLD_IFS
+		COMMANDARRAY=0
+		PARAMETERARRAY=0
+		while [ -n "${RECIEVEDCOMMAND[$COMMANDARRAY]+set}" ]
+		do
+			RECIEVEDCOMMAND=${RECIEVEDCOMMAND[$COMMANDARRAY]}
+			RECIEVEDPARAMETER=${RECIEVEDPARAMETER[$PARAMETERARRAY]}
 			echo "executing $RECIEVEDCOMMAND $RECIEVEDPARAMETER"
 			eval $RECIEVEDCOMMAND '$RECIEVEDPARAMETER'
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM COMMANDDB order by line asc limit 1;"
-			
-		fi
-		if [ "$EXECTUTEACTIVE" = "NO" ]
-		then
-			sleep 1
-		fi
+			let COMMANDARRAY++
+			let PARAMETERARRAY++
+		done
+		sleep 0.1
 	done
 }
 core_makesearchdb() {
@@ -97,5 +87,3 @@ core_makesearchdb() {
 		let SEARCHARRAY++
 	done
 }
-
- 

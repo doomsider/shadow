@@ -151,8 +151,7 @@ core_softstart() {
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH addevents
 		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH taillog
-		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH searchlog
-		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH executelog
+		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH search_executelog
 	fi
 }
 core_softreset() {
@@ -162,6 +161,7 @@ core_softreset() {
 		lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
 		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Server Going down be back in a bit."
 		lib_screensend $CONFIGDTSD_MAINSCREEN "/shutdown 60"
+		core_clearschedulerepeat
 # Give the server a chance to gracefully shutdown if not kill it and then seg fault it if necessary
 		sleep 60
 		for LOOPNO in {0..30}

@@ -24,7 +24,7 @@ CHATHELP_OFFLIMITS="[Sets a sector offlimits to everyone but the creator and who
 
 
 UNIVERSECENTER="2_2_2" #Set the center of the universe boarder
-UNIVERSERADIUS=50 #Set the radius of the universe boarder around 
+UNIVERSERADIUS=10000 #Set the radius of the universe boarder around 
 UNIVERSEBOARDER=YES
 
 sector_initiallogin() {

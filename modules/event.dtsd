@@ -6,13 +6,18 @@
 # Events are created by this format MYSQLEVENT_FREQUENCY_TIMEVALUE_TIMEQUANTITY_EVENTNAME="EVENT_FUNCTION_NAME"
 
 # Acceptable variables for time quantity are YEAR | QUARTER | MONTH | DAY | HOUR | MINUTE | WEEK | SECOND | YEAR_MONTH | DAY_HOUR | DAY_MINUTE | DAY_SECOND | HOUR_MINUTE | HOUR_SECOND | MINUTE_SECOND
-# Acceptable variables for frequency are REPEAT
+# Acceptable variables for frequency are REPEAT time time_value
+# Acceptable variables for frequency are ONCEADAY hour in military two digit:  MYSQLEVENT_ONCEADAY_02 for 2 AM starting the next day and eveyday after that.
+# CREATE EVENT my_event ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '%Y%m%d 0200'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES ("EVENT_SERVERVERSION");
+# CREATE EVENT my_event ON SCHEDULE EVERY 120 SECOND STARTS str_to_date( date_format(now(), '%Y%m%d %H%i'), '%Y%m%d %H%i' ) + INTERVAL 120 SECOND DO INSERT INTO COMMANDDB (COMMAND) VALUES ("EVENT_SERVERVERSION");
 
 MYSQLEVENT_REPEAT_600_SECOND_SERVERMESSAGE="EVENT_SERVERMESSAGE"
-MYSQLEVENT_REPEAT_43200_SECOND_SERVERRESTART="EVENT_SERVERRESTART"
+#MYSQLEVENT_REPEAT_43200_SECOND_SERVERRESTART="EVENT_SERVERRESTART"
 MYSQLEVENT_REPEAT_60_SECOND_VOTECHECK="EVENT_VOTECHECK &"
-MYSQLEVENT_REPEAT_300_SECOND_SERVERSTATUS="EVENT_SERVERSTATUS &"
+#MYSQLEVENT_REPEAT_300_SECOND_SERVERSTATUS="EVENT_SERVERSTATUS &"
 MYSQLEVENT_REPEAT_3600_SECOND_SERVERVERSION="EVENT_SERVERVERSION"
+MYSQLEVENT_ONCEADAY_04_SERVERRESTART="EVENT_SERVERRESTART"
+MYSQLEVENT_ONCEADAY_12_SERVERRESTART2="EVENT_SERVERRESTART"
 
 DTSDHELP_myscheduler="\nMyscheduler usage: shadow.dtsd myscheduler on or off\nTurns the Myql Scheduler on or off.  Requires root password for Mysql\n"
 DTSDHELP_clearschedule="\nClearschedule usage: shadow.dtsd clearschedule\nClears scheduled tasks\n"
@@ -62,6 +67,18 @@ core_clearschedule() {
 		let CREATEARRAY++
 	done
 }
+core_clearschedulerepeat() {
+# [Clears scheduled tasks] clearschedule usage: shadow.dtsd clearschedulerepeat
+	echo "Clearing all repeat Schedules"
+	CREATEVAR=( $(compgen -v | grep MYSQLEVENT_REPEAT ) )
+	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
+	do
+		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
+		SCHEDULECOMMAND=${CURRENTSEARCH##*_}
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "drop event $SCHEDULECOMMAND;"
+		let CREATEARRAY++
+	done
+}
 core_addevents() {
 # [Adds events from the script to the Mysql database] usage: shadow.dtsd addevents
 CREATEVAR=( $(compgen -v | grep MYSQLEVENT_ ) )
@@ -71,18 +88,29 @@ CREATEARRAY=0
 		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
 		cutstring=${CURRENTSEARCH#*_}
 		SCHEDULETYPE=${cutstring%%_*}
-		cutstring=${cutstring#*_}
-		TIMEVALUE=${cutstring%%_*}
-		cutstring=${cutstring#*_}
-		TIMEQUANTITY=${cutstring%%_*}
-		EVENTNAME=${cutstring#*_}
-		SCHEDULECOMMAND=${!CURRENTSEARCH}
-		echo "this is SCHEDULETYPE $SCHEDULETYPE TIMEVALUE $TIMEVALUE TIMEQUANTITY $TIMEQUANTITY SCHEDULECOMMAND $SCHEDULECOMMAND EVENTNAME $EVENTNAME"
+		echo "this is SCHEDULETYPE $SCHEDULETYPE"
 		case $SCHEDULETYPE in
 			REPEAT)
+				cutstring=${cutstring#*_}
+				TIMEVALUE=${cutstring%%_*}
+				cutstring=${cutstring#*_}
+				TIMEQUANTITY=${cutstring%%_*}
+				EVENTNAME=${cutstring#*_}
+				SCHEDULECOMMAND=${!CURRENTSEARCH}
 # Rather than just drop the event here in case there are changes in the script it would be better to compare to see if there are differences, if so drop the old event.  This way existing timers could remain counting
-				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "drop event $EVENTNAME;"
-				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY STARTS str_to_date( date_format(now(), '%Y%m%d %H%i'), '%Y%m%d %H%i' ) + INTERVAL $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
+				#mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"		
+			;;
+			ONCEADAY)
+				cutstring=${cutstring#*_}
+				TIMEVALUE=${cutstring%%_*}
+				EVENTNAME=${cutstring#*_}
+				echo "TIMEVALUE $TIMEVALUE"
+				echo "EVENTNAME $EVENTNAME"
+				TIMESTRING="%Y%m%d "$TIMEVALUE"00"
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '$TIMESTRING'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES  (\"$SCHEDULECOMMAND\");"
+				#mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '%Y%m%d $TIMEVALUE00'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES  (\"$SCHEDULECOMMAND\");"
+				# CREATE EVENT my_event ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '%Y%m%d 0200'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES ("EVENT_SERVERVERSION");
 			;;
 		esac
 		let CREATEARRAY++
@@ -91,7 +119,7 @@ CREATEARRAY=0
 }
 EVENT_SERVERMESSAGE() {
 # A simple server message to send to all players
-	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Message sent from Shadow pre-Alpha database event"
+	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Welcome to the server type !help to see extra commands"
 }
 EVENT_VOTECHECK() {
 core_votecheck

@@ -18,7 +18,6 @@ MYSQLDTSD_DESTROYLOG_NAME="VARCHAR(25) BINARY"
 MYSQLDTSD_DESTROYLOG_TYPE="VARCHAR(50)"
 MYSQLDTSD_DESTROYLOG_DESTROYTIME=TIMESTAMP
 
-LOGSEARCH_player_boarding="[CONTROLLER][ADD-UNIT] (Server(0)): PlS"
 LOGSEARCH_player_changesector="has players attached. Doing Sector Change for PlS"
 LOGSEARCH_sector_info="[SERVER-LOCAL-ADMIN] LOADED SECTOR INFO: Sector"
 LOGSEARCH_sector_entityinfo="[SERVER-LOCAL-ADMIN] LoadedEntity [uid="
@@ -281,65 +280,7 @@ collect_player_NAME() {
 	lib_release playerinfo $COLLECT_PLAYER_NAME
 	lib_release playerdeposit $COLLECT_PLAYER_NAME
 	lib_release startership $COLLECT_PLAYER_NAME
-	lib_release garageremove $COLLECT_PLAYER_NAME
-	
-}
-# Function for boarding ships and stations
-player_boarding() {
-# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: Ship[test ship](132)
-# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[dude ; id(18)(1)f(0)] Added to controllers: SpaceStation[ENTITY_SPACESTATION_test_station_10_block(7)]
-
-# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: PlayerCharacter[(ENTITY_PLAYERCHARACTER_testdude)(131)]
-# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: SpaceStation[ENTITY_SPACESTATION_test station(151)]
-	echo "Boarding detected"
-	BOARDSTRING="${@:1}"
-	BOARDSTRING=${BOARDSTRING#*]}
-	CUTSTRING=${BOARDSTRING%%;*}
-	CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
-	PLAYERBOARDING=${CUTSTRING##*[}
-	CUTSTRING=${BOARDSTRING##*:}
-	CONTROLLER=${CUTSTRING%[*}
-	
-	lib_myinsert PLAYERDB NAME $PLAYERBOARDING
-	case "$CONTROLLER" in
-	*"Ship"*) 
-		echo "Ship boarding detected"
-		echo "Player boarding $PLAYERBOARDING"
-		echo "Player controlling a $CONTROLLER"
-		CUTSTRING=${BOARDSTRING##*[}
-		CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
-		BOARDSHIPNAME=${CUTSTRING%]*}
-		echo "Player boarding ship $BOARDSHIPNAME"
-		lib_myinsert SHIPDB NAME $BOARDSHIPNAME
-		lib_myupdate SHIPDB LASTCONTROLLER $PLAYERBOARDING NAME "$BOARDSHIPNAME"
-		lib_myupdate PLAYERDB CONTROLLING "$BOARDSHIPNAME" NAME $PLAYERBOARDING
-		lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
-		lib_trigger shipinfo SHIPDB $BOARDSHIPNAME		
-	;;
-	*"SpaceStation"*)
-	# string="[CONTROLLER][ADD-UNIT] (Server(0)): PlS[dude ; id(18)(1)f(0)] Added to controllers: SpaceStation[ENTITY_SPACESTATION_test_station_10_block(7)]"; string=${string##*[};  string=${string#*_};  string=${string#*_}; string=${string%%\(*}; echo ""; echo $string; echo ""
-		echo "Station boarding detected"
-		CUTSTRING=${BOARDSTRING##*[}
-		CUTSTRING=${CUTSTRING#*_}
-		CUTSTRING=${CUTSTRING#*_}
-		BOARDSTATIONNAME=${CUTSTRING%%\(*}
-		echo "Station boarded is $BOARDSTATIONNAME"
-		lib_myinsert STATIONDB NAME "$BOARDSTATIONNAME"
-		lib_myupdate STATIONDB LASTCONTROLLER $PLAYERBOARDING NAME "$BOARDSTATIONNAME"
-		lib_myupdate PLAYERDB CONTROLLING $BOARDSTATIONNAME NAME $PLAYERBOARDING
-		lib_myupdate PLAYERDB CONTROLTYPE STATIONDB NAME $PLAYERBOARDING
-		lib_trigger shipinfo STATIONDB $BOARDSTATIONNAME	
-	;;
-	*"PlayerCharacter"*)
-# Need to release ship from CONTROLLING here if it exists
-		echo "Astronaut in space"
-		CONTROLLING=$(lib_myvalueretrieve CONTROLLING PLAYERDB $PLAYERBOARDING)
-		
-		lib_myupdate PLAYERDB CONTROLLING Spacesuit NAME $PLAYERBOARDING
-		lib_myupdate PLAYERDB CONTROLTYPE Astronaut NAME $PLAYERBOARDING
-		
-	;;
-	esac
+	lib_release garageremove $COLLECT_PLAYER_NAME	
 }
 # Functions to collect from sector info
 sector_entityinfo() {
@@ -520,16 +461,17 @@ collect_ship_LASTPOSITION() {
 	fi
 }
 collect_ship_ATTACHED() {
-#	[SERVER-LOCAL-ADMIN] Attached: [PlS[harry_dude ; id(6)(1)f(0)]]
+#[SERVER-LOCAL-ADMIN] Attached: [PlS[harry_dude ; id(6)(1)f(0)]]
+#[SERVER-LOCAL-ADMIN] Attached: [PlS[Doomsider [Doomsider]*; id(4)(1)f(0)]]
 	SHIPATTACHEDSTRING="${@:1}"
 	SHIPATTACHEDSTRING=${SHIPATTACHEDSTRING#*]}
 	FIRSTCUT=${SHIPATTACHEDSTRING##*[}
 	SECONDCUT=${FIRSTCUT%]*}
 	if [ -n "${SECONDCUT}" ]
 	then
-		CUTSTRING=${SHIPATTACHEDSTRING%%;*}
-		CUTSTRING=${CUTSTRING##*[}
-		COLLECT_SHIP_ATTACHED="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+		CUTSTRING=${SHIPATTACHEDSTRING%;*}
+		CUTSTRING=${CUTSTRING%[[:space:]]*}
+		COLLECT_SHIP_ATTACHED=${CUTSTRING##*[}
 		echo "this is the attached player $COLLECT_SHIP_ATTACHED"
 	else
 		echo "nothing attached to this ship"

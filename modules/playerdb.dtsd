@@ -260,16 +260,15 @@ chatcommand_LISTBOUNTY(){
 }
 player_login() {
 # Player login is received from a string passed after a player spawns
+# [SERVER][SPAWN] SPAWNING NEW CHARACTER FOR PlS[Doomsider [Doomsider]*; id(4)(1)f(0)] at LastLogoutPoint: (30.592138, 0.2092065, 20.137096)
     PLAYERLOGINSTRING="${@:1}"
-	PLAYERLOGINSTRING=${PLAYERLOGINSTRING#*]}
+	PLAYERLOGINSTRING=${PLAYERLOGINSTRING%;*}
     # Below is an example of the string received by player_login
     # [SERVER] org.schema.game.server.controller.GameServerController@478b7093 SPAWNING NEW CHARACTER FOR PlS[Doomsider ; id(4)(1)f(0)]
     # Cut everything before the first [
-    cutstring=${PLAYERLOGINSTRING##*[}
-    # Cut everything after the ; 
-    cutstring=${cutstring%;*}
+    cutstring=${PLAYERLOGINSTRING%[[:space:]]*}
     # Cut trailing space to get the playername that is logging in
-    LOGINPLAYERNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+    LOGINPLAYERNAME=${cutstring##*[}
     echo "$LOGINPLAYERNAME is logging in"
 	lib_trigger playerinfo $LOGINPLAYERNAME Astronaut
 	lib_trigger guestbookip $LOGINPLAYERNAME Spawned

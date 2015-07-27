@@ -20,7 +20,7 @@ MYSQLDTSD_GARAGEDB_PLAYER="VARCHAR(50)"
 MYSQLDTSD_GARAGEDB_SHIP="VARCHAR(50)"
 MYSQLALTER_GARAGEDB_SHIP="UNIQUE INDEX"
 
-LOGSEARCH_player_boarding="[CONTROLLER][ADD-UNIT] (Server(0)): PlS"
+LOGSEARCH_ship_boarding="[CONTROLLER][ADD-UNIT] (Server(0)): PlS"
 
 EXAMPLESTARTERSHIP="Isanth-VI"
 
@@ -102,15 +102,18 @@ chatcommand_STARTERSHIP(){
 		lib_trigger startership $1 $EXAMPLESTARTERSHIP
 	fi
 }
-player_boarding() {
+ship_boarding() {
 # SEARCHBOARD="[CONTROLLER][ADD-UNIT]"
 # [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: Ship[test ship](132)
 # [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: PlayerCharacter[(ENTITY_PLAYERCHARACTER_testdude)(131)]
 # [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: SpaceStation[ENTITY_SPACESTATION_test station(151)]
+# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[InfernoSuperNova [InfernoSuperNova]; id(12)(2)f(10085)] Added to controllers: PlayerCharacter[(ENTITY_PLAYERCHARACTER_InfernoSuperNova)(2244)]
+# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[Doomsider [Doomsider]*; id(4)(1)f(0)] Added to controllers: Ship[Doomsider_1437954095149](135)
+
 	echo "Boarding detected"
 	BOARDSTRING="${@:1}"
 	CUTSTRING=${BOARDSTRING%;*}
-	CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+	CUTSTRING=${CUTSTRING%[[:space:]]*}
 	PLAYERBOARDING=${CUTSTRING##*[}
 	CUTSTRING=${BOARDSTRING##*:}
 	CONTROLLER=${CUTSTRING%[*}
@@ -124,12 +127,10 @@ player_boarding() {
 		CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
 		BOARDSHIPNAME=${CUTSTRING%]*}
 		echo "Player boarding ship $BOARDSHIPNAME"
-		lib_myinsert SHIPDB NAME $BOARDSHIPNAME
+		lib_myinsert SHIPDB NAME "$BOARDSHIPNAME"
 		lib_myupdate PLAYERDB CONTROLLING "$BOARDSHIPNAME" NAME $PLAYERBOARDING
 		lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
-		lib_myinsert REQUESTINFODB NAME $BOARDSHIPNAME
-		lib_myupdate REQUESTINFODB TYPE $CONTROLLER NAME $BOARDSHIPNAME
-		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSHIPNAME\"
+		lib_trigger shipinfo SHIPDB $BOARDSHIPNAME
 	;;
 	*"SpaceStation"*)
 		echo "Station boarding detected"
@@ -139,7 +140,7 @@ player_boarding() {
 		lib_myinsert STATIONDB NAME $BOARDSTATIONNAME
 		lib_myupdate PLAYERDB CONTROLLING "$BOARDSTATIONNAME" NAME $PLAYERBOARDING
 		lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
-		lib_screensend $CONFIGDTSD_MAINSCREEN /ship_info_name \"$BOARDSTATIONNAME\"		
+		lib_trigger shipinfo STATIONDB $BOARDSTATIONNAME	
 	;;
 	*"PlayerCharacter"*)
 		echo "Astronaut in space"

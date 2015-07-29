@@ -26,7 +26,7 @@ core_loadlog() {
 	do 
 		 mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0
 # Sleep added here to keep it from burning up the CPU.  This value can be modified based upon how aggressive you want the script to run.
-		 sleep 0.5
+		 sleep 1
 	done
 }
 
@@ -85,7 +85,7 @@ core_search_executelog() {
 			let COMMANDARRAY++
 			let PARAMETERARRAY++
 		done
-		sleep 0.1
+		sleep 1
 	done
 }
 core_makesearchdb() {

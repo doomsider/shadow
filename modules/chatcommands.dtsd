@@ -339,7 +339,6 @@ chatcommand_RESTART(){
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RESTART
 	else
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The server will now restart
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart\");"
 		core_softreset
 	fi
 }
@@ -352,7 +351,7 @@ chatcommand_SHUTDOWN(){
 	else
 		lib_screensend $CONFIGDTSD_MAINSCREEN /shutdown $2
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The server will shut down in $2 seconds
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Shutdown\");"
+		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Shutdown issued from chatcommand\");"
 	fi
 }
 chatcommand_SPAWNSTART(){

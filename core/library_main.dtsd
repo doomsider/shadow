@@ -122,11 +122,28 @@ lib_forcestop(){
 	fi
 }
 core_softstart() {
-# Softstart can only be ran after a softstop
+# Softstart can only be ran after a softstop or a softrestart
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Starting\");"
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN >/dev/null
 	then
 		echo "Screen(s) identified by $CONFIGDTSD_DTSDSCREEN detected and will be closed"
 		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN | awk '{print $2}') )
+		echo "Trying to kill these ${PIDS[@]}"
+		kill ${PIDS[@]}
+	fi
+# Added an extra pause and check here to make sure the script screen and related functions have shut down
+	sleep 1
+	if ps aux | grep -v grep | grep loadlog >/dev/null
+	then
+		echo "Process loadlog detected and will be closed"
+		PIDS=( $(ps aux | grep -v grep | grep loadlog | awk '{print $2}') )
+		echo "Trying to kill these ${PIDS[@]}"
+		kill ${PIDS[@]}
+	fi
+	if ps aux | grep -v grep | grep  search_executelog >/dev/null
+	then
+		echo "Process search_executelogdetected and will be closed"
+		PIDS=( $(ps aux | grep -v grep | grep  search_executelog | awk '{print $2}') )
 		echo "Trying to kill these ${PIDS[@]}"
 		kill ${PIDS[@]}
 	fi
@@ -146,15 +163,15 @@ core_softstart() {
 		lib_screensend $CONFIGDTSD_DTSDSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_SCRIPTSCREEN.log
 		lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Starting\");"
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH addevents
-		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH taillog
+		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH loadlog
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH search_executelog
 	fi
 }
 core_softreset() {
+	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart\");"
 	if lib_check_server_running
 	then
 # Issue Chat and a command to the server to shutdown
@@ -164,18 +181,55 @@ core_softreset() {
 		core_clearschedulerepeat
 # Give the server a chance to gracefully shutdown if not kill it and then seg fault it if necessary
 		sleep 60
-		for LOOPNO in {0..30}
+		for LOOPNO in {0..60}
 		do
 			if lib_check_server_running
 			then
 				sleep 1
 			else
 				echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Sever shut down after $LOOPNO seconds\");"
+				break
 			fi
 		done
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Stopped\");"
-	fi
+		if lib_check_server_running
+		then
+			echo "It appears the server is taking awhile to shut down, sending a general kill to get it to stop"
+			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+			kill $PID
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Kill from softreset\");"
+			for LOOPNO in {0..30}
+			do
+				if lib_check_server_running
+			then
+					sleep 1
+			else
+				echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Sever shut down after $LOOPNO seconds from kill\");"
+				break
+				fi
+			done
+			if lib_check_server_running
+			then
+				echo "It appears the server is refusing to shut down, sending a force kill to get it to stop"
+				PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+				kill -9 $PID
+				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Forcekill from softreset\");"
+				for LOOPNO in {0..30}
+				do
+					if lib_check_server_running
+					then
+						sleep 1
+					else
+						echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Sever shut down after $LOOPNO seconds from forcekill\");"
+						break
+					fi
+				done	
+			fi
+		fi
 # Main screen must be killed off to ensure no running process left
+	fi
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null
 	then
 		echo "Screen(s) identified by $CONFIGDTSD_MAINSCREEN detected and will be closed"
@@ -183,6 +237,7 @@ core_softreset() {
 		echo "Trying to kill these ${PIDS[@]}"
 		kill ${PIDS[@]}
 	fi
+	sleep 1
 	lib_screenadd $CONFIGDTSD_MAINSCREEN
 	lib_screensend $CONFIGDTSD_MAINSCREEN $CONFIGDTSD_SCRIPTPATH softstart
 }

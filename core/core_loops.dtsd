@@ -4,7 +4,6 @@
 
 MYSQLDTSD_SERVERLOG_LOGSTRING="TEXT NOT NULL"
 MYSQLDTSD_SERVERLOG_LOGDATE=TIMESTAMP
-MYSQLALTER_SERVERLOG_LOGSTRING="UNIQUE INDEX"
 
 MYSQLDTSD_log_LOGSTRING="VARCHAR(256) NOT NULL"
 MYSQLDTSD_log_LOGDATE=TIMESTAMP
@@ -25,7 +24,7 @@ core_loadlog() {
 	log_myerasetable log
 	while lib_check_server_running
 	do 
-		 mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb /home/ubuntu/StarMade/logs/log.txt.0
+		 mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0
 # Sleep added here to keep it from burning up the CPU.  This value can be modified based upon how aggressive you want the script to run.
 		 sleep 0.5
 	done

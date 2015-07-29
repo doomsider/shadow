@@ -16,7 +16,7 @@ Install Easy:
 	
 	or
 	
-	wget http://104.223.107.159/forum/uploads/local/install.sh in the directory Starmade is or will be.
+	wget https://raw.githubusercontent.com/doomsider/shadow/master/install.sh in the directory Starmade is or will be.
 	
 	chmod +x install.sh
 	

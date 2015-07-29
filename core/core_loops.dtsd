@@ -4,6 +4,11 @@
 
 MYSQLDTSD_SERVERLOG_LOGSTRING="TEXT NOT NULL"
 MYSQLDTSD_SERVERLOG_LOGDATE=TIMESTAMP
+MYSQLALTER_SERVERLOG_LOGSTRING="UNIQUE INDEX"
+
+MYSQLDTSD_log_LOGSTRING="VARCHAR(256) NOT NULL"
+MYSQLDTSD_log_LOGDATE=TIMESTAMP
+MYSQLALTER_log_LOGSTRING="UNIQUE INDEX"
 
 MYSQLDTSD_COMMANDDB_LOGDATE=TIMESTAMP
 MYSQLDTSD_COMMANDDB_PARAMETER="TEXT NOT NULL"
@@ -14,6 +19,18 @@ MYSQLDTSD_SEARCHDB_SEARCHFUNCTION="VARCHAR(50)"
 
 # The current logging script works by feeding the current starmade log into the database and then searching the database to find matches with search
 # strings and their associated functions
+core_loadlog() {
+# This function is testing a solution to the sluggishness of the tailog function.  Currently it used Mysqlimport to rapidly insert lines into a table with a unique column.  This way the file can be loaded into the database again and again without adding duplicate lines.
+
+	log_myerasetable log
+	while lib_check_server_running
+	do 
+		 mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb /home/ubuntu/StarMade/logs/log.txt.0
+# Sleep added here to keep it from burning up the CPU.  This value can be modified based upon how aggressive you want the script to run.
+		 sleep 0.5
+	done
+}
+
 core_taillog() {
 	log_myerasetable SERVERLOG
 # Tail with -F to prevent rollover file from stopping read is extremely fast and lightweight method for feeding log lines into the database
@@ -30,7 +47,7 @@ core_search_executelog() {
 	log_myerasetable COMMANDDB
 	while true
 	do 
-		NUMOFLINES=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
+		NUMOFLINES=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM log ORDER BY line DESC LIMIT 1;")
 		#echo "Here is the last line of the log $NUMOFLINES"
 		# if the number of lines isn't detected it is because no lines have been fed yet
 		if [ -z "$NUMOFLINES" ]
@@ -49,7 +66,7 @@ core_search_executelog() {
 #			echo "$NUMOFLINES is the total lines of the log"
 #			echo "$LINESTART is linestart"
 			let LINESTART++
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO COMMANDDB (PARAMETER, COMMAND) SELECT SERVERLOG.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM SERVERLOG, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, SERVERLOG.LOGSTRING) > 0 AND SERVERLOG.line <= $NUMOFLINES AND SERVERLOG.line >= $LINESTART ORDER BY SERVERLOG.line ASC"
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO COMMANDDB (PARAMETER, COMMAND) SELECT log.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM log, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, log.LOGSTRING) > 0 AND log.line <= $NUMOFLINES AND log.line >= $LINESTART ORDER BY log.line ASC"
 			LINESTART=$NUMOFLINES
 		fi
 		OLD_IFS=$IFS

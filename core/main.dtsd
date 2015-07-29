@@ -591,7 +591,8 @@ core_start() {
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH addevents
-		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH taillog
+	#	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH taillog
+		lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH loadlog
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH search_executelog
 	fi  
 }

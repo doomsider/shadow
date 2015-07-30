@@ -11,10 +11,6 @@ Development:
 Adding useful modifications and testing towards an Alpha release
 
 Install Easy:
-
-	Download https://drive.google.com/file/d/0B519td3ku8G1dVVPNURCbzBJcGM/view?usp=sharing and copy to the directory you wish to install StarMade to.
-	
-	or
 	
 	wget https://raw.githubusercontent.com/doomsider/shadow/master/install.sh in the directory Starmade is or will be.
 	
@@ -95,7 +91,7 @@ Naming Conventions - Shadow looks at its own functions' names to determine speci
 	
 	Any variable that starts with LOGSEARCH_ will automatically entered into the search database and then the result will be returned to the specified function.  The format is LOGSEARCH_functioname="String match in log".
 
-	Any variable that starts with MYSQLEVENT_ will be added to the running Mysql events.  Mysql event manager must be turned on for these to work.  The format is MYSQLEVENT_FREQUENCY_TIMEVALUE_TIMEQUANTITY_EVENTNAME="EVENT_FUNCTION_NAME".
+	Any variable that starts with MYSQLEVENT_ will be added to the running Mysql events.  Mysql event manager must be turned on for these to work.  The format is MYSQLEVENT_FREQUENCY_TIMEVALUE_TIMEQUANTITY_EVENTNAME="EVENT_FUNCTION_NAME"
 	
 
 Known Issues:

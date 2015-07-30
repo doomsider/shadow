@@ -29,6 +29,81 @@ core_loadlog() {
 		 sleep 1
 	done
 }
+core_logloop() {
+	USERAMDRIVE=no
+	if [ "$USERAMDRIVE" = "no" ]
+	then
+		WRITEDIR=$CONFIGDTSD_INSTALLPATH
+	else
+		WRITEDIR="/dev/shm"
+	fi
+# This function is testing a solution to the sluggishness of the current_core loop.  Currently it inserts lines into the database while they are received from a log file.
+	log_myerasetable SERVERLOG
+	log_myerasetable TRIGGERDB
+	log_myerasetable COMMANDDB
+	MYSQLSTART=0
+	sleep 5
+	while true
+	do 
+		NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 | cut -d" " -f1)
+# Since the Starmade log file rolls after 4mb the Linestart must be reset back to something reasonable when this happens or the script will hang. Special thanks to LordDragon for helping trouble shoot this
+		let "CHECKSCRIPTRESET = $LINESTART - 5000"
+	    if [ "$CHECKSCRIPTRESET" -gt "$NUMOFLINES" ]
+		then
+		echo "Script has reset"
+		LINESTART=$NUMOFLINES
+		fi
+# In case Linestart does not have a value give it an integer value of 1.  The prevents a startup error on the script.
+		if [ -z "$LINESTART" ]
+		then
+			LINESTART=$NUMOFLINES
+#			echo "Start at line $LINESTART"
+		fi
+# If the number of lines read from the log file is greater than last line read + 1 from the log then feed more lines.
+		if [ "$NUMOFLINES" -gt "$LINESTART" ] 
+		then
+			echo "$NUMOFLINES is the total lines of the log"
+#   		echo "$LINESTART is linestart"
+			let LINESTART++
+# Use sed to gather the current selection of lines
+			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 > $WRITEDIR/SERVERLOG.txt
+			mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb $WRITEDIR/SERVERLOG.txt
+			MYSQLSTOP=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
+			echo "MYSQLSTOP $MYSQLSTOP"
+			echo "MYSQLSTART $MYSQLSTART"
+			let MYSQLSTART++
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO COMMANDDB (PARAMETER, COMMAND) SELECT SERVERLOG.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM SERVERLOG, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, SERVERLOG.LOGSTRING) > 0 AND SERVERLOG.line <= $MYSQLSTOP AND SERVERLOG.line >= $MYSQLSTART ORDER BY SERVERLOG.line ASC;"
+			LINESTART=$NUMOFLINES
+			let MYSQLSTART=$MYSQLSTOP			
+		fi
+	
+		CHECKCOMMANDS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT 1 FROM COMMANDDB LIMIT 1;")
+		if [ -n "${CHECKCOMMANDS-unset}" ]
+		then
+		echo "CHECKCOMMANDS $CHECKCOMMANDS"
+		echo "commands detected"
+			OLD_IFS=$IFS
+			IFS=$'\n'
+			RECIEVEDCOMMAND=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select COMMAND from COMMANDDB order by line asc;") )
+			RECIEVEDPARAMETER=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PARAMETER from COMMANDDB order by line asc;") )
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "truncate table COMMANDDB;"
+			IFS=$OLD_IFS
+			COMMANDARRAY=0
+			PARAMETERARRAY=0
+			while [ -n "${RECIEVEDCOMMAND[$COMMANDARRAY]+set}" ]
+			do
+				RECIEVEDCOMMAND=${RECIEVEDCOMMAND[$COMMANDARRAY]}
+				RECIEVEDPARAMETER=${RECIEVEDPARAMETER[$PARAMETERARRAY]}
+				echo "executing $RECIEVEDCOMMAND $RECIEVEDPARAMETER"
+				eval $RECIEVEDCOMMAND '$RECIEVEDPARAMETER'
+				let COMMANDARRAY++
+				let PARAMETERARRAY++
+			done
+		fi
+	sleep 0.5
+	done
+}
+
 
 core_taillog() {
 	log_myerasetable SERVERLOG

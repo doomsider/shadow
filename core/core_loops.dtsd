@@ -18,17 +18,6 @@ MYSQLDTSD_SEARCHDB_SEARCHFUNCTION="VARCHAR(50)"
 
 # The current logging script works by feeding the current starmade log into the database and then searching the database to find matches with search
 # strings and their associated functions
-core_loadlog() {
-# This function is testing a solution to the sluggishness of the tailog function.  Currently it used Mysqlimport to rapidly insert lines into a table with a unique column.  This way the file can be loaded into the database again and again without adding duplicate lines.
-
-	log_myerasetable log
-	while lib_check_server_running
-	do 
-		 mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0
-# Sleep added here to keep it from burning up the CPU.  This value can be modified based upon how aggressive you want the script to run.
-		 sleep 1
-	done
-}
 core_logloop() {
 	USERAMDRIVE=no
 	if [ "$USERAMDRIVE" = "no" ]
@@ -57,44 +46,52 @@ core_logloop() {
 		if [ -z "$LINESTART" ]
 		then
 			LINESTART=$NUMOFLINES
-#			echo "Start at line $LINESTART"
+			#echo "Start at line $LINESTART"
 		fi
 # If the number of lines read from the log file is greater than last line read + 1 from the log then feed more lines.
 		if [ "$NUMOFLINES" -gt "$LINESTART" ] 
 		then
-			echo "$NUMOFLINES is the total lines of the log"
-#   		echo "$LINESTART is linestart"
+			#echo "$NUMOFLINES is the total lines of the log"
+			#echo "$LINESTART is linestart"
 			let LINESTART++
 # Use sed to gather the current selection of lines
 			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 > $WRITEDIR/SERVERLOG.txt
+# Mysqlimport is a command line version of load data infile and rapidly inserts a file into Mysql
 			mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb $WRITEDIR/SERVERLOG.txt
+# Get the last line of the MYSQL table Serverlog where th log is being dumped
 			MYSQLSTOP=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
-			echo "MYSQLSTOP $MYSQLSTOP"
-			echo "MYSQLSTART $MYSQLSTART"
+			#echo "MYSQLSTOP $MYSQLSTOP"
+			#echo "MYSQLSTART $MYSQLSTART"
 			let MYSQLSTART++
+# Search through the log from the last mysqlstart and the current mysqlstop and insert any matched into the Commanddb
 			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO COMMANDDB (PARAMETER, COMMAND) SELECT SERVERLOG.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM SERVERLOG, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, SERVERLOG.LOGSTRING) > 0 AND SERVERLOG.line <= $MYSQLSTOP AND SERVERLOG.line >= $MYSQLSTART ORDER BY SERVERLOG.line ASC;"
 			LINESTART=$NUMOFLINES
 			let MYSQLSTART=$MYSQLSTOP			
 		fi
-	
+# Quick check to save Mysql time to see if commands are in the Commanddb
 		CHECKCOMMANDS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT 1 FROM COMMANDDB LIMIT 1;")
 		if [ -n "${CHECKCOMMANDS-unset}" ]
 		then
 		echo "CHECKCOMMANDS $CHECKCOMMANDS"
 		echo "commands detected"
+# Set the field seperator to newline so commands and parameters are received as a single array variable and not broken up by the normal space field seperator
 			OLD_IFS=$IFS
 			IFS=$'\n'
+# Gather command and parameter
 			RECIEVEDCOMMAND=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select COMMAND from COMMANDDB order by line asc;") )
 			RECIEVEDPARAMETER=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PARAMETER from COMMANDDB order by line asc;") )
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "truncate table COMMANDDB;"
+# Reset the field seperator so it does not cause issues with the rest of the execution of the script
 			IFS=$OLD_IFS
+# Reset the database so the same command is not read repeatedly 
+			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "truncate table COMMANDDB;"
 			COMMANDARRAY=0
 			PARAMETERARRAY=0
+# Go through each command and parameter received and execute them with eval
 			while [ -n "${RECIEVEDCOMMAND[$COMMANDARRAY]+set}" ]
 			do
 				RECIEVEDCOMMAND=${RECIEVEDCOMMAND[$COMMANDARRAY]}
 				RECIEVEDPARAMETER=${RECIEVEDPARAMETER[$PARAMETERARRAY]}
-				echo "executing $RECIEVEDCOMMAND $RECIEVEDPARAMETER"
+				#echo "executing $RECIEVEDCOMMAND $RECIEVEDPARAMETER"
 				eval $RECIEVEDCOMMAND '$RECIEVEDPARAMETER'
 				let COMMANDARRAY++
 				let PARAMETERARRAY++
@@ -103,7 +100,35 @@ core_logloop() {
 	sleep 0.5
 	done
 }
+core_makesearchdb() {
+# Make the search database which contains all the search strings and their related functions
+	log_myerasetable SEARCHDB
+	SEARCHVAR=( $(compgen -v | grep LOGSEARCH_ ) )
+	SEARCHARRAY=0
+	while [ -n "${SEARCHVAR[$SEARCHARRAY]+set}" ]
+	do
+		CURRENTSEARCH=${SEARCHVAR[$SEARCHARRAY]}
+		CURRENTSEARCHSTRING=${!CURRENTSEARCH}
+		CURRENTSEARCHFUNCTION=${CURRENTSEARCH#*_}
+		lib_myinsert SEARCHDB SEARCHFUNCTION "$CURRENTSEARCHFUNCTION"
+		lib_myupdate SEARCHDB SEARCHSTRING "$CURRENTSEARCHSTRING" SEARCHFUNCTION $CURRENTSEARCHFUNCTION
+		let SEARCHARRAY++
+	done
+}
 
+########################OLD FUNCTIONS########################
+
+core_loadlog() {
+# This function is testing a solution to the sluggishness of the tailog function.  Currently it used Mysqlimport to rapidly insert lines into a table with a unique column.  This way the file can be loaded into the database again and again without adding duplicate lines.
+
+	log_myerasetable log
+	while lib_check_server_running
+	do 
+		 mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0
+# Sleep added here to keep it from burning up the CPU.  This value can be modified based upon how aggressive you want the script to run.
+		 sleep 1
+	done
+}
 
 core_taillog() {
 	log_myerasetable SERVERLOG
@@ -163,18 +188,4 @@ core_search_executelog() {
 		sleep 1
 	done
 }
-core_makesearchdb() {
-# Make the search database which contains all the search strings and their related functions
-	log_myerasetable SEARCHDB
-	SEARCHVAR=( $(compgen -v | grep LOGSEARCH_ ) )
-	SEARCHARRAY=0
-	while [ -n "${SEARCHVAR[$SEARCHARRAY]+set}" ]
-	do
-		CURRENTSEARCH=${SEARCHVAR[$SEARCHARRAY]}
-		CURRENTSEARCHSTRING=${!CURRENTSEARCH}
-		CURRENTSEARCHFUNCTION=${CURRENTSEARCH#*_}
-		lib_myinsert SEARCHDB SEARCHFUNCTION "$CURRENTSEARCHFUNCTION"
-		lib_myupdate SEARCHDB SEARCHSTRING "$CURRENTSEARCHSTRING" SEARCHFUNCTION $CURRENTSEARCHFUNCTION
-		let SEARCHARRAY++
-	done
-}
+

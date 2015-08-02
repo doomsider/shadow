@@ -133,17 +133,10 @@ core_softstart() {
 	fi
 # Added an extra pause and check here to make sure the script screen and related functions have shut down
 	sleep 1
-	if ps aux | grep -v grep | grep loadlog >/dev/null
+	if ps aux | grep -v grep | grep logloop >/dev/null
 	then
 		echo "Process loadlog detected and will be closed"
 		PIDS=( $(ps aux | grep -v grep | grep loadlog | awk '{print $2}') )
-		echo "Trying to kill these ${PIDS[@]}"
-		kill ${PIDS[@]}
-	fi
-	if ps aux | grep -v grep | grep  search_executelog >/dev/null
-	then
-		echo "Process search_executelogdetected and will be closed"
-		PIDS=( $(ps aux | grep -v grep | grep  search_executelog | awk '{print $2}') )
 		echo "Trying to kill these ${PIDS[@]}"
 		kill ${PIDS[@]}
 	fi

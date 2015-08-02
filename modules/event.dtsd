@@ -291,6 +291,7 @@ oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
 			fi
 			let LINECOUNT++
 		done
+		curl "http://files.star-made.org$newversion/version.txt" > "$CONFIGDTSD_INSTALLPATH/StarMade/version.txt"
 		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart after update\");"
 		core_softreset
 	else

@@ -337,6 +337,7 @@ oldversion=$(cat StarMade/version.txt)
 		fi
 		let LINECOUNT++
 		done
+		curl "http://files.star-made.org$newversion/version.txt" > "$CONFIGDTSD_INSTALLPATH/StarMade/version.txt"
 	else
 		echo "No new version detected"
 	fi

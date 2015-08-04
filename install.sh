@@ -131,11 +131,12 @@ case $INPUT in
 		done
 		chmod +x $SCRIPTDIR/shadow.dtsd
 		dos2unix $SCRIPTDIR/shadow.dtsd
+		echo -e "\nStarmade installed, you must go through this setup before Shadow will run properly\n"
 		$SCRIPTDIR/shadow.dtsd setup
 	;;
 	esac
 else
-	echo -e "\nStarmade found setting up Shadow\n"
+	echo -e "\nStarmade found setting up Shadow, you must go through this setup before Shadow will run properly\n"
 	chmod +x $SCRIPTDIR/shadow.dtsd
 	dos2unix $SCRIPTDIR/shadow.dtsd
 	$SCRIPTDIR/shadow.dtsd setup

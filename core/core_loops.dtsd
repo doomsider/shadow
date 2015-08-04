@@ -56,34 +56,36 @@ core_logloop() {
 			let LINESTART++
 # Use sed to gather the current selection of lines
 			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 > $WRITEDIR/SERVERLOG.txt
+# Remove any quotes from the log to prevent processing issues in mysql
+			sed -i 's/\"//g' $WRITEDIR/SERVERLOG.txt
 # Mysqlimport is a command line version of load data infile and rapidly inserts a file into Mysql
 			mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb $WRITEDIR/SERVERLOG.txt
 # Get the last line of the MYSQL table Serverlog where th log is being dumped
-			MYSQLSTOP=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
+			MYSQLSTOP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
 			#echo "MYSQLSTOP $MYSQLSTOP"
 			#echo "MYSQLSTART $MYSQLSTART"
 			let MYSQLSTART++
 # Search through the log from the last mysqlstart and the current mysqlstop and insert any matched into the Commanddb
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO COMMANDDB (PARAMETER, COMMAND) SELECT SERVERLOG.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM SERVERLOG, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, SERVERLOG.LOGSTRING) > 0 AND SERVERLOG.line <= $MYSQLSTOP AND SERVERLOG.line >= $MYSQLSTART ORDER BY SERVERLOG.line ASC;"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e  "INSERT INTO COMMANDDB (PARAMETER, COMMAND) SELECT SERVERLOG.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM SERVERLOG, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, SERVERLOG.LOGSTRING) > 0 AND SERVERLOG.line <= $MYSQLSTOP AND SERVERLOG.line >= $MYSQLSTART ORDER BY SERVERLOG.line ASC;"
 			LINESTART=$NUMOFLINES
 			let MYSQLSTART=$MYSQLSTOP			
 		fi
 # Quick check to save Mysql time to see if commands are in the Commanddb
-		CHECKCOMMANDS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT 1 FROM COMMANDDB LIMIT 1;")
+		CHECKCOMMANDS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT 1 FROM COMMANDDB LIMIT 1;")
 		if [ -n "${CHECKCOMMANDS-unset}" ]
 		then
-		echo "CHECKCOMMANDS $CHECKCOMMANDS"
-		echo "commands detected"
+#		echo "CHECKCOMMANDS $CHECKCOMMANDS"
+#		echo "commands detected"
 # Set the field seperator to newline so commands and parameters are received as a single array variable and not broken up by the normal space field seperator
 			OLD_IFS=$IFS
 			IFS=$'\n'
 # Gather command and parameter
-			RECIEVEDCOMMAND=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select COMMAND from COMMANDDB order by line asc;") )
-			RECIEVEDPARAMETER=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PARAMETER from COMMANDDB order by line asc;") )
+			RECIEVEDCOMMAND=( $(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select COMMAND from COMMANDDB order by line asc;") )
+			RECIEVEDPARAMETER=( $(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PARAMETER from COMMANDDB order by line asc;") )
 # Reset the field seperator so it does not cause issues with the rest of the execution of the script
 			IFS=$OLD_IFS
 # Reset the database so the same command is not read repeatedly 
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "truncate table COMMANDDB;"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "truncate table COMMANDDB;"
 			COMMANDARRAY=0
 			PARAMETERARRAY=0
 # Go through each command and parameter received and execute them with eval
@@ -138,7 +140,7 @@ core_taillog() {
 # Quotations will cause Mysql to error so they are removed with a in line edit 
 		STRING=${a//\"/}
 #		echo "INSERT INTO SERVERLOG LOGSTRING $STRING"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERLOG (LOGSTRING) VALUES (\"$STRING\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERLOG (LOGSTRING) VALUES (\"$STRING\");"
     done
 }
 core_search_executelog() {
@@ -146,7 +148,7 @@ core_search_executelog() {
 	log_myerasetable COMMANDDB
 	while true
 	do 
-		NUMOFLINES=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM log ORDER BY line DESC LIMIT 1;")
+		NUMOFLINES=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT line FROM log ORDER BY line DESC LIMIT 1;")
 		#echo "Here is the last line of the log $NUMOFLINES"
 		# if the number of lines isn't detected it is because no lines have been fed yet
 		if [ -z "$NUMOFLINES" ]
@@ -165,14 +167,14 @@ core_search_executelog() {
 #			echo "$NUMOFLINES is the total lines of the log"
 #			echo "$LINESTART is linestart"
 			let LINESTART++
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e  "INSERT INTO COMMANDDB (PARAMETER, COMMAND) SELECT log.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM log, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, log.LOGSTRING) > 0 AND log.line <= $NUMOFLINES AND log.line >= $LINESTART ORDER BY log.line ASC"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e  "INSERT INTO COMMANDDB (PARAMETER, COMMAND) SELECT log.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM log, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, log.LOGSTRING) > 0 AND log.line <= $NUMOFLINES AND log.line >= $LINESTART ORDER BY log.line ASC"
 			LINESTART=$NUMOFLINES
 		fi
 		OLD_IFS=$IFS
 		IFS=$'\n'
-		RECIEVEDCOMMAND=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select COMMAND from COMMANDDB order by line asc;") )
-		RECIEVEDPARAMETER=( $(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PARAMETER from COMMANDDB order by line asc;") )
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "truncate table COMMANDDB;"
+		RECIEVEDCOMMAND=( $(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select COMMAND from COMMANDDB order by line asc;") )
+		RECIEVEDPARAMETER=( $(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PARAMETER from COMMANDDB order by line asc;") )
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "truncate table COMMANDDB;"
 		IFS=$OLD_IFS
 		COMMANDARRAY=0
 		PARAMETERARRAY=0

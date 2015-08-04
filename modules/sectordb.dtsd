@@ -23,10 +23,6 @@ CHATHELP_GETOUT="[Releases a player from jail and being confined to certain sect
 CHATHELP_OFFLIMITS="[Sets a sector offlimits to everyone but the creator and who they allow in the sector] USAGE: !offlimits <add or remove> <sector> <playername>"
 
 
-UNIVERSECENTER="2_2_2" #Set the center of the universe boarder
-UNIVERSERADIUS=10000 #Set the radius of the universe boarder around 
-UNIVERSEBOARDER=YES
-
 sector_initiallogin() {
 	SECTORINITIALLOGINSTRING="${@:1}"
 	SECTORINITIALLOGINSTRING=${SECTORINITIALLOGINSTRING#*]}
@@ -43,18 +39,18 @@ sector_initiallogin() {
 chatcommand_JAIL() {
 # Jails or keeps player(s) in certain sectors
 # Usage: !jail x y z playername
-	CHECKPLAYERDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select NAME from PLAYERDB where NAME='$5';")
+	CHECKPLAYERDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select NAME from PLAYERDB where NAME='$5';")
 	SECTORNAME="$2"_"$3"_"$4"
 	if [ -z "$CHECKPLAYERDB" ]
 	then
 		echo "No existing player to add to jail"
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No player $5 found in database to put in jail in sector $2 $3 $4
 	else
-		CHECKPLAYERJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PLAYER from JAIL where PLAYER='$5' and SECTOR='$SECTORNAME'")
+		CHECKPLAYERJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PLAYER from JAIL where PLAYER='$5' and SECTOR='$SECTORNAME'")
 		if [ -z "$CHECKPLAYERJAIL" ]
 		then
 			echo "Player not already in jail"
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO JAIL (SECTOR, PLAYER) VALUES (\"$SECTORNAME\",\"$5\");"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO JAIL (SECTOR, PLAYER) VALUES (\"$SECTORNAME\",\"$5\");"
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Player $5 found in database and put in jail in sector $2 $3 $4
 		else
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Player $5 appears to already be in jail in sector $2 $3 $4
@@ -64,7 +60,7 @@ chatcommand_JAIL() {
 chatcommand_GETOUT() {
 # Releases a player from jail and being confined to certain sector(s)
 # Usage: !getout playername
- CHECKPLAYERJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PLAYER from JAIL where PLAYER='$2'")
+ CHECKPLAYERJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PLAYER from JAIL where PLAYER='$2'")
 	if [ -z "$CHECKPLAYERJAIL" ]
  	then
 		echo "No player to let out of jail"
@@ -72,7 +68,7 @@ chatcommand_GETOUT() {
 	else
 		
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Releasing Player $2 from jail
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM JAIL where PLAYER='$2';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM JAIL where PLAYER='$2';"
 	fi
 }
 chatcommand_OFFLIMITS(){
@@ -87,7 +83,7 @@ chatcommand_OFFLIMITS(){
 	echo "This sent to OFFLIMITS $OFFLIMITSSTRING"
 	CURRENTSECTOR="$3"_"$4"_"$5"
 	echo "Sector in offlimits set to $CURRENTSECTOR"
-	CHECKSECTOREXISTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from OFFLIMIT where SECTOR='$CURRENTSECTOR' ORDER BY line ASC LIMIT 1;")
+	CHECKSECTOREXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from OFFLIMIT where SECTOR='$CURRENTSECTOR' ORDER BY line ASC LIMIT 1;")
 	echo "Check sector exists for offlimits .$CHECKSECTOREXISTS."
 	if [ "$#" -le "4" ]
 	then
@@ -95,8 +91,8 @@ chatcommand_OFFLIMITS(){
 	else
 		if [ "$#" -ge "6" ]
 		then
-			CHECKPLAYERDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select NAME from PLAYERDB where NAME='$6';")
-			CHECKPLAYEROFF=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PLAYER from OFFLIMIT where PLAYER='$6' ORDER BY line ASC LIMIT 1;")
+			CHECKPLAYERDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select NAME from PLAYERDB where NAME='$6';")
+			CHECKPLAYEROFF=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PLAYER from OFFLIMIT where PLAYER='$6' ORDER BY line ASC LIMIT 1;")
 			echo "The player exists in database .$CHECKPLAYERDB. the player exists in offlimits .$CHECKPLAYEROFF."
 			case $2 in 
 				add)
@@ -105,7 +101,7 @@ chatcommand_OFFLIMITS(){
 						echo "No existing player to add to sector offlimits"
 						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No player $6 found in database to add to offlimits sector $3 $4 $5 
 					else
-						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO OFFLIMIT (SECTOR, PLAYER) VALUES (\"$CURRENTSECTOR\",\"$6\");"
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO OFFLIMIT (SECTOR, PLAYER) VALUES (\"$CURRENTSECTOR\",\"$6\");"
 						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Adding player $6 to allowed list of sector $3 $4 $5
 					fi
 				;;
@@ -115,7 +111,7 @@ chatcommand_OFFLIMITS(){
 						echo "No existing player to remove in sector offlimits"
 						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No player $6 found in offlimits to remove from sector $3 $4 $5 
 					else
-						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM OFFLIMIT where PLAYER='$6';"
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM OFFLIMIT where PLAYER='$6';"
 						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Removing player $6 from allowed list for sector $3 $4 $5
 					fi
 				;;
@@ -126,7 +122,7 @@ chatcommand_OFFLIMITS(){
 					if [ -z "$CHECKSECTOREXISTS" ]
 					then
 						echo "No existing sector found for add sector to offlimits"
-						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO OFFLIMIT (SECTOR, PLAYER) VALUES (\"$CURRENTSECTOR\",\"$1\");"
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO OFFLIMIT (SECTOR, PLAYER) VALUES (\"$CURRENTSECTOR\",\"$1\");"
 						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Setting sector $3 $4 $5 offlimits to everyone but $1
 					else
 						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The sector $3 $4 $5 is already in offlimit
@@ -138,7 +134,7 @@ chatcommand_OFFLIMITS(){
 						echo "No existing sector found to remove sector in offlimits"
 						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The sector $3 $4 $5 does not appear to be in offlimits
 					else
-						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM OFFLIMIT where SECTOR='$CURRENTSECTOR';"
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM OFFLIMIT where SECTOR='$CURRENTSECTOR';"
 						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Removing sector $3 $4 $5 from offlimits
 					fi
 				;;
@@ -151,22 +147,22 @@ universejail() {
 # Usage: universejail x y z x y z playername - 1st x y z represent the old sector and 2nd is the new sector
 	UNIVERSEJAILSTRING="${@:1}"
 	echo "This sent to OFFLIMITS $UNIVERSEJAILSTRING"
-	CHECKJAILSTATUS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PLAYER from JAIL where PLAYER='$7';")
+	CHECKJAILSTATUS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PLAYER from JAIL where PLAYER='$7';")
 	if [ -z "$CHECKJAILSTATUS" ]
 	then
 		echo "No jail found for player $7"
 	else
 		ORIGINALSECTOR="$1"_"$2"_"$3"
 		ENTEREDSECTOR="$4"_"$5"_"$6"
-		STILLINJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from JAIL where PLAYER='$7' and SECTOR='$ENTEREDSECTOR' ORDER BY line ASC LIMIT 1;")
+		STILLINJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from JAIL where PLAYER='$7' and SECTOR='$ENTEREDSECTOR' ORDER BY line ASC LIMIT 1;")
 		if [ -z "$STILLINJAIL" ]
 		then
 			echo "Player has attempted to leave jail"
-			OLDSECTORINJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from JAIL where PLAYER='$7' and SECTOR='$ORIGINALSECTOR' ORDER BY line ASC LIMIT 1;")
+			OLDSECTORINJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from JAIL where PLAYER='$7' and SECTOR='$ORIGINALSECTOR' ORDER BY line ASC LIMIT 1;")
 			if [ -z "$OLDSECTORINJAIL" ]
 			then
 			echo "Player has left the jail and cannot return to previous sector"
-			SECTORJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from JAIL where PLAYER='$7' ORDER BY line ASC LIMIT 1;")
+			SECTORJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from JAIL where PLAYER='$7' ORDER BY line ASC LIMIT 1;")
 			cutstring=${SECTORJAIL//_/ }
 			COLLECTSECTORARRAY=($cutstring)
 			COLLECTX=${COLLECTSECTORARRAY[0]}
@@ -201,9 +197,9 @@ universeofflimits() {
 	ORIGINALSECTOR="$1"_"$2"_"$3"
 	ENTEREDSECTOR="$4"_"$5"_"$6"
 	echo "Off limits entered sector $ENTEREDSECTOR original sector $ORIGINALSECTOR"
-	CHECKSECTOROFF=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from OFFLIMIT where SECTOR='$ENTEREDSECTOR' ORDER BY line ASC LIMIT 1;")
+	CHECKSECTOROFF=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from OFFLIMIT where SECTOR='$ENTEREDSECTOR' ORDER BY line ASC LIMIT 1;")
 	echo "Here is CHECKSECTOROFF .$CHECKSECTOROFF."
-	CHECKPLAYEROFF=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select SECTOR from OFFLIMIT where SECTOR='$ENTEREDSECTOR' AND PLAYER='$7' ORDER BY line ASC LIMIT 1;")
+	CHECKPLAYEROFF=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from OFFLIMIT where SECTOR='$ENTEREDSECTOR' AND PLAYER='$7' ORDER BY line ASC LIMIT 1;")
 	echo "Here is CHECKPLAYEROFF .$CHECKPLAYEROFF."
 	if [ -z "$CHECKSECTOROFF" ]
 	then
@@ -228,7 +224,7 @@ universeboarder() {
 	if [ "$UNIVERSEBOARDER" = "YES" ]
 	then
 # Add a check to make sure the player is not in jail which can be set up outside of universe boundaries 
-		CHECKJAIL=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select PLAYER from JAIL where PLAYER='$4';")
+		CHECKJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PLAYER from JAIL where PLAYER='$4';")
 		if [ -z "$CHECKJAIL" ]
 		then
 			UCENTER=$UNIVERSECENTER

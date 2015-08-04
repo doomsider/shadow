@@ -73,26 +73,26 @@ core_votecheck(){
 					cutstring=${CURRENTSTRING%<*}
 					VOTENUMBER=${cutstring#*>}
 					echo "This is the vote number $VOTENUMBER and the voter $VOTERNAME"
-					CHECKFORVOTES=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select CURRENTVOTE from VOTEDB where NAME='$VOTERNAME';")
+					CHECKFORVOTES=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CURRENTVOTE from VOTEDB where NAME='$VOTERNAME';")
 	# If currentvote does not exist add the user and give them a point, this is because regardless of when the voting system is setup we can always assume that if a person appears in the xml then they have voted.  This may give a user a free vote under if they have not voted that day but that month and the script is ran for the first time.
 					if [ -z "$CHECKFORVOTES" ]
 					then
 						echo "New voter added to database"
-						CHECKFORALIAS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select ALIAS from VOTEDB where ALIAS='$VOTERNAME';")
+						CHECKFORALIAS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select ALIAS from VOTEDB where ALIAS='$VOTERNAME';")
 						if [ -z "$CHECKFORALIAS" ]
 						then
 							echo "No existing Alias found for new user entry into VOTEDB"
 						else
 							echo "Existing Alias found in VOTEDB removing it"
-							mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET ALIAS=null where ALIAS='$VOTERNAME'"
+							mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE VOTEDB SET ALIAS=null where ALIAS='$VOTERNAME'"
 						fi
 						lib_myinsert VOTEDB NAME $VOTERNAME
 						lib_myupdate VOTEDB CURRENTVOTE $VOTENUMBER NAME $VOTERNAME
 						echo "Added a voter point for $VOTERNAME"
 	# Limit the increase to only one point to prevent any issues. 
-						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET VOTEPOINTS = VOTEPOINTS + 1 WHERE NAME = '$VOTERNAME';"
-						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO VOTELOG (NAME, INFO) VALUES (\"$VOTERNAME\",\"Received 1 point\");"
-						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET TOTALPOINTS = TOTALPOINTS + 1 WHERE NAME = '$VOTERNAME' or  ALIAS = '$VOTERNAME' ;"
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE VOTEDB SET VOTEPOINTS = VOTEPOINTS + 1 WHERE NAME = '$VOTERNAME';"
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO VOTELOG (NAME, INFO) VALUES (\"$VOTERNAME\",\"Received 1 point\");"
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE VOTEDB SET TOTALPOINTS = TOTALPOINTS + 1 WHERE NAME = '$VOTERNAME' or  ALIAS = '$VOTERNAME' ;"
 						lib_screensend $CONFIGDTSD_MAINSCREEN "/chat $VOTERNAME received 1 voting point just now from voting"
 					else
 						echo "Existing voter found"
@@ -100,9 +100,9 @@ core_votecheck(){
 						if [ "$VOTENUMBER" -ne "$CHECKFORVOTES" ]
 						then
 							echo "Added a voter point for $VOTERNAME"
-							mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET VOTEPOINTS = VOTEPOINTS + 1 WHERE NAME = '$VOTERNAME' or  ALIAS = '$VOTERNAME' ;"
-							mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET TOTALPOINTS = TOTALPOINTS + 1 WHERE NAME = '$VOTERNAME' or  ALIAS = '$VOTERNAME' ;"
-							mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO VOTELOG (NAME, INFO) VALUES (\"$VOTERNAME\",\"Received 1 point\");"
+							mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE VOTEDB SET VOTEPOINTS = VOTEPOINTS + 1 WHERE NAME = '$VOTERNAME' or  ALIAS = '$VOTERNAME' ;"
+							mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE VOTEDB SET TOTALPOINTS = TOTALPOINTS + 1 WHERE NAME = '$VOTERNAME' or  ALIAS = '$VOTERNAME' ;"
+							mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO VOTELOG (NAME, INFO) VALUES (\"$VOTERNAME\",\"Received 1 point\");"
 							lib_myupdate VOTEDB CURRENTVOTE $VOTENUMBER NAME $VOTERNAME
 							lib_screensend $CONFIGDTSD_MAINSCREEN "/chat $VOTERNAME received 1 voting point just now from voting"
 						fi					
@@ -188,7 +188,7 @@ chatcommand_VOTEPOINTS(){
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Invalid parameters. Please use !VOTEPOINTS"
 	else
-        CHECKFORPOINTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VOTEPOINTS from VOTEDB where NAME='$1' or ALIAS='$1';")
+        CHECKFORPOINTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VOTEPOINTS from VOTEDB where NAME='$1' or ALIAS='$1';")
 		if [ -z "$CHECKFORPOINTS" ]
 		then
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "It does not appear that you have voted, if you voted under another name try VOTEALIAS so you can collect your points"
@@ -229,7 +229,7 @@ chatcommand_VOTEALIAS() {
 						then
 							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Votealias cannot be set to an existing playername"
 						else
-							CHECKALIAS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select ALIAS from VOTEDB where ALIAS='$2';")
+							CHECKALIAS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select ALIAS from VOTEDB where ALIAS='$2';")
 							if [ -z "$CHECKALIAS" ]
 							then
 								lib_myupdate VOTEDB ALIAS $1 NAME $2
@@ -289,7 +289,7 @@ VOTEREWARD_CREDITS(){
 	then
 		lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 1000000
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "You have converted 1 voting point into 1 million credits. Enjoy!"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO VOTELOG (NAME, INFO) VALUES (\"$1\",\"Spent 1 point on CREDITS\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO VOTELOG (NAME, INFO) VALUES (\"$1\",\"Spent 1 point on CREDITS\");"
 	fi
 }
 VOTEREWARD_SHIP(){
@@ -308,34 +308,14 @@ echo C
 VOTEREWARD_D(){
 echo D
 }
-SETUP_VOTING(){
-# Used in shadow.dtsd setup to install voting system
-    read -p "Do you wish to set up voting rewards? [y/N] : " INPUT
-	case $INPUT in
-		[YesyesYESYy]* ) 
-			CONFIGDTSD_VOTING=true
-            read -p "The server key for accessing votes on starmade-servers.com : " INPUT
-            if [ -n "$INPUT" ]
-            then
-                CONFIGDTSD_VOTEKEY=$INPUT
-            else
-                CONFIGDTSD_VOTEKEY=false
-                CONFIGDTSD_VOTING=false
-            fi
-		;;
-		* ) 
-			CONFIGDTSD_VOTING=false
-		;;
-	esac
-}
 votes_deduct(){
 # Checks to see if there are enough voting points, deducts if so, and then returns True/False
 # usage: votes_deduct PlayerName Amount
-	CHECKFORPOINTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VOTEPOINTS from VOTEDB where NAME='$1' or ALIAS='$1';")
+	CHECKFORPOINTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VOTEPOINTS from VOTEDB where NAME='$1' or ALIAS='$1';")
     if [ $(($CHECKFORPOINTS - $2)) -ge 0 ]
     then
 		TOTALVOTE=$(($CHECKFORPOINTS - $2))
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE VOTEDB SET VOTEPOINTS='$TOTALVOTE' WHERE NAME='$1' or ALIAS='$1'"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE VOTEDB SET VOTEPOINTS='$TOTALVOTE' WHERE NAME='$1' or ALIAS='$1'"
         return 0
     else
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "It appears you are short on voting points you have $CHECKFORPOINTS points but the cost is $2 points"

@@ -69,7 +69,14 @@ core_setup() {
 	else
 		FOUNDCURL=NO
 	fi
-	if [[ $FOUNDSCREEN == NO ]] || [[ $FOUNDMYSQL == NO ]] || [[ $FOUNDJAVA == NO ]] || [[ $FOUNDZIP == NO ]] || [[ $FOUNDSTARMADE == NO ]] || [[ $FOUNDDOS2UNIX == NO ]] || [[ $FOUNDCURL == NO ]]
+		if command -v git >/dev/null
+	then
+		echo "git was found"
+		FOUNDGIT=YES
+	else
+		FOUNDGIT=NO
+	fi
+	if [[ $FOUNDSCREEN == NO ]] || [[ $FOUNDMYSQL == NO ]] || [[ $FOUNDJAVA == NO ]] || [[ $FOUNDZIP == NO ]] || [[ $FOUNDSTARMADE == NO ]] || [[ $FOUNDDOS2UNIX == NO ]] || [[ $FOUNDCURL == NO ]] || [[ $FOUNDGIT == NO ]]
 	then
 		if [[ $FOUNDSTARMADE == NO ]]
 		then
@@ -98,6 +105,10 @@ core_setup() {
 		if [[ $FOUNDCURL == NO ]]
 		then
 			echo "Please install curl.  IE: for Ubuntu type - sudo apt-get install curl"
+		fi
+		if [[ $FOUNDGIT == NO ]]
+		then
+			echo "Please install git.  IE: for Ubuntu type - sudo apt-get install git"
 		fi
 		exit
 	fi

@@ -15,7 +15,7 @@ lib_trigger() {
 	VALUE3="${@:3}"
 	COMMAND=TRIGGER_$VALUE1
 	echo "This was sent to trigger function for value1  $VALUE1 and value2 $VALUE2 and value3 $VALUE3"
-    mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO TRIGGERDB (VALUE1, VALUE2, VALUE3) VALUES (\"$VALUE1\",\"$VALUE2\",\"$VALUE3\");"
+    mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO TRIGGERDB (VALUE1, VALUE2, VALUE3) VALUES (\"$VALUE1\",\"$VALUE2\",\"$VALUE3\");"
 #	lib_myinsert TRIGGERDB VALUE2 $2
 #	lib_myupdate TRIGGERDB VALUE1 $COMMAND NAME $2
 #	lib_myupdate TRIGGERDB VALUE3 $3 NAME $2
@@ -42,14 +42,14 @@ lib_release() {
 	VALUERELEASE="${@:2}"
 	COMMAND=$1
 	echo "Current command is $COMMAND and value is $VALUERELEASE"
-	CHECKENTRYEXISTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='$1' and VALUE2='$VALUERELEASE' or VALUE3='$VALUERELEASE' ORDER BY line ASC LIMIT 1;")
+	CHECKENTRYEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='$1' and VALUE2='$VALUERELEASE' or VALUE3='$VALUERELEASE' ORDER BY line ASC LIMIT 1;")
 	echo "This is the value of the checkentryexists string $CHECKENTRYEXISTS"
 	if [[ -z "$CHECKENTRYEXISTS" ]]
 	then
 		echo "No match for release $1"
 	else
-		CHECKVALUE1=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='$1' ORDER BY line ASC LIMIT 1;")
-		CHECKVALUE2=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='$1' ORDER BY line ASC LIMIT 1;")
+		CHECKVALUE1=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='$1' ORDER BY line ASC LIMIT 1;")
+		CHECKVALUE2=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='$1' ORDER BY line ASC LIMIT 1;")
 		COMMAND=RELEASE_$1
 		echo "send this command for lib_release $COMMAND $CHECKVALUE1 $CHECKVALUE2"
 		eval $COMMAND $CHECKVALUE1 $CHECKVALUE2
@@ -101,7 +101,7 @@ RELEASE_startership() {
 	COLLECTPOSZ=${ARRAYSTRING[2]}	
 	echo "startership $VALUE to be spawned in $SECTORLOCATION in pos $PLAYERPOS with faction tag $PLAYERFAC as the name $RANDOM'_startship'"
 	lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity_pos \"$BLUEPRINT\" $RANDOM'_startership' $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ $COLLECTPOSX $COLLECTPOSY $COLLECTPOSZ $PLAYERFAC false
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='startership';"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='startership';"
 
 }
 TRIGGER_playerinfo() {
@@ -110,7 +110,7 @@ TRIGGER_playerinfo() {
 }
 RELEASE_playerinfo() {
 	echo "player info released"
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;"
 }
 TRIGGER_shipinfo() {
 	echo "ship info triggered"
@@ -120,7 +120,7 @@ TRIGGER_shipinfo() {
 RELEASE_shipinfo() {
 	echo "ship info released"
 	SHIPNAME="${@:2}"
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE3='$SHIPNAME' and VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE3='$SHIPNAME' and VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;"
 }
 TRIGGER_sectorinfo() {
 	echo "sector info triggered"
@@ -128,7 +128,7 @@ TRIGGER_sectorinfo() {
 	echo "This sent to trigger_sectorinfo $SECTORRELEASESTRING"
 	VALUERELEASE="${@:2}"
 	SECTORNAME=$1
-	CHECKLASTSECTORUPDATE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT * FROM SECTORDB WHERE NAME='$SECTORNAME' and LASTUPDATE >= DATE_SUB(NOW(), INTERVAL 10 MINUTE);")
+	CHECKLASTSECTORUPDATE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT * FROM SECTORDB WHERE NAME='$SECTORNAME' and LASTUPDATE >= DATE_SUB(NOW(), INTERVAL 10 MINUTE);")
 	if [ -z "$CHECKLASTSECTORUPDATE" ]
 	then
 		lib_myinsert SECTORDB NAME $SECTORNAME
@@ -144,7 +144,7 @@ TRIGGER_sectorinfo() {
 }
 RELEASE_sectorinfo() {
 	echo "sectorinfo command released"
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;"
 	
 }
 TRIGGER_playerdeposit() {
@@ -155,7 +155,7 @@ RELEASE_playerdeposit() {
 	echo "deposit command released"
 	echo "match found for banking command"
 	BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
-	BVALUE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE2='$1' and VALUE1='playerdeposit' ORDER BY line ASC LIMIT 1;")
+	BVALUE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE2='$1' and VALUE1='playerdeposit' ORDER BY line ASC LIMIT 1;")
 	echo "Credits to be deposited $BVALUE"
 	CREDITSTOTAL=$(lib_myvalueretrieve CREDITS PLAYERDB $1)
 	REMAININGCREDITS=$(( $CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS ))
@@ -172,12 +172,12 @@ RELEASE_playerdeposit() {
 #		lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You successfully deposited $BVALUE credits
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Your balance is now $NEWBALANCE
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='playerdeposit' ORDER BY line ASC LIMIT 1;"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='playerdeposit' ORDER BY line ASC LIMIT 1;"
 		DELETE FROM TRIGGERDB where VALUE1='VALUE1' ORDER BY line ASC LIMIT 1
 		#		as_user "echo '$1 deposited $2' >> $BANKLOG"
 	else
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $2 GALATIC BANK - Insufficient money
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='playerdeposit' ORDER BY line ASC LIMIT 1;"
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Insufficient money
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='playerdeposit' ORDER BY line ASC LIMIT 1;"
 #		lib_myupdate PLAYERDB BANKCOMMAND "none" NAME $1
 		echo "not enough money"
 	fi
@@ -189,8 +189,8 @@ RELEASE_guestbookip() {
 	echo "guestbookip command released"
 	PLAYERIP=$(lib_myvalueretrieve CURRENTIP PLAYERDB $1)
 	echo "playername $1 and IP $PLAYERIP was sent to guestbook"
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO GUESTBOOK (NAME, STATUS, IP) VALUES (\"$1\",\"spawned\",\"$PLAYERIP\");"
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='guestbookip' ORDER BY line ASC LIMIT 1;"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO GUESTBOOK (NAME, STATUS, IP) VALUES (\"$1\",\"spawned\",\"$PLAYERIP\");"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='guestbookip' ORDER BY line ASC LIMIT 1;"
 }
 TRIGGER_garageremove() {
 	echo "Garage remove triggered" 
@@ -218,6 +218,6 @@ RELEASE_garageremove() {
 	COLLECTPOSZ=${ARRAYSTRING[2]}	
 	echo "garageship $VALUE to be spawned in $SECTORLOCATION in pos $PLAYERPOS with faction tag $PLAYERFAC as the name $RANDOM'_startship'"
 	lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity_pos \"$BLUEPRINT\" \"$BLUEPRINT\" $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ $COLLECTPOSX $COLLECTPOSY $COLLECTPOSZ $PLAYERFAC false
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='garageremove';"
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM GARAGEDB where SHIP='$BLUEPRINT';"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='garageremove';"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM GARAGEDB where SHIP='$BLUEPRINT';"
 }

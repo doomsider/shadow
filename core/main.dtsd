@@ -88,8 +88,6 @@ core_force () {
 }
 core_backup() {
 # Backups current Starmade directory into backupdir with the below backupname and a timestamp
-    BACKUPNAME="starmade_backup_"
-    BACKUPDIR=$CONFIGDTSD_INSTALLPATH/SMBACKUP
     if lib_check_server_running
     then
         echo "$SERVICE is running! Will not start backup."
@@ -520,7 +518,7 @@ core_kill() {
 		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN | awk '{print $2}') )   
 		echo "Trying to kill these ${PIDS[@]}"		
 		kill ${PIDS[@]}
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Kill\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Kill\");"
 	fi
   
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN >/dev/null
@@ -587,14 +585,13 @@ core_start() {
 		lib_screensend $CONFIGDTSD_MAINSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log
 		lib_screensend $CONFIGDTSD_DTSDSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_SCRIPTSCREEN.log
 		lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
+		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH buildoption
+		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH builddefaults
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH myserverstart
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH addevents
-	#	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH taillog
-	#	lib_screensendback $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH loadlog
-	#	lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH search_executelog
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
 	fi  
 }
@@ -624,8 +621,6 @@ core_stop() {
 core_universebackup() {
 # Backs up just the universe of an running server
 # WARNING! Live universe backup makes only a Backup of the Database! Because, some other dirs and files are in use
-	BACKUPNAME="starmade_universe_backup_"
-	BACKUPDIR=$CONFIGDTSD_INSTALLPATH/SMBACKUP
 	if lib_check_server_running
 	then
 # Check to see if zip is installed, it isn't on most minimal server builds.
@@ -642,10 +637,10 @@ core_universebackup() {
 				lib_screensend $CONFIGDTSD_MAINSCREEN "/delay_save 3600"
 				sleep 5
 # Create a zip of starmade with time stamp and put it in backup
-				zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade/server-database
+				zip -r $BACKUPUNIVERSENAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade/server-database
 				if [ "$?" == "0" ]
 				then
-					mv $BACKUPNAME*.zip $BACKUPDIR
+					mv $BACKUPUNIVERSENAME*.zip $BACKUPUNIVERSEDIR
 					lib_screensend $CONFIGDTSD_MAINSCREEN "/chat live-backup complete and successful"
 					echo "live-backup complete and successful"
 				else
@@ -657,17 +652,17 @@ core_universebackup() {
 			else
 				echo "Directory not found attempting to create"
 				cd $CONFIGDTSD_INSTALLPATH
-				mkdir $BACKUPDIR
+				mkdir $BACKUPUNIVERSEDIR
 				lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Starting live-backup"
 				echo "Starting live-backup"
 				lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
 				sleep 10
 				lib_screensend $CONFIGDTSD_MAINSCREEN "/delay_save 3600"
 				sleep 5
-				zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade/server-database
+				zip -r $BACKUPUNIVERSENAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade/server-database
 				if [ "$?" == "0" ]
 				then
-					mv $BACKUPNAME*.zip $BACKUPDIR
+					mv $BACKUPUNIVERSENAME*.zip $BACKUPUNIVERSEDIR
 					lib_screensend $CONFIGDTSD_MAINSCREEN "/chat live-backup complete and successful"
 					echo "live-backup complete and successful"
 				else

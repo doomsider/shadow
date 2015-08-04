@@ -351,7 +351,7 @@ chatcommand_SHUTDOWN(){
 	else
 		lib_screensend $CONFIGDTSD_MAINSCREEN /shutdown $2
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The server will shut down in $2 seconds
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Shutdown issued from chatcommand\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Shutdown issued from chatcommand\");"
 	fi
 }
 chatcommand_SPAWNSTART(){

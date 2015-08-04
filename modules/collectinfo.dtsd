@@ -117,7 +117,7 @@ admin_commandlog() {
 		cutstring=${cutstring%]*}
 		ADMIN_PARAMETERS=${cutstring//,/}
 		echo "Collected admin name $ADMIN_NAME admin command $ADMIN_COMMAND and admin parameters $ADMIN_PARAMETERS"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO ADMINLOG (NAME, COMMAND) VALUES (\"$ADMIN_NAME\",\"$ADMIN_COMMAND $ADMIN_PARAMETERS\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO ADMINLOG (NAME, COMMAND) VALUES (\"$ADMIN_NAME\",\"$ADMIN_COMMAND $ADMIN_PARAMETERS\");"
 	else
 		echo "Admin command from console sent"
 	fi
@@ -141,18 +141,18 @@ entity_destroy() {
 	case "$ENTITYDESTROYED" in
 	*"SHIP"*) 
 		echo "destroyed ship detected"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM SHIPDB where NAME='$NAMEDESTROYED';"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO DESTROYLOG (NAME, TYPE) VALUES (\"$NAMEDESTROYED\",\"$ENTITYDESTROYED\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM SHIPDB where NAME='$NAMEDESTROYED';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DESTROYLOG (NAME, TYPE) VALUES (\"$NAMEDESTROYED\",\"$ENTITYDESTROYED\");"
 	;;
 	*"SPACESTATION"*) 
 		echo "destroyed spacestation detected"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM STATIONDB where NAME='$NAMEDESTROYED';"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO DESTROYLOG (NAME, TYPE) VALUES (\"$NAMEDESTROYED\",\"$ENTITYDESTROYED\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM STATIONDB where NAME='$NAMEDESTROYED';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DESTROYLOG (NAME, TYPE) VALUES (\"$NAMEDESTROYED\",\"$ENTITYDESTROYED\");"
 	;;
 	*"FLOATINGROCK"*) 
 		echo "destroyed asteroid detected"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "DELETE FROM ASTEROIDDB where NAME='$NAMEDESTROYED';"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO DESTROYLOG (NAME, TYPE) VALUES (\"$NAMEDESTROYED\",\"$ENTITYDESTROYED\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM ASTEROIDDB where NAME='$NAMEDESTROYED';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DESTROYLOG (NAME, TYPE) VALUES (\"$NAMEDESTROYED\",\"$ENTITYDESTROYED\");"
 	;;
 	esac
 }
@@ -163,7 +163,7 @@ client_connected() {
 	cutstring=${CLIENTCONNECTSTRING##*:}
 	CONNECTNAME="${cutstring#"${cutstring%%[![:space:]]*}"}"
 	echo "This was sent to client connected $CLIENTCONNECTSTRING"
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO GUESTBOOK (NAME, STATUS) VALUES (\"$CONNECTNAME\",\"connected\");"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO GUESTBOOK (NAME, STATUS) VALUES (\"$CONNECTNAME\",\"connected\");"
 	lib_myinsert PLAYERDB NAME $CONNECTNAME
 	lib_myupdate PLAYERDB ONLINE y NAME $CONNECTNAME
 }
@@ -184,7 +184,7 @@ client_logout() {
 	POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
 	echo "collected $LOGOUTNAME name with $POSITIONNAME as last position"
 	lib_myupdate PLAYERDB LASTPOSITION $POSITIONNAME NAME $LOGOUTNAME
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO GUESTBOOK (NAME, STATUS) VALUES (\"$LOGOUTNAME\",\"logout\");"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO GUESTBOOK (NAME, STATUS) VALUES (\"$LOGOUTNAME\",\"logout\");"
 	lib_myupdate PLAYERDB ONLINE n NAME $CONNECTNAME
 }
 collect_player_LASTPOSITION() {
@@ -199,7 +199,7 @@ collect_player_LASTPOSITION() {
 	COLLECTZ=${COLLECTSECTORARRAY[2]}
 	POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
 	echo "This was send to collect player current position $PLAYERLASTPOSITIONSTRING"
-	COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+	COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
 	lib_myupdate PLAYERDB LASTPOSITION $POSITIONNAME NAME $COLLECTPLAYERNAME
 }
 collect_player_SECTOR() {
@@ -220,7 +220,7 @@ collect_player_SECTOR() {
 	ZSECTOR="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
 	echo "collect this Z value $ZSECTOR"
 	CURRENTSECTOR="$XSECTOR"_"$YSECTOR"_"$ZSECTOR"
-	COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+	COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
 	lib_myupdate PLAYERDB CURRENTSECTOR $CURRENTSECTOR NAME $COLLECTPLAYERNAME
 }
 collect_player_CREDITS() {
@@ -231,7 +231,7 @@ collect_player_CREDITS() {
 	cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
 	COLLECT_PLAYER_CREDITS="${cutstring%"${cutstring##*[![:space:]]}"}"
 	echo "This was send to collect player credits $COLLECT_PLAYER_CREDITS"
-	COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+	COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
 	lib_myupdate PLAYERDB CREDITS $COLLECT_PLAYER_CREDITS NAME $COLLECTPLAYERNAME
 }
 collect_player_FACTION() {
@@ -242,7 +242,7 @@ collect_player_FACTION() {
 	cutstring=${COLLECTSTRING#*:}
 	if [[ $cutstring == *"null"* ]]
 	then
-		COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+		COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
 		lib_myupdate PLAYERDB FACTION null NAME $COLLECTPLAYERNAME
 		echo "This was send to collect player faction null" 
 	fi
@@ -252,7 +252,7 @@ collect_player_FACTION() {
 		COLLECT_PLAYER_FACTION=${cutstring%%,*}
 		cutstring=${cutstring#*=}
 		COLLECT_PLAYER_FACTIONAME=${cutstring%%,*}
-		COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+		COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
 		lib_myupdate PLAYERDB FACTION $COLLECT_PLAYER_FACTION NAME $COLLECTPLAYERNAME
 		echo "This was send to collect player faction $COLLECT_PLAYER_FACTION $COLLECT_PLAYER_FACTIONAME" 
 	fi
@@ -264,7 +264,7 @@ collect_player_CURRENTIP() {
 	cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
 	COLLECT_PLAYER_CURRENTIP="${cutstring%"${cutstring##*[![:space:]]}"}"
 	echo "This was send to collect player IP $COLLECT_PLAYER_CURRENTIP"
-	COLLECTPLAYERNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+	COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
 	lib_myupdate PLAYERDB CURRENTIP $COLLECT_PLAYER_CURRENTIP NAME $COLLECTPLAYERNAME
 	lib_release guestbookip $COLLECTPLAYERNAME
 }
@@ -287,7 +287,7 @@ sector_entityinfo() {
 #[ADMIN COMMAND] SECTOR_INFO from org.schema.schine.network.server.AdminLocalClient@614b3189 params: [3, -1, 3]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLAYERCHARACTER_harry, type=Astronaut]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANETCORE_6_8_-6, type=Planet Core]
-#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SHIP_ship test, type=Ship, seed=0, lastModifier=, spawner=ENTITY_PLAYERSTATE_harry, realName=ship test, touched=true, faction=0, pos=(56.865887, 910.5996, 5.6264873), minPos=(-2, -2, -2), maxPos=(2, 2, 2), creatorID=0]
+
 #[SERVER-LOCAL-ADMIN] LOADED SECTOR INFO: Sector[7](3, -1, 3); Protected: false; Peace: false; Seed: -4196432438942463595; Type: VOID;
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SPACESTATION_test_station_10_block, type=Space Station, seed=0, lastModifier=, spawner=, realName=test_station_10_block, touched=true, faction=0, pos=(-285.80713, -22.024189, 56.327763), minPos=(-4, -4, -4), maxPos=(4, 4, 4), creatorID=1]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SHOP_1431965817638, type=Shop, seed=0, lastModifier=, spawner=, realName=Shop, touched=false, faction=0, pos=(0.0, 0.0, 0.0), minPos=(0, -15, 0), maxPos=(0, 15, 0), creatorID=0]
@@ -306,12 +306,28 @@ sector_entityinfo() {
 	ENTITYTYPE=${CUTSTRING%%,*}
 	echo "Entity type is $ENTITYTYPE"	
 	case "$ENTITYTYPE" in
-	*"Ship"*) 
-		LASTFCUT=${ENTITYINFOSTRING##*f}
-		FIRSTEQUALCUT=${LASTFCUT#*=}
-		FACTIONID=${FIRSTEQUALCUT%%,*}
-		echo "Collected $FACTIONID for faction ID from entity ship info"
-		CUTSTRING=${LASTFCUT#*\(}
+	*"Ship"*)
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SHIP_ship test, type=Ship, seed=0, lastModifier=, spawner=ENTITY_PLAYERSTATE_harry, realName=ship test, touched=true, faction=0, pos=(56.865887, 910.5996, 5.6264873), minPos=(-2, -2, -2), maxPos=(2, 2, 2), creatorID=0]
+		THIRDEQUALCUT=${SECONDEQUALCUT#*=}
+		SEED=${THIRDEQUALCUT%%,*}
+		echo "See $SEED"
+		FOURTHEQUALCUT=${THIRDEQUALCUT#*=}
+		LASTMODIFY=${FOURTHEQUALCUT%%,*}
+		echo "LASTMODIFY $LASTMODIFY"
+		FITHEQUALCUT=${FOURTHEQUALCUT#*=}
+		SPAWNER=${FITHEQUALCUT%%,*}
+		echo "SPAWNER $SPAWNER"
+		SIXTHEQUALCUT=${FITHEQUALCUT#*=}
+		REALNAME=${SIXTHEQUALCUT%%,*}
+		echo "REALNAME $REALNAME"
+		SEVENTHEQUALCUT=${SIXTHEQUALCUT#*=}
+		TOUCHED=${SEVENTHEQUALCUT%%,*}
+		echo "TOUCHED $TOUCHED"
+		EIGHTHQUALCUT=${SEVENTHEQUALCUT#*=}
+		FACTIONID=${EIGHTHQUALCUT%%,*}
+		echo "FACTION $FACTION"
+		NINTHEQUALCUT=${EIGHTHQUALCUT#*=}		
+		CUTSTRING=${NINTHEQUALCUT#*\(}
 		CUTSTRING=${CUTSTRING%%)*}
 		CUTSTRING=${CUTSTRING//,/}
 		COLLECTSECTORARRAY=($CUTSTRING)
@@ -319,19 +335,35 @@ sector_entityinfo() {
 		COLLECTY=${COLLECTSECTORARRAY[1]}
 		COLLECTZ=${COLLECTSECTORARRAY[2]}
 		POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
-		echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z for ship position from entity info"
-		COLLECTSECTORNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
+		echo "POSITIONNAME $POSITIONNAME"
+		echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z for position from entity info"
+		COLLECTSECTORNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
 		lib_myinsert SHIPDB NAME "$ENTITYNAME"
 		lib_myupdate SHIPDB CURRENTSECTOR "$COLLECTSECTORNAME" NAME "$ENTITYNAME"
 		lib_myupdate SHIPDB LASTPOSITION "$POSITIONNAME" NAME "$ENTITYNAME"
 		lib_myupdate SHIPDB FACTION "$FACTIONID" NAME "$ENTITYNAME"
 	;;	
 	*"Space Station"*)
-		LASTFCUT=${ENTITYINFOSTRING##*f}
-		FIRSTEQUALCUT=${LASTFCUT#*=}
-		FACTIONID=${FIRSTEQUALCUT%%,*}
-		echo "Collected $FACTIONID for faction ID from entity sation info"
-		CUTSTRING=${LASTFCUT#*\(}
+		THIRDEQUALCUT=${SECONDEQUALCUT#*=}
+		SEED=${THIRDEQUALCUT%%,*}
+		echo "See $SEED"
+		FOURTHEQUALCUT=${THIRDEQUALCUT#*=}
+		LASTMODIFY=${FOURTHEQUALCUT%%,*}
+		echo "LASTMODIFY $LASTMODIFY"
+		FITHEQUALCUT=${FOURTHEQUALCUT#*=}
+		SPAWNER=${FITHEQUALCUT%%,*}
+		echo "SPAWNER $SPAWNER"
+		SIXTHEQUALCUT=${FITHEQUALCUT#*=}
+		REALNAME=${SIXTHEQUALCUT%%,*}
+		echo "REALNAME $REALNAME"
+		SEVENTHEQUALCUT=${SIXTHEQUALCUT#*=}
+		TOUCHED=${SEVENTHEQUALCUT%%,*}
+		echo "TOUCHED $TOUCHED"
+		EIGHTHQUALCUT=${SEVENTHEQUALCUT#*=}
+		FACTIONID=${EIGHTHQUALCUT%%,*}
+		echo "FACTION $FACTION"
+		NINTHEQUALCUT=${EIGHTHQUALCUT#*=}		
+		CUTSTRING=${NINTHEQUALCUT#*\(}
 		CUTSTRING=${CUTSTRING%%)*}
 		CUTSTRING=${CUTSTRING//,/}
 		COLLECTSECTORARRAY=($CUTSTRING)
@@ -339,21 +371,40 @@ sector_entityinfo() {
 		COLLECTY=${COLLECTSECTORARRAY[1]}
 		COLLECTZ=${COLLECTSECTORARRAY[2]}
 		POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
-		echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z for station position from entity info"
-		COLLECTSECTORNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
+		echo "POSITIONNAME $POSITIONNAME"
+		echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z for position from entity info"
+		COLLECTSECTORNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
 		lib_myinsert STATIONDB NAME "$ENTITYNAME"
 		lib_myupdate STATIONDB CURRENTSECTOR "$COLLECTSECTORNAME" NAME "$ENTITYNAME"
 		lib_myupdate STATIONDB LASTPOSITION "$POSITIONNAME" NAME "$ENTITYNAME"
 		lib_myupdate STATIONDB FACTION "$FACTIONID" NAME "$ENTITYNAME"
 	;;
 	*"Shop"*)
-		COLLECTSECTORNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
+		COLLECTSECTORNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
 		lib_myinsert SHOPDB NAME "$ENTITYNAME"
 		lib_myupdate SHOPDB CURRENTSECTOR "$COLLECTSECTORNAME" NAME "$ENTITYNAME"
 	;;
 	*"Asteroid"*)
-		LASTFCUT=${ENTITYINFOSTRING##*f}
-		CUTSTRING=${LASTFCUT#*\(}
+		THIRDEQUALCUT=${SECONDEQUALCUT#*=}
+		SEED=${THIRDEQUALCUT%%,*}
+		echo "See $SEED"
+		FOURTHEQUALCUT=${THIRDEQUALCUT#*=}
+		LASTMODIFY=${FOURTHEQUALCUT%%,*}
+		echo "LASTMODIFY $LASTMODIFY"
+		FITHEQUALCUT=${FOURTHEQUALCUT#*=}
+		SPAWNER=${FITHEQUALCUT%%,*}
+		echo "SPAWNER $SPAWNER"
+		SIXTHEQUALCUT=${FITHEQUALCUT#*=}
+		REALNAME=${SIXTHEQUALCUT%%,*}
+		echo "REALNAME $REALNAME"
+		SEVENTHEQUALCUT=${SIXTHEQUALCUT#*=}
+		TOUCHED=${SEVENTHEQUALCUT%%,*}
+		echo "TOUCHED $TOUCHED"
+		EIGHTHQUALCUT=${SEVENTHEQUALCUT#*=}
+		FACTIONID=${EIGHTHQUALCUT%%,*}
+		echo "FACTION $FACTION"
+		NINTHEQUALCUT=${EIGHTHQUALCUT#*=}		
+		CUTSTRING=${NINTHEQUALCUT#*\(}
 		CUTSTRING=${CUTSTRING%%)*}
 		CUTSTRING=${CUTSTRING//,/}
 		COLLECTSECTORARRAY=($CUTSTRING)
@@ -361,8 +412,10 @@ sector_entityinfo() {
 		COLLECTY=${COLLECTSECTORARRAY[1]}
 		COLLECTZ=${COLLECTSECTORARRAY[2]}
 		POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
-		echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z for asteroid position from entity info"
-		COLLECTSECTORNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
+		echo "POSITIONNAME $POSITIONNAME"
+		echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z for position from entity info"
+		COLLECTSECTORNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
+		COLLECTSECTORNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
 		lib_myinsert ASTEROIDDB NAME "$ENTITYNAME"
 		lib_myupdate ASTEROIDDB LASTPOSITION "$POSITIONNAME" NAME "$ENTITYNAME"
 		lib_myupdate ASTEROIDDB CURRENTSECTOR "$COLLECTSECTORNAME" NAME "$ENTITYNAME"
@@ -418,10 +471,10 @@ collect_ship_UID() {
 	CUTSTRING=${SHIPUIDSTRING#*_}
 	ENTITYTYPE=${CUTSTRING%%_*}
 	echo "This is the entity type from UID $ENTITYTYPE"
-	COLLECTSHIPNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the name collect from requestinfodb $COLLECTSHIPNAME"
-	COLLECTDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the db collect from requestinfodb $COLLECTDB"
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
 	lib_myupdate $COLLECTDB ENTITYTYPE $ENTITYTYPE NAME $COLLECTSHIPNAME	
 }
 collect_ship_LASTPOSITION() {
@@ -444,20 +497,20 @@ collect_ship_LASTPOSITION() {
 		POSITIONNAME=none			
 		echo "no last position detected"
 	fi
-	COLLECTSHIPNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the name collect from requestinfodb $COLLECTSHIPNAME"
-	COLLECTDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the db collect from requestinfodb $COLLECTDB"
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
 	lib_myupdate $COLLECTDB LASTPOSITION $POSITIONNAME NAME $COLLECTSHIPNAME	
 	lib_release shipinfo $COLLECTSHIPNAME
 # This check was added for spawning blueprint information collect because there is no way to determine whether it is a ship or station initially.	
-	CHECKENTITYTYPE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select ENTITYTYPE from SHIPDB where NAME='$COLLECTSHIPNAME';")
+	CHECKENTITYTYPE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select ENTITYTYPE from SHIPDB where NAME='$COLLECTSHIPNAME';")
 	echo "This is the check for entity type $CHECKENTITYTYPE"
 	if [[ $CHECKENTITYTYPE == "SPACESTATION" ]]
 	then
 		echo "Spacestation found in ship database"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "insert into STATIONDB (NAME, CURRENTSECTOR, ATTACHED, DOCKED, BLOCK, MASS, CREATOR, LASTPOSITION, FACTION, LASTCONTROLLER, ENTITYTYPE) select NAME, CURRENTSECTOR, ATTACHED, DOCKED, BLOCK, MASS, CREATOR, LASTPOSITION, FACTION, LASTCONTROLLER, ENTITYTYPE from SHIPDB where NAME='$COLLECTSHIPNAME';"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "delete from SHIPDB where NAME='$COLLECTSHIPNAME';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "insert into STATIONDB (NAME, CURRENTSECTOR, ATTACHED, DOCKED, BLOCK, MASS, CREATOR, LASTPOSITION, FACTION, LASTCONTROLLER, ENTITYTYPE) select NAME, CURRENTSECTOR, ATTACHED, DOCKED, BLOCK, MASS, CREATOR, LASTPOSITION, FACTION, LASTCONTROLLER, ENTITYTYPE from SHIPDB where NAME='$COLLECTSHIPNAME';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "delete from SHIPDB where NAME='$COLLECTSHIPNAME';"
 	fi
 }
 collect_ship_ATTACHED() {
@@ -477,10 +530,10 @@ collect_ship_ATTACHED() {
 		echo "nothing attached to this ship"
 		COLLECT_SHIP_ATTACHED=none
 	fi
-	COLLECTSHIPNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the name collect from requestinfodb $COLLECTSHIPNAME"
-	COLLECTDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the db collect from requestinfodb $COLLECTDB"
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
 	lib_myupdate $COLLECTDB ATTACHED $COLLECT_SHIP_ATTACHED NAME $COLLECTSHIPNAME
 }
 collect_ship_DOCKED() {
@@ -498,10 +551,10 @@ collect_ship_DOCKED() {
 		echo "nothing attached to this ship"
 		COLLECT_SHIP_DOCKED=none
 	fi
-	COLLECTSHIPNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the name collect from requestinfodb $COLLECTSHIPNAME"
-	COLLECTDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the db collect from requestinfodb $COLLECTDB"
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
 	lib_myupdate $COLLECTDB DOCKED $COLLECT_SHIP_DOCKED NAME $COLLECTSHIPNAME
 }
 collect_ship_BLOCKS() {
@@ -518,10 +571,10 @@ collect_ship_BLOCKS() {
 		echo "no blocks detected"
 		COLLECT_SHIP_BLOCK=none
 	fi
-	COLLECTSHIPNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the name collect from requestinfodb $COLLECTSHIPNAME"
-	COLLECTDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the db collect from requestinfodb $COLLECTDB"
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
 	lib_myupdate $COLLECTDB BLOCK $COLLECT_SHIP_BLOCK NAME $COLLECTSHIPNAME
 }
 collect_ship_MASS() {
@@ -537,10 +590,10 @@ collect_ship_MASS() {
 		echo "no mass detected"
 		COLLECT_SHIP_MASS=none
 	fi
-	COLLECTSHIPNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the name collect from requestinfodb $COLLECTSHIPNAME"
-	COLLECTDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the db collect from requestinfodb $COLLECTDB"
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
 	lib_myupdate $COLLECTDB MASS $COLLECT_SHIP_MASS NAME $COLLECTSHIPNAME
 }
 collect_ship_CREATOR() {
@@ -550,18 +603,21 @@ collect_ship_CREATOR() {
 	FIRSTCUT=${SHIPCREATORSTRING#*:}
 	if [ -n "${FIRSTCUT}" ] 
 	then
-		CUTSTRING=${SHIPCREATORSTRING#*_}
+		CUTSTRING=${FIRSTCUT#*_}
 		CUTSTRING=${CUTSTRING#*_}
 		COLLECT_SHIP_CREATOR="${CUTSTRING%"$CUTSTRING##*[![:space:]]}"}"
+# Remove greater than or less than from string to prevent mysql error when admin is the creator
+		COLLECT_SHIP_CREATOR=${COLLECT_SHIP_CREATOR//</}
+		COLLECT_SHIP_CREATOR=${COLLECT_SHIP_CREATOR//>/}
 		echo "this is the ships creator $COLLECT_SHIP_CREATOR"
 	else
 		echo "no creator detected"
 		COLLECT_SHIP_CREATOR=none
 	fi
-	COLLECTSHIPNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the name collect from requestinfodb $COLLECTSHIPNAME"
-	COLLECTDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the db collect from requestinfodb $COLLECTDB"
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
 	lib_myupdate $COLLECTDB CREATOR $COLLECT_SHIP_CREATOR NAME $COLLECTSHIPNAME
 }
 collect_ship_CURRENTSECTOR() {
@@ -583,10 +639,10 @@ collect_ship_CURRENTSECTOR() {
 		echo "no current sector detected"
 		SECTORNAME=none
 	fi
-	COLLECTSHIPNAME=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the name collect from requestinfodb $COLLECTSHIPNAME"
-	COLLECTDB=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
-	echo "This is the db collect from requestinfodb $COLLECTDB"
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
 	lib_myupdate $COLLECTDB CURRENTSECTOR $SECTORNAME NAME $COLLECTSHIPNAME
 }
 # Function for sector change for players

@@ -1,0 +1,74 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions for creating default values for various functions that need them.  These are stored in /core/defaults.dtsd
+# To create a default value for a function create a variable with DTSDDEFAULTVALUE_VALUENAME=VALUE
+
+
+DTSDDEFAULTVALUE_CONFIGDTSD_CREDITLIMITON=No #Change to "Yes" to use the credit cap on banking. This means a player can deposit credits into the bank until they hit the number specified below.
+DTSDDEFAULTVALUE_CONFIGDTSD_CREDITLIMIT=2000000 #Change this number to the number you wish to have the bank limit the credits at.
+
+DTSDDEFAULTVALUE_BACKUPUNIVERSENAME="starmade_universe_backup_"
+DTSDDEFAULTVALUE_BACKUPUNIVERSEDIR=$CONFIGDTSD_INSTALLPATH/SMBACKUP
+
+DTSDDEFAULTVALUE_BACKUPNAME="starmade_backup_"
+DTSDDEFAULTVALUE_BACKUPDIR=$CONFIGDTSD_INSTALLPATH/SMBACKUP
+
+DTSDDEFAULTVALUE_EXAMPLESTARTERSHIP="Isanth-VI"
+
+DTSDDEFAULTVALUE_UNIVERSECENTER="2_2_2" #Set the center of the universe boarder
+DTSDDEFAULTVALUE_UNIVERSERADIUS=10000 #Set the radius of the universe boarder around 
+DTSDDEFAULTVALUE_UNIVERSEBOARDER=YES
+
+lib_makemysqloption() {
+# mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf
+# Makes a mysql option file from the config.dtsd file.  This allows the script to access mysql without exposing the password in running processes 
+cat > $CONFIGDTSD_INSTALLPATH/core/shadow.cnf <<_EOF_
+[mysql]
+user=$CONFIGDTSD_MYSQLUSER
+password=$CONFIGDTSD_MYSQLPASS
+database=$CONFIGDTSD_MYSQLDB
+_EOF_
+}
+core_buildoption() {
+lib_makemysqloption
+}
+lib_makedefaults() {
+# Builds default values for all modules and core scripts
+	DEFAULTVAR=( $(compgen -v | grep DTSDDEFAULTVALUE_ ) )
+	DEFAULTARRAY=0
+	echo ${DEFAULTVAR[@]}
+	echo ${#DEFAULTVAR[@]}
+	if [ -f $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd ]
+	then
+		echo "defaults.dtsd found"
+		while [ -n "${DEFAULTVAR[$DEFAULTARRAY]+set}" ]
+		do
+			CURRENTDEFAULT=${DEFAULTVAR[$DEFAULTARRAY]}
+			VALUENAME=${CURRENTDEFAULT#*_}
+			DEFAULTVALUE=${!CURRENTDEFAULT}
+			if grep "$VALUENAME" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd > /dev/null
+			then
+				echo "existing value found.  No change"
+			else
+				echo "Adding VALUENAME $VALUENAME DEFAULTVALUE $DEFAULTVALUE "
+				echo "$VALUENAME=$DEFAULTVALUE" >> $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
+			fi
+			let DEFAULTARRAY++
+		done
+	else
+		echo "no defaults.dtsd found"
+		touch $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
+		while [ -n "${DEFAULTVAR[$DEFAULTARRAY]+set}" ]
+		do
+			CURRENTDEFAULT=${DEFAULTVAR[$DEFAULTARRAY]}
+			VALUENAME=${CURRENTDEFAULT#*_}
+			DEFAULTVALUE=${!CURRENTDEFAULT}
+			echo "$VALUENAME=$DEFAULTVALUE" >> $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
+			let DEFAULTARRAY++
+		done
+		echo "defaults.dtsd file created in /modules"
+	fi
+}
+core_builddefaults() {
+lib_makedefaults
+}

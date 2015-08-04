@@ -63,7 +63,7 @@ core_clearschedule() {
 	do
 		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
 		SCHEDULECOMMAND=${CURRENTSEARCH##*_}
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "drop event $SCHEDULECOMMAND;"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "drop event $SCHEDULECOMMAND;"
 		let CREATEARRAY++
 	done
 }
@@ -75,7 +75,7 @@ core_clearschedulerepeat() {
 	do
 		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
 		SCHEDULECOMMAND=${CURRENTSEARCH##*_}
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "drop event $SCHEDULECOMMAND;"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "drop event $SCHEDULECOMMAND;"
 		let CREATEARRAY++
 	done
 }
@@ -98,8 +98,8 @@ CREATEARRAY=0
 				EVENTNAME=${cutstring#*_}
 				SCHEDULECOMMAND=${!CURRENTSEARCH}
 # Rather than just drop the event here in case there are changes in the script it would be better to compare to see if there are differences, if so drop the old event.  This way existing timers could remain counting
-				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY STARTS str_to_date( date_format(now(), '%Y%m%d %H%i'), '%Y%m%d %H%i' ) + INTERVAL $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
-				#mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"		
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY STARTS str_to_date( date_format(now(), '%Y%m%d %H%i'), '%Y%m%d %H%i' ) + INTERVAL $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
+				#mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"		
 			;;
 			ONCEADAY)
 				cutstring=${cutstring#*_}
@@ -108,8 +108,8 @@ CREATEARRAY=0
 				echo "TIMEVALUE $TIMEVALUE"
 				echo "EVENTNAME $EVENTNAME"
 				TIMESTRING="%Y%m%d "$TIMEVALUE"00"
-				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '$TIMESTRING'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES  (\"$SCHEDULECOMMAND\");"
-				#mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '%Y%m%d $TIMEVALUE00'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES  (\"$SCHEDULECOMMAND\");"
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '$TIMESTRING'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES  (\"$SCHEDULECOMMAND\");"
+				#mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '%Y%m%d $TIMEVALUE00'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES  (\"$SCHEDULECOMMAND\");"
 				# CREATE EVENT my_event ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '%Y%m%d 0200'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES ("EVENT_SERVERVERSION");
 			;;
 		esac
@@ -128,32 +128,32 @@ EVENT_SERVERSTATUS() {
 	echo "Checking Server Status"
 	if lib_check_server_running
 	then
-		LASTLINE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
+		LASTLINE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
 		LASTLINE=$(($LASTLINE - 5))
 		CURRENTTIME=$(date +%s)
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
 		sleep 60
-		SERVERREPAIR=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%Database Repairing itself%\" and SERVERLOG.line >= $LASTLINE";) 
+		SERVERREPAIR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%Database Repairing itself%\" and SERVERLOG.line >= $LASTLINE";) 
 		if [ -n "$SERVERREPAIR" ]
 			then
 			echo "Sever appears to be repairing database"
 		else
 			echo "Server is not repairing database "
-			CHECKSERVER=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%SHADOW_SERVER_CHECK_$CURRENTTIME%\";")
+			CHECKSERVER=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%SHADOW_SERVER_CHECK_$CURRENTTIME%\";")
 			echo "CHECKSERVER $CHECKSERVER"
 			if [ -n "$CHECKSERVER" ]
 			then
 				echo "Sever appears to be running"
-				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Server Running\");"
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Server Running\");"
 			else
 				echo "Server appears to be down"
-				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart server frozen\");"
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart server frozen\");"
 				core_softreset
 			fi
 		fi
 	else
 		echo "Starmade is not running!"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart no server detected\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart no server detected\");"
 		core_softreset
 	fi
 }
@@ -187,7 +187,7 @@ oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
 # If the first or second newversion exceeds the first or second old version
 	if [ "$NEWSMVERSION1" -gt "$OLDSMVER1" ] || [ "$NEWSMVERSION2" -gt "$OLDSMVER2" ]
 	then 
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"New Version Detected\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"New Version Detected\");"
 		echo "Newer Version Detected"
 		core_clearschedule
 # At this point the cronjobs and server will need to be stopped and a backup made just in case
@@ -292,10 +292,10 @@ oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
 			let LINECOUNT++
 		done
 		curl "http://files.star-made.org$newversion/version.txt" > "$CONFIGDTSD_INSTALLPATH/StarMade/version.txt"
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart after update\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart after update\");"
 		core_softreset
 	else
-		mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Version current\");"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Version current\");"
 		echo "No new version detected"
 	fi
 }

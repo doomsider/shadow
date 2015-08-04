@@ -5,7 +5,7 @@ lib_mysend() {
 # Usage lib_mysend database user password command
 	MYSQLCOMMAND="${@:1}"
 	#echo "command to mysql $MYSQLCOMMAND"
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "$MYSQLCOMMAND"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "$MYSQLCOMMAND"
 }
 lib_myinsert() {
 # This command creates a new row
@@ -74,23 +74,23 @@ lib_myvalueretrieve() {
 # Usage: lib_mysend [column to search] [table column is in] [value in column]
     MYVALUERETRIEVENAME="${@:3}"
 	#echo "This is name $MYVALUERETRIEVENAME"
-    mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where NAME='$MYVALUERETRIEVENAME';"
+    mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select $1 from $2 where NAME='$MYVALUERETRIEVENAME';"
 }
 lib_mycolumnretrieve() {
 # Retrieves an entire column
 # Usage:  lib_mycolumnretrieve [table] [row]
-	mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -se "select $2 from $1;"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -se "select $2 from $1;"
 }
 lib_columnretrievesearch() {
 # Like myvalueretrieve only tries to grab all values from a column rather than just one from a column with a unique index
 # Usage: columnretrievesearch column_to_display table column_containing_search search_string
     searchval="${@:4}"
     #echo "this is column to retrieve from $1 from this table $2 searching from this column $3 containing this string $searchval"
-    mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select $1 from $2 where $3 like '%$searchval%';"
+    mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select $1 from $2 where $3 like '%$searchval%';"
 }	
 log_myerasetable() { 
     lib_mysend "TRUNCATE TABLE $1;"
 }
 core_myserverstart() {
-mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Starting\");"
+mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Starting\");"
 }

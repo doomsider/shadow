@@ -22,8 +22,6 @@ MYSQLALTER_GARAGEDB_SHIP="UNIQUE INDEX"
 
 LOGSEARCH_ship_boarding="[CONTROLLER][ADD-UNIT] (Server(0)): PlS"
 
-EXAMPLESTARTERSHIP="Isanth-VI"
-
 CHATHELP_STARTERSHIP="[Gives a Player a designated starter ship] USAGE: !STARTERSHIP"
 CHATHELP_GARAGE="[Puts a ship away into your garage or retrieves one from the garage] USAGE: !GARAGE <add or remove> <shipname>"
 
@@ -67,7 +65,7 @@ chatcommand_GARAGE(){
 							echo "Player in space and all conditions met for add to ship garage"
 							lib_screensend $CONFIGDTSD_MAINSCREEN /save_uid \"ENTITY_SHIP_$SHIPTOGARAGE\" \"$SHIPTOGARAGE\"
 							lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid \"ENTITY_SHIP_$SHIPTOGARAGE\"
-							mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO GARAGEDB (SHIP, PLAYER) VALUES (\"$SHIPTOGARAGE\",\"$1\");"
+							mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO GARAGEDB (SHIP, PLAYER) VALUES (\"$SHIPTOGARAGE\",\"$1\");"
 						else
 							echo "player not in space"
 						fi
@@ -84,7 +82,7 @@ chatcommand_GARAGE(){
 	;;
 	*"remove"*) 
 		echo "remove from garage executed"
-		SHIPTOREMOVE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "SELECT SHIP FROM GARAGEDB where PLAYER='$1' ORDER BY line ASC LIMIT 1;")
+		SHIPTOREMOVE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "SELECT SHIP FROM GARAGEDB where PLAYER='$1' ORDER BY line ASC LIMIT 1;")
 		echo "here is the ship to remove $SHIPTOREMOVE"
 		lib_trigger garageremove $1 $SHIPTOREMOVE
 	;;

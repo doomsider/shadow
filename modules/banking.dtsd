@@ -1,8 +1,7 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
 # Banking related functions 
-CONFIGDTSD_CREDITLIMITON=No #Change to "Yes" to use the credit cap on banking. This means a player can deposit credits into the bank until they hit the number specified below.
-CONFIGDTSD_CREDITLIMIT=2000000 #Change this number to the number you wish to have the bank limit the credits at.
+
 
 MYSQLDTSD_PLAYERDB_BANKCREDITS="BIGINT DEFAULT '0'"
 

@@ -83,19 +83,19 @@ chatcommand_DUEL() {
 		then
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You cannot challenge yourself
 		else
-			CHALLENGEEXISTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select CHALLENGER from DUEL where CHALLENGER='$1' and DEFENDER='$4';")
+			CHALLENGEEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where CHALLENGER='$1' and DEFENDER='$4';")
 			echo "CHALLENGEEXISTS $CHALLENGEEXISTS"
 			if [ -n "$CHALLENGEEXISTS" ]
 			then
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have already challenged this person
 			else
-				CURRENTSHIP=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select CONTROLLING from PLAYERDB where NAME='$1';")
+				CURRENTSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CONTROLLING from PLAYERDB where NAME='$1';")
 				echo "CURRENTSHIP $CURRENTSHIP"
 				if [ "$CURRENTSHIP" = "Spacesuit" ]
 				then
 					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have to be in and remain in your ship during a challenge
 				else
-					DEFENDERONLINE=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select ONLINE from PLAYERDB where NAME='$4';")
+					DEFENDERONLINE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select ONLINE from PLAYERDB where NAME='$4';")
 					echo "DEFENDERONLINE $DEFENDERONLINE"
 					if [ "$DEFENDERONLINE" = "n" ]
 					then
@@ -129,10 +129,10 @@ chatcommand_DUEL() {
 						then
 							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You must select a challenge type: ship credits faction or honor must be used
 						else
-							CHALLENGERMASS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select MASS from SHIPDB where NAME='$CURRENTSHIP';")
-							CHALLENGERBLOCK=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select BLOCK from SHIPDB where NAME='$CURRENTSHIP';")
+							CHALLENGERMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select MASS from SHIPDB where NAME='$CURRENTSHIP';")
+							CHALLENGERBLOCK=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BLOCK from SHIPDB where NAME='$CURRENTSHIP';")
 
-							mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO DUEL (CHALLENGER, CHALLENGERSHIP, CHALLENGERSHIPBLOCKS, CHALLENGERSHIPMASS, TYPE, DEFENDER) VALUES (\"$1\",\"$CURRENTSHIP\",\"$CHALLENGERBLOCK\",\"$CHALLENGERMASS\",\"$3\",\"$4\");"
+							mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DUEL (CHALLENGER, CHALLENGERSHIP, CHALLENGERSHIPBLOCKS, CHALLENGERSHIPMASS, TYPE, DEFENDER) VALUES (\"$1\",\"$CURRENTSHIP\",\"$CHALLENGERBLOCK\",\"$CHALLENGERMASS\",\"$3\",\"$4\");"
 							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have challenged $4 to a duel
 							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $4 You have been challenged to a duel by $1 in $CURRENTSHIP containing $CHALLENGERBLOCK blocks and weighing in at $CHALLENGERMASS mass under terms of $FIGHTTERMS
 						fi
@@ -143,12 +143,12 @@ chatcommand_DUEL() {
 	;;
 	accept)
 		echo "Challenged issued for duel"
-		CHALLENGEEXISTS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select DEFENDER from DUEL where CHALLENGER='$3' and DEFENDER='$1';")
+		CHALLENGEEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDER from DUEL where CHALLENGER='$3' and DEFENDER='$1';")
 		if [ -z "$CHALLENGEEXISTS" ]
 		then
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 There does not appear to be a challenge from that player please used duel list
 		else
-			CURRENTSHIP=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select CONTROLLING from PLAYERDB where NAME='$1';")
+			CURRENTSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CONTROLLING from PLAYERDB where NAME='$1';")
 			if [ "$CURRENTSHIP" = "Spacesuit" ]
 			then
 				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have to be in and remain in your ship during a challenge
@@ -156,12 +156,12 @@ chatcommand_DUEL() {
 				if [ "$CHALLENGEEXISTS" = "$1" ]
 				then
 					echo "Defender agreed to terms"
-					DEFENDERMASS=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select MASS from SHIPDB where NAME='$CURRENTSHIP';")
-					DEFENDERBLOCK=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select BLOCK from SHIPDB where NAME='$CURRENTSHIP';")
-					mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO DUEL (DEFENDERAGREE, DEFENDERSHIPBLOCKS, DEFENDERSHIPMASS) VALUES (\"y\",\"$DEFENDERBLOCK\",\"$DEFENDERMASS\");"
+					DEFENDERMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select MASS from SHIPDB where NAME='$CURRENTSHIP';")
+					DEFENDERBLOCK=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BLOCK from SHIPDB where NAME='$CURRENTSHIP';")
+					mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DUEL (DEFENDERAGREE, DEFENDERSHIPBLOCKS, DEFENDERSHIPMASS) VALUES (\"y\",\"$DEFENDERBLOCK\",\"$DEFENDERMASS\");"
 				else
 					echo "Challenger agreed to terms"
-					mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO DUEL (CHALLENGERAGREE) VALUES (\"y\");"
+					mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DUEL (CHALLENGERAGREE) VALUES (\"y\");"
 				fi
 				
 			fi
@@ -217,7 +217,7 @@ chatcommand_POSTBOUNTY(){
 						NEWBALANCE=$(( $BALANCECREDITS - $3 ))
 						lib_myupdate BOUNTYDB BOUNTY $CURRENTBOUNTY NAME $2
 						lib_myupdate PLAYERDB BANKCREDITS $NEWBALANCE NAME $1
-						mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO BOUNTYLOG (WANTED, AMOUNT, POSTER) VALUES (\"$2\",\"$3\",\"$1\");"
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO BOUNTYLOG (WANTED, AMOUNT, POSTER) VALUES (\"$2\",\"$3\",\"$1\");"
 						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC COMMAND - You have placed a bounty of $3 on $2
 					else 
 						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Not enough credits in your bank account. Please use !DEPOSIT Amount
@@ -299,11 +299,11 @@ kill_message() {
 			echo "The killer is $KILLER"
 			lib_myinsert BOUNTYDB NAME $KILLER
 			lib_myupdate BOUNTYDB LASTKILL $VICTIMNAME NAME $KILLER
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET KILLS = KILLS + 1 WHERE NAME = '$KILLER';"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE BOUNTYDB SET KILLS = KILLS + 1 WHERE NAME = '$KILLER';"
 			lib_myinsert BOUNTYDB NAME $VICTIMNAME
 			lib_myupdate BOUNTYDB KILLEDBY $KILLER NAME $VICTIMNAME
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET DEATHS = DEATHS + 1 WHERE NAME = '$VICTIMNAME';"
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO KILLDB (KILLER, VICTIM) VALUES (\"$KILLER\",\"$VICTIMNAME\");"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE BOUNTYDB SET DEATHS = DEATHS + 1 WHERE NAME = '$VICTIMNAME';"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO KILLDB (KILLER, VICTIM) VALUES (\"$KILLER\",\"$VICTIMNAME\");"
 			BOUNTYONVICTIM=$(lib_myvalueretrieve BOUNTY BOUNTYDB $VICTIMNAME)
 			if [ "$BOUNTYONVICTIM" -gt "0" ]
 			then
@@ -311,7 +311,7 @@ kill_message() {
 				BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $KILLER)
 				NEWBALANCE=$(( $BALANCECREDITS + $BOUNTYONVICTIM ))
 				echo "bounty of $BOUNTYONVICTIM added to existing $BALANCECREDITS for a new total of $NEWBALANCE"
-				mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET BOUNTY='0' WHERE NAME='$VICTIMNAME';"
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE BOUNTYDB SET BOUNTY='0' WHERE NAME='$VICTIMNAME';"
 				lib_myupdate PLAYERDB BANKCREDITS $NEWBALANCE NAME $KILLER
 				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $KILLER GALACTIC COMMAND - You have been awarded $BOUNTYONVICTIM credits for killing $VICTIMNAME
 				
@@ -326,15 +326,15 @@ kill_message() {
 			KILLERSHIP=${cutstring#*[}
 			 -sNe "select NAME from PLAYERDB where CONTROLLING='$KILLERSHIP' ORDER BY LASTUPDATE DESC LIMIT 1;"
 			# Order by lastupdate desc is used to return the newest result to the last person to be updated.  This prevents players that have been disconnect and still control the ship in the database erroneously 
-			KILLER=$(mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -sNe "select NAME from PLAYERDB where CONTROLLING='$KILLERSHIP' ORDER BY LASTUPDATE DESC LIMIT 1;")
+			KILLER=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select NAME from PLAYERDB where CONTROLLING='$KILLERSHIP' ORDER BY LASTUPDATE DESC LIMIT 1;")
 			echo "The killing ship is $KILLERSHIP and is piloted by $KILLER"
 			lib_myinsert BOUNTYDB NAME $KILLER
 			lib_myupdate BOUNTYDB LASTKILL $VICTIMNAME NAME $KILLER
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET KILLS = KILLS + 1 WHERE NAME = '$KILLER';"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE BOUNTYDB SET KILLS = KILLS + 1 WHERE NAME = '$KILLER';"
 			lib_myinsert BOUNTYDB NAME $VICTIMNAME
 			lib_myupdate BOUNTYDB KILLEDBY $KILLER NAME $VICTIMNAME
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "UPDATE BOUNTYDB SET DEATHS = DEATHS + 1 WHERE NAME = '$VICTIMNAME';"
-			mysql -D $CONFIGDTSD_MYSQLDB -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "INSERT INTO KILLDB (KILLER, VICTIM) VALUES (\"$KILLER\",\"$VICTIMNAME\");"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE BOUNTYDB SET DEATHS = DEATHS + 1 WHERE NAME = '$VICTIMNAME';"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO KILLDB (KILLER, VICTIM) VALUES (\"$KILLER\",\"$VICTIMNAME\");"
 			BOUNTYONVICTIM=$(lib_myvalueretrieve BOUNTY BOUNTYDB $VICTIMNAME)
 			if [ "$BOUNTYONVICTIM" -gt "0" ]
 			then

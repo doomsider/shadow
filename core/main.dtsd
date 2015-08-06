@@ -626,10 +626,10 @@ core_universebackup() {
 # Check to see if zip is installed, it isn't on most minimal server builds.
 		if command -v zip >/dev/null
 		then
-			if [ -d "$BACKUP" ]
+			if [ -d "$BACKUPUNIVERSEDIR" ]
 			then
 				cd $CONFIGDTSD_INSTALLPATH
-				lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Starting live-backup"
+				lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Starting live-backup, during this time most commands will be disabled and the universe will not save"
 				echo "Starting live-backup"
 				lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
 				sleep 10

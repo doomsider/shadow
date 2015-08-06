@@ -138,7 +138,7 @@ core_setupvote(){
 					CURRENTVOTESETTING=${CURRENTVOTESETTING#*=}
 					echo "Current value CURRENTVOTESETTING $CURRENTVOTESETTING ${#CURRENTVOTESETTING}"
 # Replace the current value with the one choosen by user
-					sed -i "s/CONFIGDTSD_VOTING=$CURRENTVOTESETTING/CONFIGDTSD_VOTING=true/g" $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+					sed -i "s/CONFIGDTSD_VOTING=$CURRENTVOTESETTING/CONFIGDTSD_VOTING=true/g" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
 					echo " CONFIGDTSD_VOTING value changed to true"
 				fi
 				if [ -z "$CURRENTKEYSETTING" ]
@@ -149,7 +149,7 @@ core_setupvote(){
 					CURRENTKEYSETTING=${CURRENTKEYSETTING#*=}
 					echo "Current value CURRENTKEYSETTING $CURRENTKEYSETTING ${#CURRENTKEYSETTING}"
 # Replace the current value with the one choosen by user
-					sed -i "s/CONFIGDTSD_VOTEKEY=$CURRENTKEYSETTING/CONFIGDTSD_VOTEKEY=$INPUT/g" $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+					sed -i "s/CONFIGDTSD_VOTEKEY=$CURRENTKEYSETTING/CONFIGDTSD_VOTEKEY=$INPUT/g" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
 					echo "CONFIGDTSD_VOTEKEY value changed to $INPUT"
 				fi
 			else
@@ -164,7 +164,7 @@ core_setupvote(){
 			else
 				CURRENTVOTESETTING=${CURRENTVOTESETTING#*=}
 				echo "Current value CURRENTVOTESETTING $CURRENTVOTESETTING ${#CURRENTVOTESETTING}"
-				sed -i "s/CONFIGDTSD_VOTING=$CURRENTVOTESETTING/CONFIGDTSD_VOTING=false/g" $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+				sed -i "s/CONFIGDTSD_VOTING=$CURRENTVOTESETTING/CONFIGDTSD_VOTING=false/g" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
 				echo "CONFIGDTSD_VOTING value changed to false"
 			fi
 			if [ -z "$CURRENTKEYSETTING" ]
@@ -174,7 +174,7 @@ core_setupvote(){
 			else
 				CURRENTKEYSETTING=${CURRENTKEYSETTING#*=}
 				echo "Current value CURRENTKEYSETTING $CURRENTKEYSETTING ${#CURRENTKEYSETTING}"
-				sed -i "s/CONFIGDTSD_VOTEKEY=$CURRENTKEYSETTING/CONFIGDTSD_VOTEKEY=false/g" $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+				sed -i "s/CONFIGDTSD_VOTEKEY=$CURRENTKEYSETTING/CONFIGDTSD_VOTEKEY=false/g" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
 				echo "CONFIGDTSD_VOTEKEY value changed to false"
 			fi
 		;;

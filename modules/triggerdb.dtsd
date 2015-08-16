@@ -75,6 +75,15 @@ lib_release() {
 #		fi
 #	done
 }
+TRIGGER_startduel() {
+echo "Startduel Triggered"
+execute_duel $2 $3 &
+}
+
+RELEASE_startership() {
+echo "Startduel released"
+}
+
 TRIGGER_startership() {
 	echo "Startership triggered" 
 	lib_trigger playerinfo $1 Astronaut

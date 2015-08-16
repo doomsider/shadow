@@ -98,7 +98,7 @@ core_backup() {
 		then 
 			if [ -d "$BACKUPDIR" ] 
 			then
-				cd CONFIGDTSD_INSTALLPATH
+				cd $CONFIGDTSD_INSTALLPATH
 				zip -r $BACKUPNAME$(date '+%b_%d_%Y_%H.%M.%S').zip StarMade
 				mv $BACKUPNAME*.zip $BACKUPDIR
 				echo "Backup complete"

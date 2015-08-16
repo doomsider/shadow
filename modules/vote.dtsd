@@ -17,6 +17,7 @@ MYSQLDTSD_VOTELOG_TIME=TIMESTAMP
 CHATHELP_VOTEALIAS="[Assign a player name to the voting database] USAGE: !VOTEALIAS voter_name"
 CHATHELP_VOTEPOINTS="[Lists the number of voting points you have] USAGE: !VOTEPOINTS"
 CHATHELP_VOTEEXCHANGE="[Exchanges voting points for rewards] !VOTEEXCHANGE list to list packages or !VOTEEXCHANGE Package_name to receive a package "
+CHATHELP_VOTECHECK="[Check Starmade Servers for new votes] !VOTEECHECK"
 
 VOTEPACKAGE_CREDITS="[CREDITS] Exchange 1 point for 1 million credits"
 VOTEPACKAGE_SHIP="[SHIP] Exchange 1 point for a ship"
@@ -179,6 +180,14 @@ core_setupvote(){
 			fi
 		;;
 		esac
+	fi
+}
+chatcommand_VOTECHECK(){
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "Invalid parameters. Please use !VOTECHECK"
+	else
+		core_votecheck &
 	fi
 }
 chatcommand_VOTEPOINTS(){

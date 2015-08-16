@@ -2,6 +2,7 @@
 # Shadow .01 Based off of DTSD
 # Location of all the regular chat commands
 
+CHATHELP_BACKUP="[Starts a live backup of the server] USAGE: !BACKUP"
 CHATHELP_BANPLAYER="[Bans a player from the server] USAGE: !BANPLAYER <Player>"
 CHATHELP_BANSTOP="[Removes a player from the ban list] USAGE: !BANSTOP <Player>"
 CHATHELP_CORE="[Gives player a ship core, 10 minute cooldown] Core usage: CORE"
@@ -92,6 +93,17 @@ chatcommand_HELP() {
 	unset MATCHHELP
 }
 #####################################MODIFIED ADMIN COMMANDS#####################################
+chatcommand_BACKUP() {
+# Starts a live backup of the server
+# USAGE: !backup
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters.
+	else
+		core_universebackup &
+	fi
+
+}
 chatcommand_BANPLAYER(){
 # Bans a player from the server
 # USAGE: !BANPLAYER <Player>

@@ -4,19 +4,22 @@
 
 # In order to use scheduler is must be turned on with SET GLOBAL event_scheduler = ON; issued from root for Mysql
 # Events are created by this format MYSQLEVENT_FREQUENCY_TIMEVALUE_TIMEQUANTITY_EVENTNAME="EVENT_FUNCTION_NAME"
+# Events with repeat for frequency will be repeated this events will be stopped and reset on server restart.  
+# Events with system for frequency will also be repeated but they will not be reset upon server restarting.  They should be scheduled to prevent overlap and interference from other system events.    
 
 # Acceptable variables for time quantity are YEAR | QUARTER | MONTH | DAY | HOUR | MINUTE | WEEK | SECOND | YEAR_MONTH | DAY_HOUR | DAY_MINUTE | DAY_SECOND | HOUR_MINUTE | HOUR_SECOND | MINUTE_SECOND
-# Acceptable variables for frequency are REPEAT time time_value
-# Acceptable variables for frequency are ONCEADAY hour in military two digit:  MYSQLEVENT_ONCEADAY_02 for 2 AM starting the next day and eveyday after that.
+# Acceptable variables for frequency are REPEAT time time_value or SYSTEM time time_value
 # CREATE EVENT my_event ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '%Y%m%d 0200'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES ("EVENT_SERVERVERSION");
 # CREATE EVENT my_event ON SCHEDULE EVERY 120 SECOND STARTS str_to_date( date_format(now(), '%Y%m%d %H%i'), '%Y%m%d %H%i' ) + INTERVAL 120 SECOND DO INSERT INTO COMMANDDB (COMMAND) VALUES ("EVENT_SERVERVERSION");
 
 MYSQLEVENT_REPEAT_60_SECOND_VOTECHECK="EVENT_VOTECHECK &"
 MYSQLEVENT_REPEAT_300_SECOND_SERVERSTATUS="EVENT_SERVERSTATUS &"
 MYSQLEVENT_REPEAT_3600_SECOND_SERVERVERSION="EVENT_SERVERVERSION &"
-MYSQLEVENT_ONCEADAY_00_SERVERRESTART="EVENT_SERVERRESTART &"
-MYSQLEVENT_ONCEADAY_12_SERVERRESTART2="EVENT_SERVERRESTART &"
-MYSQLEVENT_ONCEADAY_20_SERVERUNIVERSEBACKUP="EVENT_UNIVERSEBACKUP &"
+MYSQLEVENT_SYSTEM_12_HOUR_SERVERRESTART="EVENT_SERVERRESTART &"
+MYSQLEVENT_SYSTEM_24_HOUR_SERVERUNIVERSEBACKUP="EVENT_UNIVERSEBACKUP &"
+
+#MYSQLEVENT_ONCEADAY_12_SERVERRESTART="EVENT_SERVERRESTART &"
+#MYSQLEVENT_ONCEADAY_20_SERVERUNIVERSEBACKUP="EVENT_UNIVERSEBACKUP &"
 
 
 DTSDHELP_myscheduler="\nMyscheduler usage: shadow.dtsd myscheduler on or off\nTurns the Myql Scheduler on or off.  Requires root password for Mysql\n"
@@ -101,18 +104,15 @@ CREATEARRAY=0
 				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY STARTS str_to_date( date_format(now(), '%Y%m%d %H%i'), '%Y%m%d %H%i' ) + INTERVAL $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
 				#mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"		
 			;;
-			ONCEADAY)
+			SYSTEM)
 				cutstring=${cutstring#*_}
 				TIMEVALUE=${cutstring%%_*}
+				cutstring=${cutstring#*_}
+				TIMEQUANTITY=${cutstring%%_*}
 				EVENTNAME=${cutstring#*_}
-				echo "TIMEVALUE $TIMEVALUE"
-				echo "EVENTNAME $EVENTNAME"
-				TIMESTRING="$TIMEVALUE:00:00"
-				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY 1 DAY STARTS CONCAT(DATE(NOW()+INTERVAL 1 DAY ), ' $TIMEVALUE:00:00' ) DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
-				#mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY 1 DAY STARTS CONCAT(DATE(NOW()), ' $TIMESTRING') + INTERVAL $TIMEVALUE DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
-				#mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '$TIMESTRING'), '%Y%m%d %H%i' ) ON COMPLETION PRESERVE ENABLE DO INSERT INTO COMMANDDB (COMMAND) VALUES  (\"$SCHEDULECOMMAND\");"
-				#mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '%Y%m%d $TIMEVALUE00'), '%Y%m%d %H%i' )  ON COMPLETION PRESERVE ENABLE DO INSERT INTO COMMANDDB (COMMAND) VALUES  (\"$SCHEDULECOMMAND\");"
-				#CREATE EVENT my_event ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '%Y%m%d 0200'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES ("EVENT_SERVERVERSION");
+				SCHEDULECOMMAND=${!CURRENTSEARCH}
+# Rather than just drop the event here in case there are changes in the script it would be better to compare to see if there are differences, if so drop the old event.  This way existing timers could remain counting
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY STARTS str_to_date( date_format(now(), '%Y%m%d %H%i'), '%Y%m%d %H%i' ) + INTERVAL $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
 			;;
 		esac
 		let CREATEARRAY++
@@ -129,10 +129,14 @@ EVENT_SERVERSTATUS() {
 	echo "Checking Server Status"
 	if lib_check_server_running
 	then
+		MYSQLSTOP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
 		CURRENTTIME=$(date +%s)
 		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
+# Extra redundant send just to make sure server recieved it	
+		sleep 2
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
 		sleep 30
-		SERVERREPAIR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%Database Repairing itself%\" and SERVERLOG.line >= $LASTLINE";) 
+		SERVERREPAIR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%Database Repairing itself%\" and SERVERLOG.line >= $MYSQLSTOP";) 
 		if [ -n "$SERVERREPAIR" ]
 			then
 			echo "Sever appears to be repairing database"

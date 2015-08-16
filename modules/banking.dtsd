@@ -100,30 +100,35 @@ chatcommand_TRANSFER(){
 		if ! test "$3" -gt 0 2> /dev/null
 		then
 			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
-		else 
-			PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
-			PLAYERLIST=($PLAYERLIST)
-			if lib_arraycontains PLAYERLIST $2
+		else
+			if [ "$1" = "$2" ]
 			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
-				BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
-#				echo "Player transferring has $BALANCECREDITS in account"
-				if [ "$3" -lt "$BALANCECREDITS" ]
-			 	then
-					TRANSFERBALANCE=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $2)
-# 					echo "Player receiving has $TRANSFERBALANCE in his account"
-					NEWBALANCETO=$(( $3 + $TRANSFERBALANCE ))
-					NEWBALANCEFROM=$(( $BALANCECREDITS - $3 ))
-#					echo "Changing $1 account to $NEWBALANCEFROM and $2 account to $NEWBALANCETO"
-					lib_myupdate PLAYERDB BANKCREDITS "$$NEWBALANCEFROM" NAME $1
-					lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCETO" NAME $2
-					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You sent $3 credits to $2
-					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Your balance is now $NEWBALANCEFROM
-				else
-					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Not enough credits
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You cannot transfer funds to yourself
+			else
+				PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
+				PLAYERLIST=($PLAYERLIST)
+				if lib_arraycontains PLAYERLIST $2
+				then
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+					BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
+	#				echo "Player transferring has $BALANCECREDITS in account"
+					if [ "$3" -lt "$BALANCECREDITS" ]
+					then
+						TRANSFERBALANCE=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $2)
+	# 					echo "Player receiving has $TRANSFERBALANCE in his account"
+						NEWBALANCETO=$(( $3 + $TRANSFERBALANCE ))
+						NEWBALANCEFROM=$(( $BALANCECREDITS - $3 ))
+	#					echo "Changing $1 account to $NEWBALANCEFROM and $2 account to $NEWBALANCETO"
+						lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCEFROM" NAME $1
+						lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCETO" NAME $2
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You sent $3 credits to $2
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Your balance is now $NEWBALANCEFROM
+					else
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Not enough credits
+					fi
+				else 
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - No account found
 				fi
-			else 
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - No account found
 			fi
 		fi
 	fi

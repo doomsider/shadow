@@ -30,6 +30,7 @@ core_logloop() {
 	log_myerasetable SERVERLOG
 	log_myerasetable TRIGGERDB
 	log_myerasetable COMMANDDB
+	log_myerasetable DUEL
 	MYSQLSTART=0
 	sleep 5
 	while true

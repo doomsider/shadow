@@ -292,6 +292,8 @@ sector_entityinfo() {
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SPACESTATION_test_station_10_block, type=Space Station, seed=0, lastModifier=, spawner=, realName=test_station_10_block, touched=true, faction=0, pos=(-285.80713, -22.024189, 56.327763), minPos=(-4, -4, -4), maxPos=(4, 4, 4), creatorID=1]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SHOP_1431965817638, type=Shop, seed=0, lastModifier=, spawner=, realName=Shop, touched=false, faction=0, pos=(0.0, 0.0, 0.0), minPos=(0, -15, 0), maxPos=(0, 15, 0), creatorID=0]
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_FLOATINGROCK_1432202013135_2_2_2_0, type=Asteroid, seed=7652247429851126783, lastModifier=, spawner=, realName=undef, touched=false, faction=0, pos=(115.0, -116.0, 76.0), minPos=(-1, -4, -3), maxPos=(2, 2, 2), creatorID=7]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_qwwwwwww, type=Planet Segment, seed=5009764450413293528, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(-94.77713, 0.67864233, 47.775173), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANETCORE_6_8_-6, type=Planet Core]
 	echo "Entity info detected"
 	ENTITYINFOSTRING="${@:1}"
 	ENTITYINFOSTRING=${ENTITYINFOSTRING#*]}
@@ -306,6 +308,23 @@ sector_entityinfo() {
 	ENTITYTYPE=${CUTSTRING%%,*}
 	echo "Entity type is $ENTITYTYPE"	
 	case "$ENTITYTYPE" in
+	*"Segment"*)
+		if [ "$REMOVEPLANETS" = "YES" ]
+		then
+			FULLENTITYNAME=${FIRSTEQUALCUT%%,*}
+			echo "Planet Segment $FULLENTITYNAME and is set to be removed"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid $FULLENTITYNAME 
+		fi
+		
+	;;
+	*"Core"*)
+		if [ "$REMOVEPLANETS" = "YES" ]
+		then
+			FULLENTITYNAME=${FIRSTEQUALCUT%%,*}
+			echo "Planet Segment $FULLENTITYNAME and is set to be removed"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid $FULLENTITYNAME 
+		fi
+	;;
 	*"Ship"*)
 #[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SHIP_ship test, type=Ship, seed=0, lastModifier=, spawner=ENTITY_PLAYERSTATE_harry, realName=ship test, touched=true, faction=0, pos=(56.865887, 910.5996, 5.6264873), minPos=(-2, -2, -2), maxPos=(2, 2, 2), creatorID=0]
 		THIRDEQUALCUT=${SECONDEQUALCUT#*=}

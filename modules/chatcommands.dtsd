@@ -30,7 +30,8 @@ CHATHELP_SPAWNSTART="[Allows enemies to spawn inside the specified sector] USAGE
 CHATHELP_SPAWNSTOP="[Stops enemies from spawning inside the specified sector] USAGE: !SPAWNSTOP <X> <Y> <Z>"
 CHATHELP_TELEPORT="[Teleports you and the entity you are controlling, or another player and the entity they are controlling to the specified sector] USAGE: !TELEPORT <Player (optional)> <X> <Y> <Z>"
 CHATHELP_WHITEADD="[Adds a player to the whitelist] USAGE: !WHITEADD <Player>"
-
+CHATHELP_GIVEITEM="[Gives items that are not meta or block like lasers, makerers, etc] USAGE: !GIVEITEM <heal laser superlaser marker power rocket or sniper> with optional player name at the end if you want to give it to someone else"
+CHATHELP_GIVERECIPE="[Gives a recipe by number to yourself or a player] USAGE: !GIVERECIPE NUMBER with optional playername to give to someone else"
 
 # Gives you blocks by their given names.  This will string match so for instance red would give you all blocks with red in their name
 # USAGE: !GIVENAME amount name_of_block
@@ -93,6 +94,65 @@ chatcommand_HELP() {
 	unset MATCHHELP
 }
 #####################################MODIFIED ADMIN COMMANDS#####################################
+chatcommand_GIVEITEM() {
+# Gives certain items that are not meta or blocks
+# Usage: !giveitem <heal|laser|superlaser|marker|power|rocket|sniper
+	if [ "$#" -lt "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters please use !giveitem item to recieve it yourself or !giveitem item playername to give it to someone else.
+	else
+		case $2 in
+		heal)
+			GIVECOMMAND="/give_heal_weapon"
+		;;
+		laser)
+			GIVECOMMAND="/give_laser_weapon"
+		;;
+		superlaser)
+			GIVECOMMAND="/give_laser_weapon_op"
+		;;
+		marker)
+			GIVECOMMAND="/give_marker_weapon"
+		;;
+		power)
+			GIVECOMMAND="/give_power_supply_weapon"
+		;;
+		rocket)
+			GIVECOMMAND="/give_rocket_launcher_weapon"
+		;;
+		sniper)
+			GIVECOMMAND="/give_sniper_weapon"
+		;;
+		*)
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters please use heal laser superlaser marker power rocket or sniper
+		;;
+		esac
+		if [ "$#" -eq "2" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN $GIVECOMMAND $1
+		fi
+		if [ "$#" -eq "3" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN $GIVECOMMAND $3
+		fi
+	fi
+}
+chatcommand_GIVERECIPE() {
+# Gives a recipe 
+# Usage: !GIVERECIPE NUMBER with optional playername to give to someone else
+		GIVECOMMAND"/give_recipe"
+		if [ "$#" -eq "2" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN $GIVECOMMAND $1
+		elif [ "$#" -eq "3" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN $GIVECOMMAND $3
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters please !GIVERECIPE NUMBER or !GIVERECIPE NUMBER PLAYERNAME to give a recipee to another player
+		fi
+}
+
+
 chatcommand_BACKUP() {
 # Starts a live backup of the server
 # USAGE: !backup

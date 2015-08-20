@@ -54,6 +54,7 @@ core_updateshadow() {
 	yes | cp -f $CONFIGDTSD_INSTALLPATH/shadow/shadow_download_$current_time/* $CONFIGDTSD_INSTALLPATH
 	yes | cp -f $CONFIGDTSD_INSTALLPATH/shadow/shadow_download_$current_time/core/* $CONFIGDTSD_INSTALLPATH/core
 	yes | cp -f $CONFIGDTSD_INSTALLPATH/shadow/shadow_download_$current_time/modules/* $CONFIGDTSD_INSTALLPATH/modules
+	lib_makedefaults	
 }
 core_force () {
 	mkdir $CONFIGDTSD_INSTALLPATH/StarMade

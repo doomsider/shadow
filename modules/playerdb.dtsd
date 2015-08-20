@@ -21,6 +21,8 @@ MYSQLDTSD_DUEL_CHALLENGERSHIP="VARCHAR(50) BINARY"
 MYSQLDTSD_DUEL_CHALLENGERSHIPBLOCKS="BIGINT"
 MYSQLDTSD_DUEL_CHALLENGERSHIPMASS="BIGINT"
 MYSQLDTSD_DUEL_CHALLENGERAGREE="VARCHAR(1)"
+MYSQLDTSD_DUEL_CHALLENGERLOCATION="VARCHAR(36)"
+MYSQLDTSD_DUEL_DEFENDERLOCATION="VARCHAR(36)"
 MYSQLDTSD_DUEL_DEFENDER="VARCHAR(50) BINARY"
 MYSQLDTSD_DUEL_DEFENDERSHIP="VARCHAR(50) BINARY"
 MYSQLDTSD_DUEL_DEFENDERSHIPBLOCKS="BIGINT"
@@ -65,7 +67,9 @@ CHATHELP_POSTBOUNTY="[Places a bounty on the player specified, by taking the spe
 CHATHELP_LISTBOUNTY="[Lists all players with bounties, and how much they are worth] USAGE: !LISTBOUNTY"
 CHATHELP_DUEL="[Allows players to challenge each other to a duel.  To challenge a player get in the ship you wish to fight in] !DUEL <accept, challenge, decline, or list> <challenge_type>  <playername>"
 
-DTSDDEFAULTVALUE_STARTINGDUELLOCATION="500_-500_500"
+DTSDDEFAULTVALUE_STARTINGDUELLOCATION="10000_10000_10100"
+DTSDDEFAULTVALUE_DUELDURATIONSECONDS="120"
+
 
 # Duel Commands
 execute_duel() {
@@ -78,6 +82,7 @@ execute_duel() {
 	if [ -n "$CHALLENGEREXISTS" ]
 	then
 		echo "Challenge: matching with database"
+	
 		CHALLENGERSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGERSHIP from DUEL where CHALLENGER='$1' and DEFENDER='$2';")
 		CHALLENGERSHIPBLOCKS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGERSHIPBLOCKS from DUEL where CHALLENGER='$1' and DEFENDER='$2';")
 		CHALLENGERSHIPMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGERSHIPMASS from DUEL where CHALLENGER='$1' and DEFENDER='$2';")
@@ -85,29 +90,108 @@ execute_duel() {
 		CHALLENGERINSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CONTROLLING from PLAYERDB where NAME='$1';")
 		CHALLENGERINSHIPBLOCKS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BLOCK from SHIPDB where NAME='$CHALLENGERINSHIP';")
 		CHALLENGERINSHIPMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select MASS from SHIPDB where NAME='$CHALLENGERINSHIP';")
-		echo "Matching challenger ship to duel"
-		
-		
-		
+		echo "CHALLENGERSHIP $CHALLENGERSHIP CHALLENGERSHIPBLOCKS $CHALLENGERSHIPBLOCKS CHALLENGERSHIPMASS $CHALLENGERSHIPMASS CHALLENGERAGREE $CHALLENGERAGREE CHALLENGERINSHIP $CHALLENGERINSHIP CHALLENGERINSHIPBLOCKS $CHALLENGERINSHIPBLOCKS CHALLENGERINSHIPMASS $CHALLENGERINSHIPMASS"
 		DEFENDERSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERSHIP from DUEL where CHALLENGER='$1' and DEFENDER='$2';")
 		DEFENDERSHIPBLOCKS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERSHIPBLOCKS from DUEL where CHALLENGER='$1' and DEFENDER='$2';")
 		DEFENDERSHIPMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERSHIPMASS from DUEL where CHALLENGER='$1' and DEFENDER='$2';")
 		DEFENDERAGREE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERAGREE from DUEL where CHALLENGER='$1' and DEFENDER='$2';")
-		DEFENDERINSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CONTROLLING from PLAYERDB where NAME='$1';")
+		DEFENDERINSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CONTROLLING from PLAYERDB where NAME='$2';")
+		DEFENDERINSHIPBLOCKS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BLOCK from SHIPDB where NAME='$DEFENDERINSHIP';")
+		DEFENDERINSHIPMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select MASS from SHIPDB where NAME='$DEFENDERINSHIP';")
+		echo "DEFENDERSHIP $DEFENDERSHIP DEFENDERSHIPBLOCKS $DEFENDERSHIPBLOCKS DEFENDERSHIPMASS $DEFENDERSHIPMASS DEFENDERAGREE $DEFENDERAGREE DEFENDERINSHIP $DEFENDERINSHIP DEFENDERINSHIPBLOCKS $DEFENDERINSHIPBLOCKS DEFENDERINSHIPMASS $DEFENDERINSHIPMASS"
+		echo "Matching challenger ship to duel"
+		if [ "$CHALLENGERSHIP" = "$CHALLENGERINSHIP" ]
+		then 
+			echo "Challenger ship matches"
+			if [ "$CHALLENGERSHIPBLOCKS" = "$CHALLENGERSHIPBLOCKS" ]
+			then 
+				echo "blocks matches for challenger ship"
+				if [ "$CHALLENGERSHIPMASS" = "$CHALLENGERSHIPMASS" ]
+				then
+					echo "mass matches for challenger ship"
+					if [ "$DEFENDERSHIP" = "$DEFENDERINSHIP" ]
+					then
+						if [ "$DEFENDERSHIPBLOCKS" = "$DEFENDERSHIPBLOCKS" ]
+						then
+							echo "blocks matches for defender ship"
+							if [ "$DEFENDERSHIPMASS" = "$DEFENDERSHIPMASS" ]
+							then
+								echo "mass matches for defender ship"
+								if [ "$DEFENDERAGREE" = "y" ] && [ "$CHALLENGERAGREE" = "y" ] 
+								then
+									lib_screensend $CONFIGDTSD_MAINSCREEN /save_uid \"ENTITY_SHIP_$DEFENDERSHIP\" \"$DEFENDERSHIP_$2_DUEL\"
+									lib_screensend $CONFIGDTSD_MAINSCREEN /save_uid \"ENTITY_SHIP_$CHALLENGERSHIP\" \"$CHALLENGERSHIP_$1_DUEL\"
+									CHALLENGERINSECTOR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CURRENTSECTOR from PLAYERDB where NAME='$1';")
+									DEFENDERINSECTOR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CURRENTSECTOR from PLAYERDB where NAME='$2';")
+									echo "CHALLENGERINSECTOR $CHALLENGERINSECTOR DEFENDERINSECTOR $DEFENDERINSECTOR"
+									mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET CHALLENGERLOCATION='$CHALLENGERINSECTOR' where CHALLENGER='$1' and DEFENDER='$2';"
+									mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERLOCATION='$DEFENDERINSECTOR' where CHALLENGER='$1' and DEFENDER='$2';"
+									mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET ACTIVE='y' where CHALLENGER='$1' and DEFENDER='$2';"
+									cutstring=${STARTINGDUELLOCATION//_/ }
+									COLLECTSECTORARRAY=($cutstring)
+									COLLECTX=${COLLECTSECTORARRAY[0]}
+									COLLECTY=${COLLECTSECTORARRAY[1]}
+									COLLECTZ=${COLLECTSECTORARRAY[2]}
+									lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $1 $COLLECTX $COLLECTY $COLLECTZ
+									lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $2 $COLLECTX $COLLECTY $COLLECTZ
+									mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO JAIL (SECTOR, PLAYER) VALUES (\"$STARTINGDUELLOCATION\",\"$1\");"
+									mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO JAIL (SECTOR, PLAYER) VALUES (\"$STARTINGDUELLOCATION\",\"$2\");"
+									
+									DUELSTART=0
+									while [ "$DUELSTART" -lt "$DUELDURATIONSECONDS" ] 
+									do
+										CHALLENGEEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDER from DUEL where CHALLENGER='$1' and DEFENDER='$2';")
+										if [ -n "$CHALLENGEREXISTS" ]
+										then
+											echo "It appears the duel has ended before time ran out"
+											break
+										fi
+										sleep 1
+										let DUELSTART++
+									done
+									DUELACTIVECHECK=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select ACTIVE from DUEL where CHALLENGER='$1' and DEFENDER='$2';")
+									if [ "$DUELACTIVE" = "y" ] && [ "$DUELSTART" -ge "$DUELDURATIONSECONDS" ] 
+									then
+										echo "It appears time ran out"
+										lib_release startduel $1 timeout
+									fi
+									echo "duel time loop ended"
+								else
+									echo "Both players did not agree to match"
+								fi
+							else
+								echo "mass does not match for defender ship"
+							fi
+						else
+							echo "blocks don't match for defender ship"
+						fi
+						echo "Matching defender ship to duel"	
+					else
+						echo "No match for ships"
+					fi
+				else
+					echo "mass does not match for challenger ship"
+				fi
+			else
+				echo "blocks don't match for challenger ship"
+			fi
+		else
+			echo "No match for ships"
+		fi
+		
 		
 	fi
 
 }
-
-
 chatcommand_DUEL() {
 # Allows players to challenge each other to a duel.  To challenge a player get in the ship you wish to fight in and for example !DUEL challenge ship Doomsider
-# Usage: !DUEL <accept, challenge, decline, or list> <challenge_type>  <playername>
+# Usage: !DUEL <accept, challenge, decline, list, surrender> <challenge_type>  <playername>
 # Usage: !DUEL challenge ship Schema
 # Usage: !DUEL list 
 # Usage: !DUEL list challenges
 # Usage: !DUEL accept playername
 # Usage: !DUEL decline playername
+# Usage: !DUEL surrender
 	DUELSTRING="${@:1}"
 	echo "Sent to DUELSTRING $DUELSTRING"
 	case $2 in
@@ -249,14 +333,14 @@ chatcommand_DUEL() {
 		
 	;;
 	decline)
-	echo "Challenged issued for duel"
+	echo "Duel declined"
 	;;
 	list)
-	echo "Challenged issued for duel"
+	echo "List of duels"
 	;;
 	*)
 	echo "Unknown second parameter issued to Duel"
-	lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Unkown second parameter please use challenge accept or list
+	lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Unkown second parameter please use challenge accept list or surrender
 	;;
 	esac
 	
@@ -351,6 +435,9 @@ player_login() {
 }
 kill_message() {
 #String to collect
+#Server(0) PlS[Dude [Doomsider]*; id(3)(1)f(0)] Announcing kill: PlayerCharacter[(ENTITY_PLAYERCHARACTER_Doomsider)(234)] killed PlS[Dude [Doomsider]*; id(3)(1)f(0)]
+#Server(0) PlS[Dude [Doomsider]*; id(3)(1)f(0)] Announcing kill: Ship[7656_startership](264) killed PlS[Dude [Doomsider]*; id(3)(1)f(0)]
+
 #Server(0) PlS[Victim ; id(154)(2)f(0)] Announcing kill: PlayerCharacter[(ENTITY_PLAYERCHARACTER_Murder)(153)] killed PlS[Victim ; id(154)(2)f(0)]
 #Server(0) PlS[Victim ; id(154)(2)f(0)] Announcing kill: Ship[killership](257) killed PlS[Victim ; id(154)(2)f(0)]
     KILLSTRING="${@:1}"
@@ -362,10 +449,10 @@ kill_message() {
 		cutstring=${KILLSTRING#*:}
 		cutstring=${cutstring%%[*}
 		KILLTYPE="${cutstring#"${cutstring%%[![:space:]]*}"}"
-		echo "The was the kill type collected $KILLTYPE"
-		cutstring=${KILLSTRING##*[}
-		cutstring=${cutstring%;*}
-		VICTIMNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+		echo "This was the kill type collected $KILLTYPE"
+		cutstring=${KILLSTRING%;*}
+		cutstring=${cutstring%[[:space:]]*}
+		VICTIMNAME=${cutstring##*[}
 		echo "This was the victim $VICTIMNAME"
 		case "$KILLTYPE" in 
 		*PlayerCharacter*)
@@ -393,6 +480,11 @@ kill_message() {
 				
 			else
 				echo "no bounty on victim"
+			fi
+			DUELEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where CHALLENGER='$KILLER' or DEFENDER='$KILLER';")
+			if [ -n "$DUELEXISTS" ]
+			then
+			lib_release startduel $KILLER PERSONAL
 			fi
 		;;
 		*Ship*)
@@ -423,6 +515,11 @@ kill_message() {
 				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $KILLER GALACTIC COMMAND - You have been awarded $BOUNTYONVICTIM credits for killing $VICTIMNAME
 			else
 				echo "no bounty on victim"
+			fi
+			DUELEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where CHALLENGER='$KILLER' or DEFENDER='$KILLER';")
+			if [ -n "$DUELEXISTS" ]
+			then
+				lib_release startduel $KILLER SHIP
 			fi
 		;;
 		esac

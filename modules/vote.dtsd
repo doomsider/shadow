@@ -123,8 +123,8 @@ core_setupvote(){
 		echo "No config file found please run shadow.dtsd setup"
 	else
 		echo "Config file found"
-		CURRENTVOTESETTING=$(grep CONFIGDTSD_VOTING $CONFIGDTSD_INSTALLPATH/core/config.dtsd)
-		CURRENTKEYSETTING=$(grep CONFIGDTSD_VOTEKEY $CONFIGDTSD_INSTALLPATH/core/config.dtsd)
+		CURRENTVOTESETTING=$(grep CONFIGDTSD_VOTING $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd)
+		CURRENTKEYSETTING=$(grep CONFIGDTSD_VOTEKEY $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd)
 		echo "CURRENTVOTESETTING .$CURRENTVOTESETTING. CURRENTKEYSETTING .$CURRENTKEYSETTING."
 		case $2 in
 		on)
@@ -134,7 +134,7 @@ core_setupvote(){
 				if [ -z "$CURRENTVOTESETTING" ]
 				then
 					SETVOTE="CONFIGDTSD_VOTING=true"
-					echo $SETVOTE >> $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+					echo $SETVOTE >> $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
 				else
 					CURRENTVOTESETTING=${CURRENTVOTESETTING#*=}
 					echo "Current value CURRENTVOTESETTING $CURRENTVOTESETTING ${#CURRENTVOTESETTING}"
@@ -145,7 +145,7 @@ core_setupvote(){
 				if [ -z "$CURRENTKEYSETTING" ]
 				then
 					SETKEY="CONFIGDTSD_VOTEKEY=$INPUT"
-					echo $SETKEY >> $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+					echo $SETKEY >> $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
 				else
 					CURRENTKEYSETTING=${CURRENTKEYSETTING#*=}
 					echo "Current value CURRENTKEYSETTING $CURRENTKEYSETTING ${#CURRENTKEYSETTING}"
@@ -161,7 +161,7 @@ core_setupvote(){
 			if [ -z "$CURRENTVOTESETTING" ]
 			then
                 SETVOTE="CONFIGDTSD_VOTING=false"
-				echo $SETVOTE >> $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+				echo $SETVOTE >> $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
 			else
 				CURRENTVOTESETTING=${CURRENTVOTESETTING#*=}
 				echo "Current value CURRENTVOTESETTING $CURRENTVOTESETTING ${#CURRENTVOTESETTING}"
@@ -171,7 +171,7 @@ core_setupvote(){
 			if [ -z "$CURRENTKEYSETTING" ]
 			then
 				SETKEY="CONFIGDTSD_VOTEKEY=false"
-				echo $SETKEY >> $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+				echo $SETKEY >> $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
 			else
 				CURRENTKEYSETTING=${CURRENTKEYSETTING#*=}
 				echo "Current value CURRENTKEYSETTING $CURRENTKEYSETTING ${#CURRENTKEYSETTING}"

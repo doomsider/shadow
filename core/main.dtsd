@@ -25,6 +25,8 @@ DTSDHELP_universebackup="\nUniversebackup usage: shadow.dtsd universebackup\nBac
 DTSDHELP_updateshadow="\nUpdateshadow usage: shadow.dtsd uupdateshadow\nUpdates Shadow.  Saves new downloads and old files in shadow directory.  This will overwrite all existing file so be warned you will have to copy back any custom settings.\n"
 DTSDHELP_force="\nFroce usage: shadow.dtsd force\nForces an install of StarMade.  Can be used to repair an install.\n"
 
+DTSDDEFAULTVALUE_JAVACOMMAND="java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT"
+
 core_updateshadow() {
 # Updates Shadow.  Saves new downloads and old files in shadow directory.  This will overwrite all existing files so be warned you will have to copy back any custom settings.
 	if [ ! -d "$CONFIGDTSD_INSTALLPATH/shadow" ]
@@ -513,6 +515,42 @@ core_help() {
 core_kill() {
 # Kill server and all functions by closing their screens
 	echo "killing server"
+	PIDS=$( (ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep port:$CONFIGDTSD_PORT | awk '{print $2}') )
+	if [ -n "$PIDS" ]
+	then
+		echo "Trying to kill these ${PIDS[@]} for server"	
+		kill ${PIDS[@]}
+		for LOOPNO in {0..30}
+			do
+				if ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep port:$CONFIGDTSD_PORT >/dev/null
+				then
+					sleep 1
+				else
+					echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+					break
+				fi
+		done
+	else
+		echo "It does not appear the server is running"
+	fi
+	PIDS=$( (ps aux | grep -v grep | grep logloop | awk '{print $2}') )
+	if [ -n "$PIDS" ]
+	then
+		echo "Trying to kill these ${PIDS[@]} for script"		
+		kill ${PIDS[@]}
+		for LOOPNO in {0..30}
+			do
+				if ps aux | grep -v grep | grep logloop >/dev/null
+				then
+					sleep 1
+				else
+					echo Logloop took $LOOPNO seconds to close
+					break
+				fi
+		done
+	else 
+		echo "It does not appear logloop is running"
+	fi
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null
     then
 		echo "Screen(s) identified by $CONFIGDTSD_MAINSCREEN detected and will be closed"
@@ -520,17 +558,22 @@ core_kill() {
 		echo "Trying to kill these ${PIDS[@]}"		
 		kill ${PIDS[@]}
 		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Kill\");"
+	else
+		echo "It does not appear the screen for the server is running"
 	fi
   
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN >/dev/null
     then
 		echo "Screen(s) identified by $CONFIGDTSD_DTSDSCREEN detected and will be closed"
 		PIDS=( $(ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN | awk '{print $2}') )   
-	echo "Trying to kill these ${PIDS[@]}"		
-	kill ${PIDS[@]}
+		echo "Trying to kill these ${PIDS[@]}"		
+		kill ${PIDS[@]}
+	else
+		echo "It does not appear the screen for the script is running"
+
+	fi
 	core_clearschedule
     core_cleanup
-	fi
 }
 core_restart() {
 	core_stop
@@ -576,6 +619,16 @@ core_start() {
 		echo "Tried to start but $CONFIGDTSD_SERVICE was already running!"
 	else
 		echo "$CONFIGDTSD_SERVICE was not running... starting."
+		if [ -e $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log ]
+		then
+			if [ ! -d "$CONFIGDTSD_INSTALLPATH/dump" ]
+			then
+				mkdir $CONFIGDTSD_INSTALLPATH/dump
+			fi
+			CURRENTDATE=$(date +"%m_%d_%y"_"%T")
+			cp $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log $CONFIGDTSD_INSTALLPATH/dump/MAINLOG_$CURRENTDATE.txt
+			cp $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_SCRIPTSCREEN.log $CONFIGDTSD_INSTALLPATH/dump/SCRIPTLOG_$CURRENTDATE.txt
+		fi	
 # Lib_screen add will detect if screens already running and will terminate them if so.
 		lib_screenadd $CONFIGDTSD_MAINSCREEN
 		lib_screenadd $CONFIGDTSD_DTSDSCREEN
@@ -585,7 +638,6 @@ core_start() {
 # -f is used to flush data as it is given and keeps the log file updated quickly
 		lib_screensend $CONFIGDTSD_MAINSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_MAINSCREEN.log
 		lib_screensend $CONFIGDTSD_DTSDSCREEN script -f $CONFIGDTSD_INSTALLPATH/CONFIGDTSD_SCRIPTSCREEN.log
-		lib_screensend $CONFIGDTSD_MAINSCREEN java -Xmx$CONFIGDTSD_MAXMEM -Xms$CONFIGDTSD_MINMEM -jar $CONFIGDTSD_SERVICE -server -port:$CONFIGDTSD_PORT
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH buildoption
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH builddefaults
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH mycreate
@@ -594,6 +646,7 @@ core_start() {
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH addevents
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
+		lib_screensend $CONFIGDTSD_MAINSCREEN $JAVACOMMAND
 	fi  
 }
 core_status() {

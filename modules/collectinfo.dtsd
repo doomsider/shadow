@@ -280,7 +280,8 @@ collect_player_NAME() {
 	lib_release playerinfo $COLLECT_PLAYER_NAME
 	lib_release playerdeposit $COLLECT_PLAYER_NAME
 	lib_release startership $COLLECT_PLAYER_NAME
-	lib_release garageremove $COLLECT_PLAYER_NAME	
+	lib_release garageremove $COLLECT_PLAYER_NAME
+	lib_release shipreturn $COLLECT_PLAYER_NAME
 }
 # Functions to collect from sector info
 sector_entityinfo() {
@@ -697,7 +698,7 @@ player_changesector() {
 		OLDY=${COLLECTSECTORARRAY[1]}
 		OLDZ=${COLLECTSECTORARRAY[2]}
 		OLDSECTORNAME="$OLDX"_"$OLDY"_"$OLDZ"
-		echo "thie is old sector $OLDX $OLDY $OLDZ $OLDSECTORNAME "
+		echo "this is old sector $OLDX $OLDY $OLDZ $OLDSECTORNAME "
 		CUTSTRING=${SECTORSTRING%\)*}
 		SECTORSTRING=${CUTSTRING##*\(}
 		CHANGESECTORX=${SECTORSTRING%%,*}
@@ -723,6 +724,36 @@ player_changesector() {
 	;;
 	*"PlayerCharacter"*)
 		echo "Player changed sector"
+		CUTSTRING=${SECTORSTRING%;*}
+		CUTSTRING=${CUTSTRING%[[:space:]]*}
+		CHANGEPLAYERNAME="${CUTSTRING##*[}"
+		echo "Playername for changing sector in spacesuit $CHANGEPLAYERNAME"
+		OLDSECTORCUT=${SECTORSTRING#*:}
+		CUTSTRING=${OLDSECTORCUT#*\(}
+		CUTSTRING=${CUTSTRING%%\)*}
+		CUTSTRING=${CUTSTRING//,/}
+		COLLECTSECTORARRAY=($CUTSTRING)
+		OLDX=${COLLECTSECTORARRAY[0]}
+		OLDY=${COLLECTSECTORARRAY[1]}
+		OLDZ=${COLLECTSECTORARRAY[2]}
+		OLDSECTORNAME="$OLDX"_"$OLDY"_"$OLDZ"
+		echo "this is old sector $OLDX $OLDY $OLDZ $OLDSECTORNAME "
+		CUTSTRING=${SECTORSTRING%\)*}
+		SECTORSTRING=${CUTSTRING##*\(}
+		CHANGESECTORX=${SECTORSTRING%%,*}
+		echo "sector x $CHANGESECTORX"
+		CUTSTRING=${SECTORSTRING%,*}
+		CUTSTRING=${CUTSTRING#*,}
+		CHANGESECTORY="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+		echo "sector y $CHANGESECTORY"
+		CUTSTRING=${SECTORSTRING##*,}
+		CHANGESECTORZ="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+		echo "sector z $CHANGESECTORZ"
+		lib_myupdate PLAYERDB CURRENTSECTOR $CURRENTCHANGESECTOR NAME $CHANGEPLAYERNAME
+		lib_trigger sectorinfo $CURRENTCHANGESECTOR Sector
+		universejail $OLDX $OLDY $OLDZ $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
+		universeofflimits $OLDX $OLDY $OLDZ $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
+		universeboarder $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
 	;;
 	esac
 }

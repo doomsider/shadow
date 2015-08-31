@@ -1,6 +1,11 @@
 #!/bin/bash
 # Shadow .01 Based off of DTSD
 # This is the main set of functions for dealing with the Mysql database
+lib_myrecieve() {
+MYSQLCOMMAND="${@:1}"
+	#echo "command to mysql $MYSQLCOMMAND"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "$MYSQLCOMMAND"
+}
 lib_mysend() {
 # Usage lib_mysend database user password command
 	MYSQLCOMMAND="${@:1}"
@@ -16,33 +21,33 @@ lib_mytextdump() {
 	fi
 	if [ "$1" = "all" ]
 	then
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from ADMINLOG" >$CONFIGDTSD_INSTALLPATH/dump/ADMINLOG.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from PLAYERDB" >$CONFIGDTSD_INSTALLPATH/dump/PLAYERDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from ASTEROIDDB" >$CONFIGDTSD_INSTALLPATH/dump/ASTEROIDDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from BOUNTYDB" >$CONFIGDTSD_INSTALLPATH/dump/BOUNTYDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from BOUNTYLOG" >$CONFIGDTSD_INSTALLPATH/dump/BOUNTYLOG.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from CHATLOG" >$CONFIGDTSD_INSTALLPATH/dump/CHATLOG.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from DESTROYLOG" >$CONFIGDTSD_INSTALLPATH/dump/DESTROYLOG.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from DUEL" >$CONFIGDTSD_INSTALLPATH/dump/DUEL.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from DUELRESULTS" >$CONFIGDTSD_INSTALLPATH/dump/DUELRESULTS.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from GARAGEDB" >$CONFIGDTSD_INSTALLPATH/dump/GARAGEDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from GUESTBOOK" >$CONFIGDTSD_INSTALLPATH/dump/GUESTBOOK.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from IDDB" >$CONFIGDTSD_INSTALLPATH/dump/IDDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from JAIL" >$CONFIGDTSD_INSTALLPATH/dump/JAIL.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from KILLDB" >$CONFIGDTSD_INSTALLPATH/dump/KILLDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from OFFLIMIT" >$CONFIGDTSD_INSTALLPATH/dump/OFFLIMIT.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from RANKLOG" >$CONFIGDTSD_INSTALLPATH/dump/RANKLOG.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from SEARCHDB" >$CONFIGDTSD_INSTALLPATH/dump/SEARCHDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from SECTORDB" >$CONFIGDTSD_INSTALLPATH/dump/SECTORDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from SERVERSTATUS" >$CONFIGDTSD_INSTALLPATH/dump/SERVERSTATUS.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from SHIPDB" >$CONFIGDTSD_INSTALLPATH/dump/SHIPDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from SHOPDB" >$CONFIGDTSD_INSTALLPATH/dump/SHOPDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from STATIONDB" >$CONFIGDTSD_INSTALLPATH/dump/STATIONDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from TRIGGERDB" >$CONFIGDTSD_INSTALLPATH/dump/TRIGGERDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from VOTEDB" >$CONFIGDTSD_INSTALLPATH/dump/VOTEDB.txt
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from VOTELOG" >$CONFIGDTSD_INSTALLPATH/dump/VOTELOG.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from ADMINLOG" >$CONFIGDTSD_INSTALLPATH/dump/ADMINLOG.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from PLAYERDB" >$CONFIGDTSD_INSTALLPATH/dump/PLAYERDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from ASTEROIDDB" >$CONFIGDTSD_INSTALLPATH/dump/ASTEROIDDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from BOUNTYDB" >$CONFIGDTSD_INSTALLPATH/dump/BOUNTYDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from BOUNTYLOG" >$CONFIGDTSD_INSTALLPATH/dump/BOUNTYLOG.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from CHATLOG" >$CONFIGDTSD_INSTALLPATH/dump/CHATLOG.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from DESTROYLOG" >$CONFIGDTSD_INSTALLPATH/dump/DESTROYLOG.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from DUEL" >$CONFIGDTSD_INSTALLPATH/dump/DUEL.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from DUELRESULTS" >$CONFIGDTSD_INSTALLPATH/dump/DUELRESULTS.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from GARAGEDB" >$CONFIGDTSD_INSTALLPATH/dump/GARAGEDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from GUESTBOOK" >$CONFIGDTSD_INSTALLPATH/dump/GUESTBOOK.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from IDDB" >$CONFIGDTSD_INSTALLPATH/dump/IDDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from JAIL" >$CONFIGDTSD_INSTALLPATH/dump/JAIL.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from KILLDB" >$CONFIGDTSD_INSTALLPATH/dump/KILLDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from OFFLIMIT" >$CONFIGDTSD_INSTALLPATH/dump/OFFLIMIT.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from RANKLOG" >$CONFIGDTSD_INSTALLPATH/dump/RANKLOG.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from SEARCHDB" >$CONFIGDTSD_INSTALLPATH/dump/SEARCHDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from SECTORDB" >$CONFIGDTSD_INSTALLPATH/dump/SECTORDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from SERVERSTATUS" >$CONFIGDTSD_INSTALLPATH/dump/SERVERSTATUS.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from SHIPDB" >$CONFIGDTSD_INSTALLPATH/dump/SHIPDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from SHOPDB" >$CONFIGDTSD_INSTALLPATH/dump/SHOPDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from STATIONDB" >$CONFIGDTSD_INSTALLPATH/dump/STATIONDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from TRIGGERDB" >$CONFIGDTSD_INSTALLPATH/dump/TRIGGERDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from VOTEDB" >$CONFIGDTSD_INSTALLPATH/dump/VOTEDB.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from VOTELOG" >$CONFIGDTSD_INSTALLPATH/dump/VOTELOG.txt
 	else
-		mysql --defaults-extra-file=/home/ubuntu/core/shadow.cnf -t -e "select * from $1" >$CONFIGDTSD_INSTALLPATH/dump/$1.txt
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -t -e "select * from $1" >$CONFIGDTSD_INSTALLPATH/dump/$1.txt
 	fi
 }
 core_mytextdump () {

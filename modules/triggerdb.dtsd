@@ -75,37 +75,176 @@ lib_release() {
 #		fi
 #	done
 }
-TRIGGER_startduel() {
-echo "Startduel Triggered"
-execute_duel $2 $3 &
+
+TRIGGER_returnplayer() {
+	echo "returnplayer Triggered"
+	returnplayerstring="${@:1}"
+	echo "This sent to lib_trigger returnplayer $returnplayerstring"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You will be returned to your original sector shortly after you respawn
+	
 }
-RELEASE_startduel() {
-	echo "Startduel released"
-	DEFENDER=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDER from DUEL where CHALLENGER='$1' and ACTIVE='y';")
-	CHALLENGERSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGERSHIP from DUEL where CHALLENGER='$1' and DEFENDER='$DEFENDER';")
-	CHALLENGERSHIPBLOCKS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGERSHIPBLOCKS from DUEL where CHALLENGER='$1' and DEFENDER='$DEFENDER';")
-	CHALLENGERSHIPMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGERSHIPMASS from DUEL where CHALLENGER='$1' and DEFENDER='$DEFENDER';")
-	CHALLENGERRETURNSECTOR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGERLOCATION from DUEL where CHALLENGER='$1' and DEFENDER='$DEFENDER';")
-	echo "CHALLENGERSHIP $CHALLENGERSHIP CHALLENGERSHIPBLOCKS $CHALLENGERSHIPBLOCKS CHALLENGERSHIPMASS $CHALLENGERSHIPMASS CHALLENGERRETURNSECTOR $CHALLENGERRETURNSECTOR"	
-	DEFENDERSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERSHIP from DUEL where CHALLENGER='$1' and DEFENDER='$DEFENDER';")
-	DEFENDERSHIPBLOCKS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERSHIPBLOCKS from DUEL where CHALLENGER='$1' and DEFENDER='$DEFENDER';")
-	DEFENDERSHIPMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERSHIPMASS from DUEL where CHALLENGER='$1' and DEFENDER='$DEFENDER';")
-	DEFENDERRETURNSECTOR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERLOCATION from DUEL where CHALLENGER='$1' and DEFENDER='$DEFENDER';")
-	echo "DEFENDERSHIP $DEFENDERSHIP DEFENDERSHIPBLOCKS $DEFENDERSHIPBLOCKS DEFENDERSHIPMASS $DEFENDERSHIPMASS DEFENDERRETURNSECTOR $DEFENDERRETURNSECTOR"
-	CUTSTRING=${CHALLENGERRETURNSECTOR//_/ }
+RELEASE_returnplayer() {
+	echo "returnplayer released"
+	releassereturnplayerstring="${@:1}"
+	echo "This sent to lib_release releassereturnplayerstring $releassereturnplayerstring"
+	sleep 4
+	cutstring=${2//_/ }
+	COLLECTSECTORARRAY=($cutstring)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $1 $COLLECTX $COLLECTY $COLLECTZ
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='returnplayer';"
+}
+TRIGGER_shipreturn() {
+	echo "shipreturn Triggered"
+	shipreturnstring="${@:1}"
+	echo "This sent to lib_trigger shipreturnstring $shipreturnstring"
+	lib_trigger playerinfo $1 Astronaut
+}
+RELEASE_shipreturn() {
+	echo "shipreturn released"
+	BLUEPRINT="${@:2}"
+	echo "shipreturn command released and blueprint to spawn is $BLUEPRINT"
+	SECTORLOCATION=$(lib_myvalueretrieve CURRENTSECTOR PLAYERDB $1)
+	PLAYERPOS=$(lib_myvalueretrieve LASTPOSITION PLAYERDB $1)
+	PLAYERFAC=$(lib_myvalueretrieve FACTION PLAYERDB $1)
+	if [[ $PLAYERFAC == null ]]
+	then
+		PLAYERFAC=0
+	fi
+	CUTSTRING=${SECTORLOCATION//_/ }
 	ARRAYSTRING=($CUTSTRING)
 	COLLECTSECTORX=${ARRAYSTRING[0]}
 	COLLECTSECTORY=${ARRAYSTRING[1]}
 	COLLECTSECTORZ=${ARRAYSTRING[2]}
-	
-	lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for_copy $1 $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ
-	lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid \"ENTITY_SHIP_$CHALLENGERSHIP\"
-	lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid \"ENTITY_SHIP_$DEFENDERSHIP\"
-	
-	
+	CUTSTRING=${PLAYERPOS//_/ }
+	ARRAYSTRING=($CUTSTRING)
+	COLLECTPOSX=${ARRAYSTRING[0]}
+	COLLECTPOSY=${ARRAYSTRING[1]}
+	COLLECTPOSZ=${ARRAYSTRING[2]}	
+	echo "shipreturn $$BLUEPRINT to be spawned in $SECTORLOCATION in pos $PLAYERPOS with faction tag $PLAYERFAC as the name $BLUEPRINT"
+	lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity_pos \"$BLUEPRINT\"  \"$BLUEPRINT\" $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ $COLLECTPOSX $COLLECTPOSY $COLLECTPOSZ $PLAYERFAC false
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='shipreturn';"
+}
+TRIGGER_startduel() {
+	echo "Startduel Triggered"
+	execute_duel $1 $2 &
+}
+RELEASE_startduel() {
+	echo "Startduel released"
+	STARTDUELSTRING="${@:1}"
+	echo "This sent to lib_release startduel $STARTDUELSTRING"
+	DEFENDERDUEL=$2
+	CHALLENGERDUEL=$1
+	#DEFENDERDUEL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDER from DUEL where (DEFENDER='$1' or CHALLENGER='$1') and (ACTIVE='y');")
+	#CHALLENGERDUEL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where (DEFENDER='$1' or CHALLENGER='$1') and (ACTIVE='y');")
+	echo "DEFENDERDUEL $DEFENDERDUEL CHALLENGERDUEL $CHALLENGERDUEL"
+	CHALLENGERSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGERSHIP from DUEL where CHALLENGER='$CHALLENGERDUEL' and DEFENDER='$DEFENDERDUEL';")
+	CHALLENGERSHIPBLOCKS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGERSHIPBLOCKS from DUEL where CHALLENGER='$CHALLENGERDUEL' and DEFENDER='$DEFENDERDUEL';")
+	CHALLENGERSHIPMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGERSHIPMASS from DUEL where CHALLENGER='$CHALLENGERDUEL' and DEFENDER='$DEFENDERDUEL';")
+	CHALLENGERRETURNSECTOR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGERLOCATION from DUEL where CHALLENGER='$CHALLENGERDUEL' and DEFENDER='$DEFENDERDUEL';")
+	echo "CHALLENGERSHIP $CHALLENGERSHIP CHALLENGERSHIPBLOCKS $CHALLENGERSHIPBLOCKS CHALLENGERSHIPMASS $CHALLENGERSHIPMASS CHALLENGERRETURNSECTOR $CHALLENGERRETURNSECTOR"	
+	DEFENDERSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERSHIP from DUEL where CHALLENGER='$CHALLENGERDUEL' and DEFENDER='$DEFENDERDUEL';")
+	DEFENDERSHIPBLOCKS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERSHIPBLOCKS from DUEL where CHALLENGER='$CHALLENGERDUEL' and DEFENDER='$DEFENDERDUEL';")
+	DEFENDERSHIPMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERSHIPMASS from DUEL where CHALLENGER='$CHALLENGERDUEL' and DEFENDER='$DEFENDERDUEL';")
+	DEFENDERRETURNSECTOR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDERLOCATION from DUEL where CHALLENGER='$CHALLENGERDUEL' and DEFENDER='$DEFENDERDUEL';")
+	echo "DEFENDERSHIP $DEFENDERSHIP DEFENDERSHIPBLOCKS $DEFENDERSHIPBLOCKS DEFENDERSHIPMASS $DEFENDERSHIPMASS DEFENDERRETURNSECTOR $DEFENDERRETURNSECTOR"
+	DUELFINISH=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select FINISH from DUEL where CHALLENGER='$CHALLENGERDUEL' and DEFENDER='$DEFENDERDUEL';")
+	echo "$DUELFINISH DUELFINISH"
+	DUELVICTOR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VICTOR from DUEL where CHALLENGER='$CHALLENGERDUEL' and DEFENDER='$DEFENDERDUEL';")
+	case $DUELFINISH in
+	timeout)
+		echo "It appears the duel ended by timeout cleaning up and sending both players back to starting locations"
+		
+		CUTSTRING=${CHALLENGERRETURNSECTOR//_/ }
+		ARRAYSTRING=($CUTSTRING)
+		COLLECTSECTORX=${ARRAYSTRING[0]}
+		COLLECTSECTORY=${ARRAYSTRING[1]}
+		COLLECTSECTORZ=${ARRAYSTRING[2]}
+		lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $1 $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ
+#		lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid \"ENTITY_SHIP_$CHALLENGERSHIP\"
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The Duel is over due to running out of time.  Try harder to kill each other next time okay?
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM JAIL where PLAYER='$1';"
+		
+		CUTSTRING=${DEFENDERRETURNSECTOR//_/ }
+		ARRAYSTRING=($CUTSTRING)
+		COLLECTSECTORX=${ARRAYSTRING[0]}
+		COLLECTSECTORY=${ARRAYSTRING[1]}
+		COLLECTSECTORZ=${ARRAYSTRING[2]}
+		lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $2 $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ
+#		lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid \"ENTITY_SHIP_$DEFENDERSHIP\"
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $2 The Duel is over due to running out of time.  Try harder to kill each other next time okay?
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM JAIL where PLAYER='$2';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM DUEL where CHALLENGER='$1' and ACTIVE='y';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='startduel' ORDER BY line ASC LIMIT 1;"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DUELRESULTS (CHALLENGER, CHALLENGERSHIP, CHALLENGERSHIPBLOCKS, CHALLENGERSHIPMASS, DEFENDER, DEFENDERSHIP, DEFENDERSHIPBLOCKS, DEFENDERSHIPMASS, BYWAYOF, VICTOR) VALUES (\"$1\",\"$CHALLENGERSHIP\",\"$CHALLENGERSHIPBLOCKS\",\"$CHALLENGERSHIPMASS\",\"$2\",\"$DEFENDERSHIP\",\"$DEFENDERSHIPBLOCKS\",\"$DEFENDERSHIPMASS\",\"Timeout\",\"No Victor\");"
+#		lib_trigger shipreturn $DEFENDERDUEL $DEFENDERSHIP
+#		lib_trigger shipreturn $CHALLENGERDUEL $CHALLENGERSHIP
+	;;
+	ship)
+		if [ "$1" = "$DUELVICTOR" ]
+		then
+			echo "Challenger won"
+			DUELLOSER=$DEFENDERDUEL
+			LOSERRETURNSECTOR=$DEFENDERRETURNSECTOR
+			VICTORRETURNSECTOR=$CHALLENGERRETURNSECTOR
+		else
+			echo "Defender won"
+			DUELLOSER=$CHALLENGERDUEL
+			LOSERRETURNSECTOR=$CHALLENGERRETURNSECTOR
+			VICTORRETURNSECTOR=$DEFENDERRETURNSECTOR
+		fi
+		echo "It appears $DUELVICTOR was the victor by ship combat and $DUELLOSER lost"
+		CUTSTRING=${VICTORRETURNSECTOR//_/ }
+		ARRAYSTRING=($CUTSTRING)
+		COLLECTSECTORX=${ARRAYSTRING[0]}
+		COLLECTSECTORY=${ARRAYSTRING[1]}
+		COLLECTSECTORZ=${ARRAYSTRING[2]}
+		lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $DUELVICTOR $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ
+		lib_trigger returnplayer $DUELLOSER $LOSERRETURNSECTOR
+#		lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid \"ENTITY_SHIP_$CHALLENGERSHIP\"
+#		lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid \"ENTITY_SHIP_$DEFENDERSHIP\"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM JAIL where PLAYER='$1';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM JAIL where PLAYER='$2';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM DUEL where CHALLENGER='$CHALLENGERDUEL' and ACTIVE='y';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='startduel' ORDER BY line ASC LIMIT 1;"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DUELRESULTS (CHALLENGER, CHALLENGERSHIP, CHALLENGERSHIPBLOCKS, CHALLENGERSHIPMASS, DEFENDER, DEFENDERSHIP, DEFENDERSHIPBLOCKS, DEFENDERSHIPMASS, BYWAYOF, VICTOR) VALUES (\"$1\",\"$CHALLENGERSHIP\",\"$CHALLENGERSHIPBLOCKS\",\"$CHALLENGERSHIPMASS\",\"$2\",\"$DEFENDERSHIP\",\"$DEFENDERSHIPBLOCKS\",\"$DEFENDERSHIPMASS\",\"ship weapons\",\"$DUELVICTOR\");"
+	;;
+	personal)
+		if [ "$1" = "$DUELVICTOR" ]
+		then
+			echo "Challenger won"
+			DUELLOSER=$DEFENDERDUEL
+			LOSERRETURNSECTOR=$DEFENDERRETURNSECTOR
+			VICTORRETURNSECTOR=$CHALLENGERRETURNSECTOR
+		else
+			echo "Defender won"
+			DUELLOSER=$CHALLENGERDUEL
+			LOSERRETURNSECTOR=$CHALLENGERRETURNSECTOR
+			VICTORRETURNSECTOR=$DEFENDERRETURNSECTOR
+		fi
+		CUTSTRING=${VICTORRETURNSECTOR//_/ }
+		ARRAYSTRING=($CUTSTRING)
+		COLLECTSECTORX=${ARRAYSTRING[0]}
+		COLLECTSECTORY=${ARRAYSTRING[1]}
+		COLLECTSECTORZ=${ARRAYSTRING[2]}
+		lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $DUELVICTOR $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ
+		lib_trigger returnplayer $DUELLOSER $LOSERRETURNSECTOR
+#		lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid \"ENTITY_SHIP_$CHALLENGERSHIP\"
+#		lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid \"ENTITY_SHIP_$DEFENDERSHIP\"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM JAIL where PLAYER='$1';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM JAIL where PLAYER='$2';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM DUEL where CHALLENGER='$CHALLENGERDUEL' and ACTIVE='y';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='startduel' ORDER BY line ASC LIMIT 1;"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DUELRESULTS (CHALLENGER, CHALLENGERSHIP, CHALLENGERSHIPBLOCKS, CHALLENGERSHIPMASS, DEFENDER, DEFENDERSHIP, DEFENDERSHIPBLOCKS, DEFENDERSHIPMASS, BYWAYOF, VICTOR) VALUES (\"$1\",\"$CHALLENGERSHIP\",\"$CHALLENGERSHIPBLOCKS\",\"$CHALLENGERSHIPMASS\",\"$2\",\"$DEFENDERSHIP\",\"$DEFENDERSHIPBLOCKS\",\"$DEFENDERSHIPMASS\",\"personal weapon\",\"$DUELVICTOR\");"
+	;;
+	*)
+		echo "Duel ended without a finish, this is an error and it not supposed to be possible."
+	;;
+	esac
 #mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='startduel';"
 }
-
 TRIGGER_startership() {
 	echo "Startership triggered" 
 	lib_trigger playerinfo $1 Astronaut
@@ -133,7 +272,6 @@ RELEASE_startership() {
 	echo "startership $VALUE to be spawned in $SECTORLOCATION in pos $PLAYERPOS with faction tag $PLAYERFAC as the name $RANDOM'_startship'"
 	lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity_pos \"$BLUEPRINT\" $RANDOM'_startership' $COLLECTSECTORX $COLLECTSECTORY $COLLECTSECTORZ $COLLECTPOSX $COLLECTPOSY $COLLECTPOSZ $PLAYERFAC false
 	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM TRIGGERDB where VALUE2='$1' and VALUE1='startership';"
-
 }
 TRIGGER_playerinfo() {
 	echo "player info triggered"
@@ -171,6 +309,7 @@ TRIGGER_sectorinfo() {
 		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_info $COLLECTX $COLLECTY $COLLECTZ
 	else
 		echo "Sector updated in the last 10 minutes"
+		lib_release sectorinfo $SECTORNAME
 	fi
 }
 RELEASE_sectorinfo() {

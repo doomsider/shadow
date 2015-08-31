@@ -31,6 +31,8 @@ MYSQLDTSD_DUEL_DEFENDERAGREE="VARCHAR(1)"
 MYSQLDTSD_DUEL_TYPE="VARCHAR(50)"
 MYSQLDTSD_DUEL_LOCATION="VARCHAR(36)"
 MYSQLDTSD_DUEL_ACTIVE="VARCHAR(1)"
+MYSQLDTSD_DUEL_FINISH="VARCHAR(12)"
+MYSQLDTSD_DUEL_VICTOR="VARCHAR(50) BINARY"
 
 MYSQLDTSD_DUELRESULTS_CHALLENGER="VARCHAR(50) BINARY"
 MYSQLDTSD_DUELRESULTS_CHALLENGERSHIP="VARCHAR(50) BINARY"
@@ -77,9 +79,9 @@ execute_duel() {
 	echo "Sent to DUELSTRING $DUELSTRING"
 	echo "duel started"
 	echo "Challenger $1"
-	echo "Defendaer $2"
+	echo "Defender $2"
 	CHALLENGEEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDER from DUEL where CHALLENGER='$1' and DEFENDER='$2';")
-	if [ -n "$CHALLENGEREXISTS" ]
+	if [ -n "$CHALLENGEEXISTS" ]
 	then
 		echo "Challenge: matching with database"
 	
@@ -119,15 +121,32 @@ execute_duel() {
 								echo "mass matches for defender ship"
 								if [ "$DEFENDERAGREE" = "y" ] && [ "$CHALLENGERAGREE" = "y" ] 
 								then
-									lib_screensend $CONFIGDTSD_MAINSCREEN /save_uid \"ENTITY_SHIP_$DEFENDERSHIP\" \"$DEFENDERSHIP_$2_DUEL\"
-									lib_screensend $CONFIGDTSD_MAINSCREEN /save_uid \"ENTITY_SHIP_$CHALLENGERSHIP\" \"$CHALLENGERSHIP_$1_DUEL\"
+#									lib_screensend $CONFIGDTSD_MAINSCREEN /save_uid \"ENTITY_SHIP_$DEFENDERSHIP\" \"$DEFENDERSHIP_$2_DUEL\"
+#									lib_screensend $CONFIGDTSD_MAINSCREEN /save_uid \"ENTITY_SHIP_$CHALLENGERSHIP\" \"$CHALLENGERSHIP_$1_DUEL\"
 									CHALLENGERINSECTOR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CURRENTSECTOR from PLAYERDB where NAME='$1';")
 									DEFENDERINSECTOR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CURRENTSECTOR from PLAYERDB where NAME='$2';")
 									echo "CHALLENGERINSECTOR $CHALLENGERINSECTOR DEFENDERINSECTOR $DEFENDERINSECTOR"
 									mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET CHALLENGERLOCATION='$CHALLENGERINSECTOR' where CHALLENGER='$1' and DEFENDER='$2';"
 									mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERLOCATION='$DEFENDERINSECTOR' where CHALLENGER='$1' and DEFENDER='$2';"
 									mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET ACTIVE='y' where CHALLENGER='$1' and DEFENDER='$2';"
-									cutstring=${STARTINGDUELLOCATION//_/ }
+									
+									CHECKACTIVEDUELSECTOR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select LOCATION from DUEL where ACTIVE='y' order by line desc limit 1;")
+									if [ -n "$CHECKACTIVEDUELSECTOR" ] && [ "$CHECKACTIVEDUELSECTOR" != "NULL" ]
+									then
+										echo "Active duel taking place in $CHECKACTIVEDUELSECTOR"
+										cutstring=${CHECKACTIVEDUELSECTOR//_/ }
+										COLLECTSECTORARRAY=($cutstring)
+										COLLECTX=${COLLECTSECTORARRAY[0]}
+										COLLECTY=${COLLECTSECTORARRAY[1]}
+										COLLECTZ=${COLLECTSECTORARRAY[2]}
+										let COLLECTX=COLLECTX+20
+										STARTDUELSECTOR="$COLLECTX_$COLLECTY_$COLLECTZ"
+									else
+										echo "No active duel taking place"
+										STARTDUELSECTOR=$STARTINGDUELLOCATION
+									fi
+									mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET LOCATION='$STARTDUELSECTOR' where CHALLENGER='$1' and DEFENDER='$2';"
+									cutstring=${STARTDUELSECTOR//_/ }
 									COLLECTSECTORARRAY=($cutstring)
 									COLLECTX=${COLLECTSECTORARRAY[0]}
 									COLLECTY=${COLLECTSECTORARRAY[1]}
@@ -150,10 +169,12 @@ execute_duel() {
 										let DUELSTART++
 									done
 									DUELACTIVECHECK=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select ACTIVE from DUEL where CHALLENGER='$1' and DEFENDER='$2';")
-									if [ "$DUELACTIVE" = "y" ] && [ "$DUELSTART" -ge "$DUELDURATIONSECONDS" ] 
+									if [ "$DUELACTIVECHECK" = "y" ] && [ "$DUELSTART" -ge "$DUELDURATIONSECONDS" ] 
 									then
 										echo "It appears time ran out"
-										lib_release startduel $1 timeout
+										mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET FINISH='timeout' where CHALLENGER='$1' and DEFENDER='$2';"
+										mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET VICTOR='NONE' where CHALLENGER='$1' and DEFENDER='$2';"
+										lib_release startduel $1
 									fi
 									echo "duel time loop ended"
 								else
@@ -197,75 +218,83 @@ chatcommand_DUEL() {
 	case $2 in
 	challenge)
 		echo "Challenged issued for duel"
-		if [ "$1" = "$4" ]
+		ALREADYCHALLENGED=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where CHALLENGER='$1';")
+		if [ -n "$CHALLENGEREXISTS" ]
 		then
-			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You cannot challenge yourself
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You can only have one challenge.  Try declining and challenging again.
 		else
-			CHALLENGEREXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDER from DUEL where CHALLENGER='$4' and DEFENDER='$1';")
-			echo "CHALLENGEREXISTS $CHALLENGEREXISTS"
-			if [ -n "$CHALLENGEREXISTS" ]
+			if [ "$1" = "$4" ]
 			then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have been challenged by this person already you can decline and challenge again
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You cannot challenge yourself
 			else
-				CHALLENGEDXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where CHALLENGER='$1' and DEFENDER='$4';")
-				echo "CHALLENGEDXISTS $CHALLENGEDXISTS"
-				if [ -n "$CHALLENGEDXISTS" ]
+				CHALLENGEREXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select DEFENDER from DUEL where CHALLENGER='$4' and DEFENDER='$1';")
+				echo "CHALLENGEREXISTS $CHALLENGEREXISTS"
+				if [ -n "$CHALLENGEREXISTS" ]
 				then
-				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have already challenged this person
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have been challenged by this person already you can decline and challenge again
 				else
-					CURRENTSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CONTROLLING from PLAYERDB where NAME='$1';")
-					echo "CURRENTSHIP $CURRENTSHIP"
-					if [ "$CURRENTSHIP" = "Spacesuit" ]
+					CHALLENGEDXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where CHALLENGER='$1' and DEFENDER='$4';")
+					echo "CHALLENGEDXISTS $CHALLENGEDXISTS"
+					if [ -n "$CHALLENGEDXISTS" ]
 					then
-						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have to be in and remain in your ship during a challenge
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have already challenged this person
 					else
-						DEFENDERONLINE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select ONLINE from PLAYERDB where NAME='$4';")
-						echo "DEFENDERONLINE $DEFENDERONLINE"
-						if [ "$DEFENDERONLINE" = "n" ]
+						CURRENTSHIP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CONTROLLING from PLAYERDB where NAME='$1';")
+						echo "CURRENTSHIP $CURRENTSHIP"
+						if [ "$CURRENTSHIP" = "Spacesuit" ]
 						then
-							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 That person is not online, you can only challenge someone who is online
-						elif [ -z "$DEFENDERONLINE" ]
-						then
-							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 That person does not appear to exist
+							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have to be in and remain in your ship during a challenge
 						else
-							case $3 in
-							ship)
-								CHALLENGETYPE=ship
-								FIGHTTERMS="winner takes ship from loser"				
-							;;
-							credits)
-								CHALLENGETYPE=credits
-								FIGHTTERMS="winner takes 1 million credits from loser"
-								CURRENTBANKCREDITS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BANKCREDITS from PLAYERDB where NAME='$1';")
-								if [ "$CURRENTBANKCREDITS" -ge "1000000" ]
-								then 
-									lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have the required amount of money in your Galactic Bank account.  Be sure to leave enough in your account for the duel
-								else
-									lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have innsufficient funds in your Galatic Bank account. This duel requires 1 million credits.  Try depositing more money.
-									CHALLENGETYPE=none
-								fi	
-							;;
-							faction)
-								CHALLENGETYPE=faction
-								FIGHTTERMS="winner takes 10 faction points from losers faction and adds it to their faction"
-							;;
-							honor)
-								CHALLENGETYPE=honor
-								FIGHTTERMS="winner gets the honor of knowing they have defeated their adversary"
-							;;
-							*)
-								CHALLENGETYPE=none
-							;;
-							esac
-							if [ "$CHALLENGETYPE" = "none" ] ||  [ -z "$CHALLENGETYPE" ]
+							DEFENDERONLINE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select ONLINE from PLAYERDB where NAME='$4';")
+							echo "DEFENDERONLINE $DEFENDERONLINE"
+							if [ "$DEFENDERONLINE" = "n" ]
 							then
-								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You must select a challenge type that you can qualify for: ship credits faction or honor must be used
+								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 That person is not online, you can only challenge someone who is online
+							elif [ -z "$DEFENDERONLINE" ]
+							then
+								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 That person does not appear to exist
 							else
-								CHALLENGERMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select MASS from SHIPDB where NAME='$CURRENTSHIP';")
-								CHALLENGERBLOCK=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BLOCK from SHIPDB where NAME='$CURRENTSHIP';")
-								mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DUEL (CHALLENGER, CHALLENGERSHIP, CHALLENGERSHIPBLOCKS, CHALLENGERSHIPMASS, TYPE, DEFENDER) VALUES (\"$1\",\"$CURRENTSHIP\",\"$CHALLENGERBLOCK\",\"$CHALLENGERMASS\",\"$3\",\"$4\");"
-								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have challenged $4 to a duel under the terms of $FIGHTTERMS
-								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $4 You have been challenged to a duel by $1 in $CURRENTSHIP containing $CHALLENGERBLOCK blocks and weighing in at $CHALLENGERMASS mass under terms of $FIGHTTERMS
+								case $3 in
+								ship)
+									CHALLENGETYPE=ship
+									FIGHTTERMS="winner takes ship from loser"				
+								;;
+								credits)
+									CHALLENGETYPE=credits
+									FIGHTTERMS="winner takes 1 million credits from loser"
+									CURRENTBANKCREDITS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BANKCREDITS from PLAYERDB where NAME='$1';")
+									if [ "$CURRENTBANKCREDITS" -ge "1000000" ]
+									then 
+										lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have the required amount of money in your Galactic Bank account.  The amount is being deducted and can be refunded by using decline
+										let NEWBALANCE=$CURRENTBANKCREDITS-1000000
+										lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
+									else
+										lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have innsufficient funds in your Galatic Bank account. This duel requires 1 million credits.  Try depositing more money.
+										CHALLENGETYPE=none
+									fi	
+								;;
+#								faction)
+#									CHALLENGETYPE=faction
+#									FIGHTTERMS="winner takes 10 faction points from losers faction and adds it to their faction"
+#								;;
+								honor)
+									CHALLENGETYPE=honor
+									FIGHTTERMS="winner gets the honor of knowing they have defeated their adversary"
+								;;
+								*)
+									CHALLENGETYPE=none
+								;;
+								esac
+								if [ "$CHALLENGETYPE" = "none" ] ||  [ -z "$CHALLENGETYPE" ]
+								then
+									lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You must select a challenge type that you can qualify for: ship credits or honor must be used
+								else
+									CHALLENGERMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select MASS from SHIPDB where NAME='$CURRENTSHIP';")
+									CHALLENGERBLOCK=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BLOCK from SHIPDB where NAME='$CURRENTSHIP';")
+									mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DUEL (CHALLENGER, CHALLENGERSHIP, CHALLENGERSHIPBLOCKS, CHALLENGERSHIPMASS, TYPE, DEFENDER) VALUES (\"$1\",\"$CURRENTSHIP\",\"$CHALLENGERBLOCK\",\"$CHALLENGERMASS\",\"$3\",\"$4\");"
+									lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have challenged $4 to a duel under the terms of $FIGHTTERMS
+									lib_screensend $CONFIGDTSD_MAINSCREEN /pm $4 You have been challenged to a duel by $1 in $CURRENTSHIP containing $CHALLENGERBLOCK blocks and weighing in at $CHALLENGERMASS mass under terms of $FIGHTTERMS
+								fi
 							fi
 						fi
 					fi
@@ -293,18 +322,46 @@ chatcommand_DUEL() {
 					then
 						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have already accepted this duel
 					else
-						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Duel accepted sending ship data to $3.  You have to be in and remain in your ship to accept a challenge and engage in a duel
-						echo "Defender agreed to terms"
-						DEFENDERMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select MASS from SHIPDB where NAME='$CURRENTSHIP';")
-						echo "DEFENDERMASS $DEFENDERMASS"
-						DEFENDERBLOCK=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BLOCK from SHIPDB where NAME='$CURRENTSHIP';")
-						echo "DEFENDERBLOCK $DEFENDERBLOCK"
-						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERAGREE='y' where CHALLENGER='$3' and DEFENDER='$1';"
-						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERSHIP='$CURRENTSHIP' where CHALLENGER='$3' and DEFENDER='$1';"
-						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERSHIPBLOCKS='$DEFENDERBLOCK' where CHALLENGER='$3' and DEFENDER='$1';"
-						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERSHIPMASS='$DEFENDERMASS' where CHALLENGER='$3' and DEFENDER='$1';"
-						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $3 Your challenge has been accepted by $1 in the ship $CURRENTSHIP containing $DEFENDERBLOCK blocks and weging in at $DEFENDERMASS.  Prepare youself and accept the challenge to confirm.
-					fi	
+						DUELTYPE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select TYPE from DUEL where CHALLENGER='$3' and DEFENDER='$1';")
+						if [ "$DUELTYPE" = "credits"]
+						then
+							CURRENTBANKCREDITS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BANKCREDITS from PLAYERDB where NAME='$1';")
+							if [ "$CURRENTBANKCREDITS" -ge "1000000" ]
+							then 
+								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have the required amount of money in your Galactic Bank account.  The amount is being deducted and can be refunded by using decline
+								let NEWBALANCE=$CURRENTBANKCREDITS-1000000
+								lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
+								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Duel accepted sending ship data to $3.  You have to be in and remain in your ship to accept a challenge and engage in a duel
+								echo "Defender agreed to terms"
+								DEFENDERMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select MASS from SHIPDB where NAME='$CURRENTSHIP';")
+								echo "DEFENDERMASS $DEFENDERMASS"
+								DEFENDERBLOCK=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BLOCK from SHIPDB where NAME='$CURRENTSHIP';")
+								echo "DEFENDERBLOCK $DEFENDERBLOCK"
+								mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERAGREE='y' where CHALLENGER='$3' and DEFENDER='$1';"
+								mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERSHIP='$CURRENTSHIP' where CHALLENGER='$3' and DEFENDER='$1';"
+								mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERSHIPBLOCKS='$DEFENDERBLOCK' where CHALLENGER='$3' and DEFENDER='$1';"
+								mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERSHIPMASS='$DEFENDERMASS' where CHALLENGER='$3' and DEFENDER='$1';"
+								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $3 Your challenge has been accepted by $1 in the ship $CURRENTSHIP containing $DEFENDERBLOCK blocks and weging in at $DEFENDERMASS.  Prepare youself and accept the challenge to confirm.
+								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Duel accepted sending ship data to $3.  You have to be in and remain in your ship to accept a challenge and engage in a duel
+							else
+								lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have innsufficient funds in your Galatic Bank account. This duel requires 1 million credits.  Try depositing more money.
+							fi	
+						fi
+						if [ "$DUELTYPE" != "credits"]		
+						then
+							echo "Defender agreed to terms"
+							DEFENDERMASS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select MASS from SHIPDB where NAME='$CURRENTSHIP';")
+							echo "DEFENDERMASS $DEFENDERMASS"
+							DEFENDERBLOCK=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select BLOCK from SHIPDB where NAME='$CURRENTSHIP';")
+							echo "DEFENDERBLOCK $DEFENDERBLOCK"
+							mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERAGREE='y' where CHALLENGER='$3' and DEFENDER='$1';"
+							mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERSHIP='$CURRENTSHIP' where CHALLENGER='$3' and DEFENDER='$1';"
+							mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERSHIPBLOCKS='$DEFENDERBLOCK' where CHALLENGER='$3' and DEFENDER='$1';"
+							mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET DEFENDERSHIPMASS='$DEFENDERMASS' where CHALLENGER='$3' and DEFENDER='$1';"
+							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $3 Your challenge has been accepted by $1 in the ship $CURRENTSHIP containing $DEFENDERBLOCK blocks and weging in at $DEFENDERMASS.  Prepare youself and accept the challenge to confirm.
+							lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Duel accepted sending ship data to $3.  You have to be in and remain in your ship to accept a challenge and engage in a duel
+						fi
+					fi
 				fi
 				if [ "$CHALLENGERACCEPT" = "$1" ]
 				then
@@ -329,11 +386,14 @@ chatcommand_DUEL() {
 				fi
 			fi
 		fi
-		
-		
 	;;
 	decline)
 	echo "Duel declined"
+	CHALLENGEEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where CHALLENGER='$1' or DEFENDER='$1';")
+	CHALLENGEACTIVE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where CHALLENGER='$CHALLENGEEXISTS' and ACTIVE='y';")
+	
+	#mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM DUEL where CHALLENGER='$CHALLENGERDUEL' and ACTIVE='y';"
+	
 	;;
 	list)
 	echo "List of duels"
@@ -430,8 +490,11 @@ player_login() {
     # Cut trailing space to get the playername that is logging in
     LOGINPLAYERNAME=${cutstring##*[}
     echo "$LOGINPLAYERNAME is logging in"
+	lib_myinsert PLAYERDB NAME $LOGINPLAYERNAME
+	lib_myupdate PLAYERDB ONLINE y NAME $LOGINPLAYERNAME
 	lib_trigger playerinfo $LOGINPLAYERNAME Astronaut
 	lib_trigger guestbookip $LOGINPLAYERNAME Spawned
+	lib_release returnplayer $LOGINPLAYERNAME
 }
 kill_message() {
 #String to collect
@@ -481,10 +544,12 @@ kill_message() {
 			else
 				echo "no bounty on victim"
 			fi
-			DUELEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where CHALLENGER='$KILLER' or DEFENDER='$KILLER';")
+			DUELEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where (CHALLENGER='$KILLER' or DEFENDER='$KILLER') and ACTIVE='y';")
 			if [ -n "$DUELEXISTS" ]
 			then
-			lib_release startduel $KILLER PERSONAL
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET FINISH='personal' where (CHALLENGER='$KILLER' or DEFENDER='$KILLER') and ACTIVE='y';"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET VICTOR='$KILLER' where (CHALLENGER='$KILLER' or DEFENDER='$KILLER') and ACTIVE='y';"
+			lib_release startduel $KILLER
 			fi
 		;;
 		*Ship*)
@@ -516,10 +581,12 @@ kill_message() {
 			else
 				echo "no bounty on victim"
 			fi
-			DUELEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where CHALLENGER='$KILLER' or DEFENDER='$KILLER';")
+			DUELEXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select CHALLENGER from DUEL where (CHALLENGER='$KILLER' or DEFENDER='$KILLER') and ACTIVE='y';")
 			if [ -n "$DUELEXISTS" ]
 			then
-				lib_release startduel $KILLER SHIP
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET FINISH='ship' where (CHALLENGER='$KILLER' or DEFENDER='$KILLER') and ACTIVE='y';"
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "UPDATE DUEL SET VICTOR='$KILLER' where (CHALLENGER='$KILLER' or DEFENDER='$KILLER') and ACTIVE='y';"
+				lib_release startduel $KILLER
 			fi
 		;;
 		esac

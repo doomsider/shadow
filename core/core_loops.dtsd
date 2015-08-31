@@ -16,10 +16,11 @@ MYSQLDTSD_COMMANDDB_COMMAND="TEXT NOT NULL"
 MYSQLDTSD_SEARCHDB_SEARCHSTRING="VARCHAR(255)"
 MYSQLDTSD_SEARCHDB_SEARCHFUNCTION="VARCHAR(50)"
 
+DTSDDEFAULTVALUE_USERAMDRIVE=no
+
 # The current logging script works by feeding the current starmade log into the database and then searching the database to find matches with search
 # strings and their associated functions
 core_logloop() {
-	USERAMDRIVE=no
 	if [ "$USERAMDRIVE" = "no" ]
 	then
 		WRITEDIR=$CONFIGDTSD_INSTALLPATH
@@ -34,14 +35,15 @@ core_logloop() {
 	MYSQLSTART=0
 	sleep 5
 	while true
-	do 
+	do
+		LOGACTIVE=false
 		NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 | cut -d" " -f1)
 # Since the Starmade log file rolls after 4mb the Linestart must be reset back to something reasonable when this happens or the script will hang. Special thanks to LordDragon for helping trouble shoot this
 		let "CHECKSCRIPTRESET = $LINESTART - 5000"
 	    if [ "$CHECKSCRIPTRESET" -gt "$NUMOFLINES" ]
 		then
-		echo "Script has reset"
-		LINESTART=$NUMOFLINES
+			echo "Script has reset"
+			LINESTART=$NUMOFLINES
 		fi
 # In case Linestart does not have a value give it an integer value of 1.  The prevents a startup error on the script.
 		if [ -z "$LINESTART" ]
@@ -52,6 +54,7 @@ core_logloop() {
 # If the number of lines read from the log file is greater than last line read + 1 from the log then feed more lines.
 		if [ "$NUMOFLINES" -gt "$LINESTART" ] 
 		then
+			LOGACTIVE=true
 			#echo "$NUMOFLINES is the total lines of the log"
 			#echo "$LINESTART is linestart"
 			let LINESTART++
@@ -69,7 +72,7 @@ core_logloop() {
 # Search through the log from the last mysqlstart and the current mysqlstop and insert any matched into the Commanddb
 			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e  "INSERT INTO COMMANDDB (PARAMETER, COMMAND) SELECT SERVERLOG.LOGSTRING, SEARCHDB.SEARCHFUNCTION FROM SERVERLOG, SEARCHDB WHERE LOCATE(SEARCHDB.SEARCHSTRING, SERVERLOG.LOGSTRING) > 0 AND SERVERLOG.line <= $MYSQLSTOP AND SERVERLOG.line >= $MYSQLSTART ORDER BY SERVERLOG.line ASC;"
 			LINESTART=$NUMOFLINES
-			let MYSQLSTART=$MYSQLSTOP			
+			let MYSQLSTART=$MYSQLSTOP
 		fi
 # Quick check to save Mysql time to see if commands are in the Commanddb
 		CHECKCOMMANDS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT 1 FROM COMMANDDB LIMIT 1;")
@@ -100,7 +103,10 @@ core_logloop() {
 				let PARAMETERARRAY++
 			done
 		fi
-	sleep 0.5
+	if [ "$LOGACTIVE" = "false" ]
+	then
+		sleep 0.5
+	fi
 	done
 }
 core_makesearchdb() {
@@ -162,7 +168,6 @@ core_search_executelog() {
 			LINESTART=$NUMOFLINES
 #			echo "Start at line $LINESTART"
 		fi
-		LOGACTIVE=NO
 		if [ "$NUMOFLINES" -gt "$LINESTART" ] 
 		then
 #			echo "$NUMOFLINES is the total lines of the log"

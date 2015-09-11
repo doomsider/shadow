@@ -3,7 +3,8 @@
 # This is the setup function used to determine dependencies and setup the game server config file and database
 
 core_setup() {
-	echo "Press enter to accept default answer (capitalised) or type in your setting. Note: running this will overwrite existing configuration"
+	echo "Press enter to accept default answer (capitalised) or type in your setting."
+	echo "Note: running this will overwrite existing configuration"
 	read -p "Do you wish to setup Shadow? [y/N] : " INPUT
 	case $INPUT in
 		[YesyesYESYy]* ) 
@@ -125,7 +126,7 @@ core_setup() {
                 CONFIGDTSD_MYSQLUSER=$MYSQLUSERDEFAULT
             fi
             MYSQLUSERPASS=pass
-            read -p "The password for the user in the mysql database - do no leave this default [$MYSQLUSERPASS] : " INPUT
+            read -p "The password for the user in the mysql database - do not leave this default if you care about security [$MYSQLUSERPASS] : " INPUT
             if [ -n "$INPUT" ]
             then
                 CONFIGDTSD_MYSQLPASS=$INPUT
@@ -161,7 +162,7 @@ core_setup() {
             fi
             if [[ $USERFOUND == YES ]] && [[ $DBFOUND == YES ]]
             then
-                echo "User and database setup succesfully"
+                echo "User and database setup successfully"
             fi
             if [[ $USERFOUND == NO ]] || [[ $DBFOUND == NO ]]
             then
@@ -268,7 +269,7 @@ core_setup() {
 		CONFIGDTSD_MAINSCREEN=$MAINSCREENDEFAULT
 	fi
 	DTSDSCREENDEFAULT=dtsdscreen
-	read -p "The default sreen for script functions [$DTSDSCREENDEFAULT] : " INPUT
+	read -p "The default screen for script functions [$DTSDSCREENDEFAULT] : " INPUT
 	if [ -n "$INPUT" ]
 	then
 		CONFIGDTSD_DTSDSCREEN=$INPUT
@@ -280,22 +281,52 @@ core_setup() {
     do
         $func
     done
-	if [ -e $CONFIGDTSD_INSTALLPATH/core/config.dtsd ]
+	DEFAULTVAR=( $(compgen -v | grep CONFIGDTSD_ | grep -v DTSDDEFAULTVALUE) )
+	DEFAULTARRAY=0
+	echo ${DEFAULTVAR[@]}
+	echo ${#DEFAULTVAR[@]}
+	if [ -e $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd ]
 	then
-		echo "Config file found - removing"
-		rm $CONFIGDTSD_INSTALLPATH/core/config.dtsd
+		echo "defaults.dtsd found"
+		while [ -n "${DEFAULTVAR[$DEFAULTARRAY]+set}" ]
+		do
+			CURRENTDEFAULT=${DEFAULTVAR[$DEFAULTARRAY]}
+			VALUENAME=$CURRENTDEFAULT
+			DEFAULTVALUE=${!CURRENTDEFAULT}
+			if grep "$VALUENAME" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd > /dev/null
+			then
+				EXISTINGVARIABLE=$(grep "$VALUENAME" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd)
+				EXISTINGVARIABLENAME=${EXISTINGVARIABLE%=*}
+				EXISTINGVALUE=${EXISTINGVARIABLE#*=}
+				echo "EXISTINGVARIABLENAME $EXISTINGVARIABLENAME EXISTINGVARIABLE $EXISTINGVARIABLE EXISTINGVALUE $EXISTINGVALUE"
+				echo "Updating VALUENAME $VALUENAME DEFAULTVALUE $DEFAULTVALUE "
+				sed -i "s/$EXISTINGVARIABLE/$EXISTINGVARIABLENAME=\"$DEFAULTVALUE\"/g" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
+			else
+				echo "Adding VALUENAME $VALUENAME DEFAULTVALUE $DEFAULTVALUE "
+				printf "%s=%q\n" "$VALUENAME=\"$DEFAULTVALUE\"" >> $SCRIPTDIR/core/config.dtsd
+			fi
+			let DEFAULTARRAY++
+		done
+	else
+		echo "no defaults.dtsd found"
+		touch $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
+		while [ -n "${DEFAULTVAR[$DEFAULTARRAY]+set}" ]
+		do
+			CURRENTDEFAULT=${DEFAULTVAR[$DEFAULTARRAY]}
+			VALUENAME=$CURRENTDEFAULT
+			DEFAULTVALUE=${!CURRENTDEFAULT}
+			printf "%s=%q\n" "$VALUENAME=\"$DEFAULTVALUE\"" >> $SCRIPTDIR/core/config.dtsd
+			let DEFAULTARRAY++
+		done
+		echo "defaults.dtsd file created in /modules"
 	fi
-#Gather all of the variables to write to config.dtsd
-	compgen -v | while read var
-	do 
-		printf "%s=%q\n" "$var" "${!var}" | grep CONFIGDTSD_ >> $SCRIPTDIR/core/config.dtsd
-	done
 	echo "Setting up tables and columns, ranks, and search"
 	lib_makemysqloption
 	lib_mycreate
 	set_ranks_database
 	core_makesearchdb
 	core_addevents
+	lib_makedefaults
 	echo "Building ID database this may take a minute"
 	lib_pause
 	core_parseblocks

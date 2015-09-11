@@ -222,6 +222,68 @@ core_softreset() {
 				done	
 			fi
 		fi
+	lib_screensend $CONFIGDTSD_MAINSCREEN $SERVERCOMMAND
+	fi
+	
+}
+old_core_softreset() {
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Softreset\");"
+	if lib_check_server_running
+	then
+# Issue Chat and a command to the server to shutdown
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Server Going down be back in a bit."
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/shutdown 60"
+		core_clearschedulerepeat
+# Give the server a chance to gracefully shutdown if not kill it and then seg fault it if necessary
+		sleep 60
+		for LOOPNO in {0..60}
+		do
+			if lib_check_server_running
+			then
+				sleep 1
+			else
+				echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Sever shut down after $LOOPNO seconds\");"
+				break
+			fi
+		done
+		if lib_check_server_running
+		then
+			echo "It appears the server is taking awhile to shut down, sending a general kill to get it to stop"
+			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+			kill $PID
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Kill from softreset\");"
+			for LOOPNO in {0..30}
+			do
+				if lib_check_server_running
+			then
+					sleep 1
+			else
+				echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Sever shut down after $LOOPNO seconds from kill\");"
+				break
+				fi
+			done
+			if lib_check_server_running
+			then
+				echo "It appears the server is refusing to shut down, sending a force kill to get it to stop"
+				PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+				kill -9 $PID
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Forcekill from softreset\");"
+				for LOOPNO in {0..30}
+				do
+					if lib_check_server_running
+					then
+						sleep 1
+					else
+						echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Sever shut down after $LOOPNO seconds from forcekill\");"
+						break
+					fi
+				done	
+			fi
+		fi
 # Main screen must be killed off to ensure no running process left
 	fi
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_MAINSCREEN >/dev/null

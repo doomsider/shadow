@@ -25,11 +25,16 @@ SCRIPTPATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0
 #echo $SCRIPTPATH
 SCRIPTDIR=${SCRIPTPATH%/*}
 #echo $SCRIPTDIR
-if [ ! -e "$SCRIPTDIR/core/config.dtsd" ]
+if [ ! -e "$SCRIPTDIR/modules/defaults.dtsd" ]
 then
-	echo "No configuration file detected [$SCRIPTDIR/core/config.dtsd] please run shadow.dtsd setup"
+	if [ "$1" = "setup" ]
+	then 
+		core_setup
+	else
+		echo "No configuration file detected $SCRIPTDIR/modules/defaults.dtsd] please run shadow.dtsd setup"
+		exit
+	fi
 fi
-
 # All files for the script must end in .dtsd this was chosen since a significant portion of the code was borrowed from DTSD 
 # Load all the scripts associated with DTSD.  Grep -v is used here to remove shadow.dtsd itself to prevent a never ending loop
 # echo ${SOURCES[@]}

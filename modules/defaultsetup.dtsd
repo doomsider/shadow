@@ -70,7 +70,8 @@ lib_makedefaults() {
 			then
 				echo "existing value found.  No change"
 			else
-				echo "Adding VALUENAME $VALUENAME DEFAULTVALUE $DEFAULTVALUE "
+				echo "Adding VALUENAME $VALUENAME DEFAULTVALUE $DEFAULTVALUE"
+				printf "%s=%q\n" "$VALUENAME=\"$DEFAULTVALUE\"" >> $SCRIPTDIR/core/config.dtsd
 				echo "$VALUENAME=\"$DEFAULTVALUE\"" >> $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
 			fi
 			let DEFAULTARRAY++
@@ -83,12 +84,12 @@ lib_makedefaults() {
 			CURRENTDEFAULT=${DEFAULTVAR[$DEFAULTARRAY]}
 			VALUENAME=${CURRENTDEFAULT#*_}
 			DEFAULTVALUE=${!CURRENTDEFAULT}
-			echo "$VALUENAME=\"$DEFAULTVALUE\"" >> $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
+			printf "%s=%q\n" "$VALUENAME=\"$DEFAULTVALUE\"" >> $SCRIPTDIR/core/config.dtsd
 			let DEFAULTARRAY++
 		done
 		echo "defaults.dtsd file created in /modules"
 	fi
 }
-core_builddefaults() {
+core_makedefaults() {
 lib_makedefaults
 }

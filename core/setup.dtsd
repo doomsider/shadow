@@ -285,7 +285,7 @@ core_setup() {
 	DEFAULTARRAY=0
 	echo ${DEFAULTVAR[@]}
 	echo ${#DEFAULTVAR[@]}
-	if [ -e $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd ]
+	if [ -e $SCRIPTDIR/modules/defaults.dtsd ]
 	then
 		echo "defaults.dtsd found"
 		while [ -n "${DEFAULTVAR[$DEFAULTARRAY]+set}" ]
@@ -293,29 +293,30 @@ core_setup() {
 			CURRENTDEFAULT=${DEFAULTVAR[$DEFAULTARRAY]}
 			VALUENAME=$CURRENTDEFAULT
 			DEFAULTVALUE=${!CURRENTDEFAULT}
-			if grep "$VALUENAME" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd > /dev/null
+			if grep "$VALUENAME" $SCRIPTDIR/modules/defaults.dtsd > /dev/null
 			then
 				EXISTINGVARIABLE=$(grep "$VALUENAME" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd)
 				EXISTINGVARIABLENAME=${EXISTINGVARIABLE%=*}
 				EXISTINGVALUE=${EXISTINGVARIABLE#*=}
 				echo "EXISTINGVARIABLENAME $EXISTINGVARIABLENAME EXISTINGVARIABLE $EXISTINGVARIABLE EXISTINGVALUE $EXISTINGVALUE"
 				echo "Updating VALUENAME $VALUENAME DEFAULTVALUE $DEFAULTVALUE "
-				sed -i "s/$EXISTINGVARIABLE/$EXISTINGVARIABLENAME=\"$DEFAULTVALUE\"/g" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
+				sed -i "s/$EXISTINGVARIABLE/$EXISTINGVARIABLENAME=\"$DEFAULTVALUE\"/g" $SCRIPTDIR/modules/defaults.dtsd
 			else
 				echo "Adding VALUENAME $VALUENAME DEFAULTVALUE $DEFAULTVALUE "
-				printf "%s=%q\n" "$VALUENAME=\"$DEFAULTVALUE\"" >> $SCRIPTDIR/core/config.dtsd
+				printf "%s=%q\n" "$VALUENAME=\"$DEFAULTVALUE\"" >> $SCRIPTDIR/modules/defaults.dtsd
 			fi
 			let DEFAULTARRAY++
 		done
 	else
 		echo "no defaults.dtsd found"
-		touch $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd
+		touch $SCRIPTDIR/modules/defaults.dtsd
 		while [ -n "${DEFAULTVAR[$DEFAULTARRAY]+set}" ]
 		do
 			CURRENTDEFAULT=${DEFAULTVAR[$DEFAULTARRAY]}
-			VALUENAME=$CURRENTDEFAULT
+#			VALUENAME=$CURRENTDEFAULT
 			DEFAULTVALUE=${!CURRENTDEFAULT}
-			printf "%s=%q\n" "$VALUENAME=\"$DEFAULTVALUE\"" >> $SCRIPTDIR/core/config.dtsd
+			WRITEDEFAULT="$CURRENTDEFAULT=$DEFAULTVALUE"
+			printf "%s\n" "$CURRENTDEFAULT=\"$DEFAULTVALUE\"" >> $SCRIPTDIR/modules/defaults.dtsd
 			let DEFAULTARRAY++
 		done
 		echo "defaults.dtsd file created in /modules"

@@ -122,6 +122,11 @@ lib_forcestop(){
 	fi
 }
 core_softstart() {
+# Starts the server.
+lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH addevents
+lib_screensend $CONFIGDTSD_MAINSCREEN $SERVERCOMMAND
+}
+old_core_softstart() {
 # Softstart can only be ran after a softstop or a softreset and is used to re-launch the server
 	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Starting\");"
 	if ps aux | grep -v grep | grep SCREEN | grep $CONFIGDTSD_DTSDSCREEN >/dev/null

@@ -89,16 +89,16 @@ core_logloop() {
 			IFS=$OLD_IFS
 # Reset the database so the same command is not read repeatedly 
 			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "truncate table COMMANDDB;"
-			COMMANDARRAY=0
+			POSITIONCOMMANDARRAY=0
 			PARAMETERARRAY=0
 # Go through each command and parameter received and execute them with eval
-			while [ -n "${RECIEVEDCOMMAND[$COMMANDARRAY]+set}" ]
+			while [ -n "${RECIEVEDCOMMAND[$POSITIONCOMMANDARRAY]+set}" ]
 			do
-				RECIEVEDCOMMAND=${RECIEVEDCOMMAND[$COMMANDARRAY]}
+				RECIEVEDCOMMAND=${RECIEVEDCOMMAND[$POSITIONCOMMANDARRAY]}
 				RECIEVEDPARAMETER=${RECIEVEDPARAMETER[$PARAMETERARRAY]}
 				#echo "executing $RECIEVEDCOMMAND $RECIEVEDPARAMETER"
-				eval $RECIEVEDCOMMAND '$RECIEVEDPARAMETER'
-				let COMMANDARRAY++
+				$RECIEVEDCOMMAND ${RECIEVEDPARAMETER}
+				let POSITIONCOMMANDARRAY++
 				let PARAMETERARRAY++
 			done
 		fi
@@ -108,6 +108,8 @@ core_logloop() {
 	fi
 	done
 }
+# Trap is used here to restart logloop if it exits due to a bad call
+# trap core_logloop EXIT
 core_makesearchdb() {
 # Make the search database which contains all the search strings and their related functions
 	log_myerasetable SEARCHDB

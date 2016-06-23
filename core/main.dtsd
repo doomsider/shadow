@@ -284,61 +284,84 @@ oldversion=$(cat StarMade/version.txt)
 		fi
 # Core backup is commented out here but it is a good idea.  As the database grows zipping it up can take a long time so this has been taken into consideration and is commented out.
 		#core_backup
-		echo "Newer Version Detected"
+		echo "Server Shutdown"
+		core_download
+
+		#cd $CONFIGDTSD_INSTALLPATH
+		#if [ -f $CONFIGDTSD_INSTALLPATH/StarMade-Starter.jar ]
+		#then
+			#echo "Starter file found running install"
+			#java -jar StarMade-Starter.jar -nogui
+			#echo "Upgrade Complete"	
+		#else
+			#echo "Starter file not found attempting to download"
+# Grab the starmade starter file for Linux - This location may need to be updated in the future
+			#wget http://files.star-made.org/StarMade-Starter.jar
+# Execute the starters update routine for a headless server
+			#if [ -f $CONFIGDTSD_INSTALLPATH/StarMade-Starter.jar ]
+			#then
+				#echo "Download successful, running update/install routine"
+				#java -jar StarMade-Starter.jar -nogui
+				#echo "Upgrade Complete"	
+			#else
+				#echo "Unable to acquire StarMade-Starter.jar ! Please visit official website to obtain http://star-made.org/download and place it in current directory"			
+			#fi
+		#fi	
+		
 # Set the field separator to new line and then store the chucksums as an array with each element being a line
-		OLD_IFS=$IFS
-		IFS=$'\n'
-		releaseindex=( $(curl http://files.star-made.org$newversion/checksums) )
-		IFS=$OLD_IFS
+		#OLD_IFS=$IFS
+		#IFS=$'\n'
+		#releaseindex=( $(curl http://files.star-made.org$newversion/checksums) )
+		#IFS=$OLD_IFS
 # Set line count to 0 then go through the array line by line until the array index is unset		
-		LINECOUNT=0
-		while [ -n "${releaseindex[$LINECOUNT]+set}" ] 
-		do
-		CURRENTSTRING=${releaseindex[$LINECOUNT]}
+		#LINECOUNT=0
+		#while [ -n "${releaseindex[$LINECOUNT]+set}" ] 
+		#do
+		#CURRENTSTRING=${releaseindex[$LINECOUNT]}
 		#echo $CURRENTSTRING
 # Format the current line by removing everything after the first space and then removing ./ in the beginning of the name		
-		cutstring=${CURRENTSTRING%[[:space:]]*}
-		cutstring=${cutstring%[[:space:]]*}
-		CURRENTFILE=${cutstring/.\//}
-		FORMATFILE=${CURRENTFILE// /%20}
-		cutstring=${CURRENTSTRING%[[:space:]]*}
-		cutstring=${cutstring##*[[:space:]]}
-		CURRENTCKSUM=${cutstring%%[[:space:]]*}
-		OLDCKSUMSTRING=$(cksum "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE")
+		#cutstring=${CURRENTSTRING%[[:space:]]*}
+		#cutstring=${cutstring%[[:space:]]*}
+		#CURRENTFILE=${cutstring/.\//}
+		#FORMATFILE=${CURRENTFILE// /%20}
+		#cutstring=${CURRENTSTRING%[[:space:]]*}
+		#cutstring=${cutstring##*[[:space:]]}
+		#CURRENTCKSUM=${cutstring%%[[:space:]]*}
+		#OLDCKSUMSTRING=$(cksum "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE")
 # Check to see if OLDCKSUMSTRING is set, if not this indicates the file does not exist
-		if [ -z "$OLDCKSUMSTRING" ]
-		then
-			echo "No existing file found - downloading file"
+		#if [ -z "$OLDCKSUMSTRING" ]
+		#then
+			#echo "No existing file found - downloading file"
 # Makes sure directory structure is created if it does not exist for the file write
-			if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ]
-			then
-				mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-				rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-			fi
-			curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-		else
-			cutstring=${OLDCKSUMSTRING#*[[:space:]]}
-			OLDCKSUM=${cutstring%%[[:space:]]*}
-			echo "CURRENTFILE $CURRENTFILE CURRENTCKSUM $CURRENTCKSUM OLDCKSUM $OLDCKSUM"
+			#if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ]
+			#then
+				#mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+				#rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+			#fi
+			#curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+		#else
+			#cutstring=${OLDCKSUMSTRING#*[[:space:]]}
+			#OLDCKSUM=${cutstring%%[[:space:]]*}
+			#echo "CURRENTFILE $CURRENTFILE CURRENTCKSUM $CURRENTCKSUM OLDCKSUM $OLDCKSUM"
 # Check to see if the cksums differ
-			if [ "$CURRENTCKSUM" -ne "$OLDCKSUM" ]
-			then
+			#if [ "$CURRENTCKSUM" -ne "$OLDCKSUM" ]
+			#then
 # Makes sure directory structure is created if it does not exist for the file write
-			if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ] 
-			then
-				mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-				rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-			fi
+			#if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ] 
+			#then
+				#mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+				#rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+			#fi
 # Download the new file and then copy it into the proper location
-				echo "Updated file detected - downloading file"
-				curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-			else
-				echo "Current file detected - no action"
-			fi
-		fi
-		let LINECOUNT++
-		done
-		curl "http://files.star-made.org$newversion/version.txt" > "$CONFIGDTSD_INSTALLPATH/StarMade/version.txt"
+				#echo "Updated file detected - downloading file"
+				#curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+			#else
+				#echo "Current file detected - no action"
+			#fi
+		#fi
+		#let LINECOUNT++
+		#done
+		#curl "http://files.star-made.org$newversion/version.txt" > "$CONFIGDTSD_INSTALLPATH/StarMade/version.txt"
 	else
 		echo "No new version detected"
 	fi
@@ -390,8 +413,6 @@ core_download() {
 	then
 		echo "$CONFIGDTSD_SERVICE is running! Will not start upgrade or install"
 	else
-		echo "Downloading Starmade  !!Upgrade may hang at the end and you will have to ctrl-c to get out!! "
-		lib_pause
 		cd $CONFIGDTSD_INSTALLPATH
 		if [ -f $CONFIGDTSD_INSTALLPATH/StarMade-Starter.jar ]
 		then
@@ -409,7 +430,7 @@ core_download() {
 				java -jar StarMade-Starter.jar -nogui
 				echo "Upgrade Complete"	
 			else
-				echo "Unable to acquire StarMade-Starter.jar ! Please visit official website to obtain http://star-made.org/download"			
+				echo "Unable to acquire StarMade-Starter.jar ! Please visit official website to obtain http://star-made.org/download and place in current directory"			
 			fi
 		fi	
 	fi   
@@ -645,6 +666,7 @@ core_start() {
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH setranks
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH makesearchdb
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH softstart
+		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH addevents
 		lib_screensend $CONFIGDTSD_DTSDSCREEN $CONFIGDTSD_SCRIPTPATH logloop
 	fi  
 }

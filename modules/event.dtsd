@@ -12,11 +12,11 @@
 # CREATE EVENT my_event ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '%Y%m%d 0200'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES ("EVENT_SERVERVERSION");
 # CREATE EVENT my_event ON SCHEDULE EVERY 120 SECOND STARTS str_to_date( date_format(now(), '%Y%m%d %H%i'), '%Y%m%d %H%i' ) + INTERVAL 120 SECOND DO INSERT INTO COMMANDDB (COMMAND) VALUES ("EVENT_SERVERVERSION");
 
-MYSQLEVENT_REPEAT_60_SECOND_VOTECHECK="EVENT_VOTECHECK &"
-MYSQLEVENT_REPEAT_300_SECOND_SERVERSTATUS="EVENT_SERVERSTATUS &"
-MYSQLEVENT_REPEAT_3600_SECOND_SERVERVERSION="EVENT_SERVERVERSION &"
-MYSQLEVENT_SYSTEM_12_HOUR_SERVERRESTART="EVENT_SERVERRESTART &"
-MYSQLEVENT_SYSTEM_24_HOUR_SERVERUNIVERSEBACKUP="EVENT_UNIVERSEBACKUP &"
+MYSQLEVENT_REPEAT_60_SECOND_VOTECHECK="EVENT_VOTECHECK"
+MYSQLEVENT_REPEAT_300_SECOND_SERVERSTATUS="EVENT_SERVERSTATUS"
+MYSQLEVENT_REPEAT_3600_SECOND_SERVERVERSION="EVENT_SERVERVERSION"
+MYSQLEVENT_SYSTEM_12_HOUR_SERVERRESTART="EVENT_SERVERRESTART"
+MYSQLEVENT_SYSTEM_24_HOUR_SERVERUNIVERSEBACKUP="EVENT_UNIVERSEBACKUP"
 
 #MYSQLEVENT_ONCEADAY_12_SERVERRESTART="EVENT_SERVERRESTART &"
 #MYSQLEVENT_ONCEADAY_20_SERVERUNIVERSEBACKUP="EVENT_UNIVERSEBACKUP &"
@@ -123,50 +123,22 @@ EVENT_SERVERMESSAGE() {
 	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Welcome to the server type !help to see extra commands"
 }
 EVENT_VOTECHECK() {
-core_votecheck
+	core_votecheck &
 }
 EVENT_SERVERSTATUS() {
-	echo "Checking Server Status"
-	if lib_check_server_running
-	then
-		MYSQLSTOP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
-		CURRENTTIME=$(date +%s)
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
-# Extra redundant send just to make sure server recieved it	
-		sleep 2
-		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
-		sleep 30
-		SERVERREPAIR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%Database Repairing itself%\" and SERVERLOG.line >= $MYSQLSTOP";) 
-		if [ -n "$SERVERREPAIR" ]
-			then
-			echo "Sever appears to be repairing database"
-		else
-			echo "Server is not repairing database "
-			CHECKSERVER=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%SHADOW_SERVER_CHECK_$CURRENTTIME%\";")
-			echo "CHECKSERVER $CHECKSERVER"
-			if [ -n "$CHECKSERVER" ]
-			then
-				echo "Sever appears to be running"
-				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Server Running\");"
-			else
-				echo "Server appears to be down"
-				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart server frozen\");"
-				core_softreset
-			fi
-		fi
-	else
-		echo "Starmade is not running!"
-		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart no server detected\");"
-		core_softreset
-	fi
+	START_SERVERSTATUS &
 }
 EVENT_SERVERRESTART() {
-core_softreset
+	START_SERVERRESTART  &
 }
 EVENT_UNIVERSEBACKUP() {
-core_universebackup
+	core_universebackup  &
 }
 EVENT_SERVERVERSION() {
+START_SERVERVERSION &
+}
+START_SERVERVERSION() {
+	#core_check
 # Manually check for latest version and install it 
 # Grab the releaseindex as a very long string variable
 	releaseindex=$(curl http://files.star-made.org/releasebuildindex)
@@ -181,7 +153,7 @@ EVENT_SERVERVERSION() {
 	NEWSMVERSION2=${cutstring#*_}
 	echo "NEWSMVERSION2 $NEWSMVERSION2"
 # Gather the old version from the version.txt file in StarMade
-oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
+	oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
 	echo "oldversion $oldversion"
 # Get the first version to compare
 	cutstring=${oldversion#*#}
@@ -242,66 +214,109 @@ oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
 		else
 			echo "$CONFIGDTSD_SERVICE not running"
 		fi
+
 # Core backup is commented out here but it is a good idea.  As the database grows zipping it up can take a long time so this has been taken into consideration for default config.
 		#core_backup
+		core_download
 # Set the field seperator to new line and then store the chucksums as an array with each element being a line
-		OLD_IFS=$IFS
-		IFS=$'\n'
-		releaseindex=( $(curl http://files.star-made.org$newversion/checksums) )
-		IFS=$OLD_IFS
+		#OLD_IFS=$IFS
+		#IFS=$'\n'
+		#releaseindex=( $(curl http://files.star-made.org$newversion/checksums) )
+		#IFS=$OLD_IFS
 # Set line count to 0 then go through the array line by line until the array index is unset		
-		LINECOUNT=0
-		while [ -n "${releaseindex[$LINECOUNT]+set}" ] 
-		do
-			CURRENTSTRING=${releaseindex[$LINECOUNT]}
+		#LINECOUNT=0
+		#while [ -n "${releaseindex[$LINECOUNT]+set}" ] 
+		#do
+			#CURRENTSTRING=${releaseindex[$LINECOUNT]}
 			#echo $CURRENTSTRING
 # Format the current line by removing everything after the first space and then removing ./ in the beginning of the name		
-			cutstring=${CURRENTSTRING%[[:space:]]*}
-			cutstring=${cutstring%[[:space:]]*}
-			CURRENTFILE=${cutstring/.\//}
-			FORMATFILE=${CURRENTFILE// /%20}
-			cutstring=${CURRENTSTRING%[[:space:]]*}
-			cutstring=${cutstring##*[[:space:]]}
-			CURRENTCKSUM=${cutstring%%[[:space:]]*}
-			OLDCKSUMSTRING=$(cksum "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE")
+			#cutstring=${CURRENTSTRING%[[:space:]]*}
+			#cutstring=${cutstring%[[:space:]]*}
+			#CURRENTFILE=${cutstring/.\//}
+			#FORMATFILE=${CURRENTFILE// /%20}
+			#cutstring=${CURRENTSTRING%[[:space:]]*}
+			#cutstring=${cutstring##*[[:space:]]}
+			#CURRENTCKSUM=${cutstring%%[[:space:]]*}
+			#OLDCKSUMSTRING=$(cksum "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE")
 # Check to see if OLDCKSUMSTRING is set, if not this indicates the file does not exist
-			if [ -z "$OLDCKSUMSTRING" ]
-			then
-				echo "No existing file found - downloading file"
+			#if [ -z "$OLDCKSUMSTRING" ]
+			#then
+				#echo "No existing file found - downloading file"
 # Makes sure directory structure is created if it does not exist for the file write
-				if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ] 
-				then
-					mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-					rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-				fi
-				curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-			else
-				cutstring=${OLDCKSUMSTRING#*[[:space:]]}
-				OLDCKSUM=${cutstring%%[[:space:]]*}
-				echo "CURRENTFILE $CURRENTFILE CURRENTCKSUM $CURRENTCKSUM OLDCKSUM $OLDCKSUM"
+				#if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ] 
+				#then
+					#mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+					#rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+				#fi
+				#curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+			#else
+				#cutstring=${OLDCKSUMSTRING#*[[:space:]]}
+				#OLDCKSUM=${cutstring%%[[:space:]]*}
+				#echo "CURRENTFILE $CURRENTFILE CURRENTCKSUM $CURRENTCKSUM OLDCKSUM $OLDCKSUM"
 # Check to see if the cksums differ
-				if [ "$CURRENTCKSUM" -ne "$OLDCKSUM" ]
-				then
+				#if [ "$CURRENTCKSUM" -ne "$OLDCKSUM" ]
+				#then
 # Download the new file and then copy it into the proper location
-					echo "Updated file detected - downloading file"
+					#echo "Updated file detected - downloading file"
 # Makes sure directory structure is created if it does not exist for the file write
-					if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ] 
-					then
-						mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-						rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-					fi
-					curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
-				else
-					echo "Current file detected - no action"
-				fi
-			fi
-			let LINECOUNT++
-		done
-		curl "http://files.star-made.org$newversion/version.txt" > "$CONFIGDTSD_INSTALLPATH/StarMade/version.txt"
+					#if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ] 
+					#then
+						#mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+						#rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+					#fi
+					#curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+				#else
+					#echo "Current file detected - no action"
+				#fi
+			#fi
+			#let LINECOUNT++
+		#done
+		#curl "http://files.star-made.org$newversion/version.txt" > "$CONFIGDTSD_INSTALLPATH/StarMade/version.txt"
 		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart after update\");"
 		core_softreset
 	else
 		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Version current\");"
 		echo "No new version detected"
 	fi
+}
+START_SERVERSTATUS(){
+echo "Checking Server Status"
+	if lib_check_server_running
+	then
+		MYSQLSTOP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
+		echo "MYSQLSTOP $MYSQLSTOP"
+		CURRENTTIME=$(date +%s)
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
+# Extra redundant send just to make sure server received it	
+		sleep 2
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
+		sleep 30
+		SERVERREPAIR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%Database Repairing itself%\" and SERVERLOG.line >= $MYSQLSTOP";)
+		if [ -n "$SERVERREPAIR" ]
+			then
+			echo "Sever appears to be repairing database"
+		else
+			echo "Server is not repairing database "
+			CURRENTCHECK="SHADOW_SERVER_CHECK_$CURRENTTIME"
+			echo "CURRENTCHECK $CURRENTCHECK"
+			CHECKSERVER=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%$CURRENTCHECK%\"";)
+			echo "CHECKSERVER $CHECKSERVER"
+			if [ -n "$CHECKSERVER" ]
+			then
+				echo "Sever appears to be running"
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Server Running\");"
+			else
+				echo "Server appears to be down"
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart server frozen\");"
+				#core_softreset
+			fi
+		fi
+	else
+		echo "Starmade is not running!"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart no server detected\");"
+		core_softreset
+	fi
+}
+START_SERVERRESTART() {
+	core_softreset
 }

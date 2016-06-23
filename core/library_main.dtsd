@@ -227,9 +227,10 @@ core_softreset() {
 				done	
 			fi
 		fi
-	lib_screensend $CONFIGDTSD_MAINSCREEN $SERVERCOMMAND
 	fi
-	
+	lib_screensend $CONFIGDTSD_MAINSCREEN $SERVERCOMMAND
+	core_addevents
+	core_myserverstart
 }
 old_core_softreset() {
 	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Softreset\");"

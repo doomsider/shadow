@@ -1,0 +1,262 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Banking related functions 
+
+
+MYSQLDTSD_PLAYERDB_BANKCREDITS="BIGINT DEFAULT '0'"
+
+CHATHELP_DEPOSIT="[Deposits money into your server account from your player] USAGE: !DEPOSIT <Amount>"
+CHATHELP_WITHDRAW="[Takes money out of your server account and gives it to your player] USAGE: !WITHDRAW <Amount>"
+CHATHELP_TRANSFER="[Sends money from your bank account to another players account] USAGE: !TRANSFER <Player> <Amount>"
+
+chatcommand_DEPOSIT() { 
+# Deposits money into your server account from your player
+# USAGE: !DEPOSIT <Amount>
+	
+	BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
+	PLAYERCREDITS=$(lib_myvalueretrieve CREDITS PLAYERDB $1)
+	REMAININGCREDITS=$(($CONFIGDTSD_CREDITLIMIT - $BALANCECREDITS))
+	DEPOSITCREDITS=$2
+	echo "Chatcommand deposit collect $BALANCECREDITS as player balance $PLAYERCREDITS current credits before update and a deposit of $DEPOSITCREDITS"
+	echo "Remaining credits possible to deposit are $REMAININGCREDITS if creditlimit is set"
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !DEPOSIT Amount
+	else
+		if ! test "$DEPOSITCREDITS" -gt 0 2> /dev/null
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
+		else
+			if [ "$DEPOSITCREDITS" = "all" ]
+			then 
+				DEPOSITCREDITS=$BALANCECREDITS
+			fi
+			if [ "$CONFIGDTSD_CREDITLIMITON" == "Yes" ]
+			then
+				TOTALDEPOSIT=$(($BALANCECREDITS + $DEPOSITCREDITS))
+				if [ "$TOTALDEPOSIT" -gt "$CONFIGDTSD_CREDITLIMIT" ]
+				then
+					echo "Credit limit reached"
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You have reached the credit limit. You can deposit $REMAININGCREDITS before you hit the credit limit.
+				else 
+	#				echo "Withdraw $2"
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+					lib_trigger playerdeposit $1 $DEPOSITCREDITS
+				fi
+			else
+	#			echo "Withdraw $2"
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+				lib_trigger playerdeposit $1 $DEPOSITCREDITS
+			fi
+		fi	
+	fi		
+}
+chatcommand_WITHDRAW(){ 
+# Takes money out of your server account and gives it to your player
+# USAGE: !WITHDRAW <Amount>
+# echo "Withdraw command"
+	BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !WITHDRAW Amount
+	else
+		if [ "$2" = "all" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+			NEWBALANCE=$(( $BALANCECREDITS - $BALANCECREDITS ))
+			lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 $BALANCECREDITS
+			lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You successfully withdrawn $BALANCECREDITS credits
+		else
+			if ! test "$2" -gt 0 2> /dev/null
+			then
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
+			else
+	#			echo "Withdraw $2"
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+	#			echo "bank balance is $BALANCECREDITS"
+				if [ "$2" -le "$BALANCECREDITS" ]
+				then
+					NEWBALANCE=$(( $BALANCECREDITS - $2 ))
+	# 				echo "new balance for bank account is $NEWBALANCE"
+					lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 $2
+					lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCE" NAME $1
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You successfully withdrawn $2 credits
+				else
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You have insufficient funds
+				fi
+			fi
+		fi
+	fi
+}
+chatcommand_TRANSFER(){ 
+# Sends money from your bank account to another players account
+# USAGE: !TRANSFER <Player> <Amount>
+	if [ "$#" -ne "3" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !TRANSFER Player Amount
+	else
+#		echo "Transfer $1 a total of $3 credits"
+		if ! test "$3" -gt 0 2> /dev/null
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You must put in a positive number
+		else
+			if [ "$1" = "$2" ]
+			then
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You cannot transfer funds to yourself
+			else
+				PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
+				PLAYERLIST=($PLAYERLIST)
+				if lib_arraycontains PLAYERLIST $2
+				then
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+					BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
+	#				echo "Player transferring has $BALANCECREDITS in account"
+					if [ "$3" -lt "$BALANCECREDITS" ]
+					then
+						TRANSFERBALANCE=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $2)
+	# 					echo "Player receiving has $TRANSFERBALANCE in his account"
+						NEWBALANCETO=$(( $3 + $TRANSFERBALANCE ))
+						NEWBALANCEFROM=$(( $BALANCECREDITS - $3 ))
+	#					echo "Changing $1 account to $NEWBALANCEFROM and $2 account to $NEWBALANCETO"
+						lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCEFROM" NAME $1
+						lib_myupdate PLAYERDB BANKCREDITS "$NEWBALANCETO" NAME $2
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - You sent $3 credits to $2
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK - Your balance is now $NEWBALANCEFROM
+					else
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Not enough credits
+					fi
+				else 
+					lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - No account found
+				fi
+			fi
+		fi
+	fi
+}
+chatcommand_BALANCE(){
+# Tells the player how much money is stored in their server account
+# USAGE: !BALANCE
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !BALANCE
+	else
+		BALANCECREDITS=$(lib_myvalueretrieve BANKCREDITS PLAYERDB $1)
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You have $BALANCECREDITS credits
+	fi
+}
+# chatcommand_FDEPOSIT(){
+# #Allows you to deposit credits into a shared faction bank account
+# #USAGE: !FDEPOSIT <Amount>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !FACTIONDEPOSIT <Amount>
+	# else
+		# if [ "$2" -gt 0 ] 2>/dev/null
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Connecting to GALACTICE BANK servers
+			# log_playerinfo $1
+			# FACTION=$(grep "PlayerFaction=" $PLAYERFILE/$1 | cut -d= -f2)
+			# if [ ! $FACTION = "None" ]
+			# then
+				# create_factionfile $FACTION
+				# CURRENTTIME=$(date +%s)
+# #				echo "Current time $CURRENTTIME"
+				# OLDTIME=$(grep PlayerLastUpdate $PLAYERFILE/$1 | cut -d= -f2- |  tr -d ' ')
+# #				echo "Old time from playerfile $OLDTIME"
+				# ADJUSTEDTIME=$(( $CURRENTTIME - 10 ))
+# #				echo "Adjusted time to remove 10 seconds $ADJUSTEDTIME"
+				# if [ "$OLDTIME" -ge "$ADJUSTEDTIME" ]
+				# then
+					# BALANCECREDITS=$(grep CreditsInBank $FACTIONFILE/$FACTION | cut -d= -f2- |  tr -d ' ')
+# #					echo $BALANCECREDITS
+					# CREDITSTOTAL=$(grep CurrentCredits $PLAYERFILE/$1 | cut -d= -f2- |  tr -d ' ')  
+# #					echo "Credits in log $CREDITTOTAL"
+# #					echo "Total credits are $CREDITSTOTAL on person and $BALANCECREDITS in bank"
+# #					echo "Credits to be deposited $2 "
+					# if [ "$CREDITSTOTAL" -ge "$2" ]
+					# then 
+# #						echo "enough money detected"
+						# NEWBALANCE=$(( $2 + $BALANCECREDITS ))
+						# NEWCREDITS=$(( $CREDITSTOTAL - $2 ))
+# #						echo "new bank balance is $NEWBALANCE"
+						# as_user "sed -i 's/CurrentCredits=.*/CurrentCredits=$NEWCREDITS/g' $PLAYERFILE/$1"
+						# as_user "sed -i 's/CreditsInBank=.*/CreditsInBank=$NEWBALANCE/g' $FACTIONFILE/$FACTION"
+# #						as_user "sed -i '4s/.*/CreditsInBank=$NEWBALANCE/g' $PLAYERFILE/$1"
+						# lib_screensend $CONFIGDTSD_MAINSCREEN/give_credits $1 -$2
+						# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK You successfully deposited $2 credits
+						# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK Your factions balance is now $NEWBALANCE
+						# as_user "echo '$1 deposited $2 into $FACTION bank account' >> $BANKLOG"
+					# else
+						# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK Insufficient money
+# #						echo "not enough money"
+					# fi
+				# else
+# #					echo "Time difference to great, playerfile not updated recently"
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Connecting to GALACTICE BANK servers failed
+				# fi
+			# else
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTICE BANK - You are not in a faction
+			# fi
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Please enter a positive whole number
+		# fi
+	# fi
+# }
+# chatcommand_FWITHDRAW(){
+# #Allows you to withdraw from a shared faction account
+# #USAGE: !FWITHDRAW <Amount>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !FACTIONWITHDRAW <Amount>
+	# else
+		# if [ "$2" -gt 0 ] 2>/dev/null
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTICE BANK - Connecting to servers
+			# log_playerinfo $1
+			# FACTION=$(grep "PlayerFaction=" $PLAYERFILE/$1 | cut -d= -f2)
+			# if [ ! $FACTION = "None" ]
+			# then
+				# create_factionfile $FACTION
+				# BALANCECREDITS=$(grep CreditsInBank $FACTIONFILE/$FACTION | cut -d= -f2 | tr -d ' ')
+# #				echo "bank balance is $BALANCECREDITS"
+				# if [ "$2" -le "$BALANCECREDITS" ]
+				# then
+					# NEWBALANCE=$(( $BALANCECREDITS - $2 ))
+# #					echo "new balance for bank account is $NEWBALANCE"
+					# lib_screensend $CONFIGDTSD_MAINSCREEN/give_credits $1 $2
+					# as_user "sed -i 's/CreditsInBank=$BALANCECREDITS/CreditsInBank=$NEWBALANCE/g' $FACTIONFILE/$FACTION"
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK You successfully withdrawn $2 credits
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALATIC BANK The factions balance is $NEWBALANCE credits
+					# as_user "echo '$1 witdrew $2 from $FACTION' >> $BANKLOG"
+				# else
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Your faction has insufficent funds
+				# fi
+			# else
+				# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You are not in a faction
+			# fi
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Please enter positive whole numbers only.
+		# fi
+	# fi
+
+# }
+# chatcommand_FBALANCE(){
+# #Allows you to see how many credits are in a shared faction account
+# #USAGE: !FBALANCE
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !BALANCE
+	# else
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Connecting to servers
+		# log_playerinfo $1
+		# FACTION=$(grep "PlayerFaction" $PLAYERFILE/$1 | cut -d= -f2)
+		# if [ ! $FACTION = "None" ]
+		# then
+			# BALANCECREDITS=$(grep CreditsInBank $FACTIONFILE/$FACTION | cut -d= -f2 | tr -d ' ')
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - Your faction has $BALANCECREDITS credits
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 GALACTIC BANK - You are not in a faction
+		# fi
+	# fi
+# }
+

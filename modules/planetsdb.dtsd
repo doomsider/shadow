@@ -1,0 +1,22 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions and database for Planets
+
+
+#String to collect
+
+#Received from /sector info
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_5_1428401260145, type=Planet Segment, seed=4794119740034605540, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(76.27743, -56.25764, 47.775173), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_6_1428401260161, type=Planet Segment, seed=-3478466249417952299, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(30.034533, 90.00234, -47.572468), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_9_1428401260210, type=Planet Segment, seed=1283623023077934707, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(28.603615, -90.467285, -47.572468), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_2_1428401260090, type=Planet Segment, seed=-4677679252262600468, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(-28.642313, 90.34813, 47.775173), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_1_1428401260074, type=Planet Segment, seed=7615202292458253194, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(77.0752, 55.159584, 47.775173), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_8_1428401260193, type=Planet Segment, seed=5628419288185785956, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(-77.200485, -55.15957, -47.572468), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_4_1428401260114, type=Planet Segment, seed=-3153728235350173664, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(-29.933157, -89.928696, 47.775177), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_0_1428401260043, type=Planet Segment, seed=7962138912912088687, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(0.5385685, -0.53855824, 106.13697), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_7_1428401260177, type=Planet Segment, seed=2381927788216435806, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(-76.316124, 56.376774, -47.572468), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_3_1428401260103, type=Planet Segment, seed=5009764450413293528, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(-94.77713, 0.67864233, 47.775173), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANETCORE_6_8_-6, type=Planet Core]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_11_1428401260243, type=Planet Segment, seed=-2375959118085462195, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(0.7522712, 0.119143836, -106.13697), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_6_8_-6_10_1428401260226, type=Planet Segment, seed=-8900387999113430117, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(94.878494, -0.75227606, -47.572468), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+

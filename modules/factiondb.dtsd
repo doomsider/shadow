@@ -1,0 +1,12 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions and database for Factions
+
+
+#String to collect
+# String from faction list with Testers as only player faction /faction_list
+# [SERVER-LOCAL-ADMIN] FACTIONS: {Faction [id=10001, name=Testers, description=a faction, size: 1; FP: 100], Faction [id=-1, name=Pirates, description=Ravaging space pirates, size: 0; FP: 100], Faction [id=-1007, name=Enemy Fauna Fac 7, description=An Enemy Fanua Faction, size: 0; FP: 100], Faction [id=-1005, name=Enemy Fauna Fac 5, description=An Enemy Fanua Faction, size: 0; FP: 100], Faction [id=-2004, name=Neutral Fauna Fac 4, description=A Neutral Fanua Faction, size: 0; FP: 100], Faction [id=-1002, name=Enemy Fauna Fac 2, description=An Enemy Fanua Faction, size: 0; FP: 100], Faction [id=-2001, name=Neutral Fauna Fac 1, description=A Neutral Fanua Faction, size: 0; FP: 100], Faction [id=-2002, name=Neutral Fauna Fac 2, description=A Neutral Fanua Faction, size: 0; FP: 100], Faction [id=-2003, name=Neutral Fauna Fac 3, description=A Neutral Fanua Faction, size: 0; FP: 100], Faction [id=-1006, name=Enemy Fauna Fac 6, description=An Enemy Fanua Faction, size: 0; FP: 100], Faction [id=-1001, name=Enemy Fauna Fac 1, description=An Enemy Fanua Faction, size: 0; FP: 100], Faction [id=-1004, name=Enemy Fauna Fac 4, description=An Enemy Fanua Faction, size: 0; FP: 100], Faction [id=-2005, name=Neutral Fauna Fac 5, description=A Neutral Fanua Faction, size: 0; FP: 100], Faction [id=-2006, name=Neutral Fauna Fac 6, description=A Neutral Fanua Faction, size: 0; FP: 100], Faction [id=-2000, name=Neutral Fauna Fac 0, description=A Neutral Fanua Faction, size: 0; FP: 100], Faction [id=-2, name=Trading guild, description=The intergalactic trading guild, size: 0; FP: 100], Faction [id=-2007, name=Neutral Fauna Fac 7, description=A Neutral Fanua Faction, size: 0; FP: 100], Faction [id=-1000, name=Enemy Fauna Fac 0, description=An Enemy Fanua Faction, size: 0; FP: 100], Faction [id=-1003, name=Enemy Fauna Fac 3, description=An Enemy Fanua Faction, size: 0; FP: 100]}
+# String from faction member list with two members Doomsider and guy /faction_list_members 10001
+# [SERVER-LOCAL-ADMIN] [ADMIN COMMAND] [SUCCESS] Testers: {Doomsider=>obfuscated.TI@a5b78bf2, guy=>obfuscated.TI@1914b} 
+# String from faction point get /faction_point_get 10001
+# [SERVER-LOCAL-ADMIN] [ADMIN COMMAND] [SUCCESS] faction points of Testers now: 199.0

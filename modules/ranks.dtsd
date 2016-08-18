@@ -1,0 +1,151 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# The rank system allows for a range of control over various chat commands
+MYSQLDTSD_RANKLOG_COMMANDSALLOWED=TEXT
+MYSQLDTSD_RANKLOG_NAME="VARCHAR(25) BINARY"
+MYSQLALTER_RANKLOG_NAME="UNIQUE INDEX"
+
+DTSDHELP_changerank="\nChangerank usage: shadow.dtsd changerank player rank\nChanges the rank of a player\n"
+CHATHELP_RANKME="[Tells you what your rank is and what commands are available to you] USAGE: !RANKME"
+CHATHELP_RANKLIST="[ Lists all the available ranks] USAGE: !RANKLIST"
+CHATHELP_RANKUSER="[Finds out the rank of the given player] USAGE: !RANKUSER <Player>"
+CHATHELP_RANKSET="[Set player to given rank] USAGE: !RANKUSER <Player>"
+CHATHELP_RANSETRANK="[Sets the rank of the player] USAGE: !RANKSET <Player> <Rank>"
+
+
+check_player_rank_allowed() {
+	echo "Checking to see if player is allowed to execute chat command"
+	echo "check_player_rank_allowed chatcommand playername"
+	PLAYERCHECK="${@:2}"
+	PLAYERRANK=$(lib_myvalueretrieve RANK PLAYERDB $PLAYERCHECK)
+	PCOMMANDALLOWED=$(lib_myvalueretrieve COMMANDSALLOWED RANKLOG $PLAYERRANK)
+	echo "Player $2 is attempting to execute $1 chatcommand"
+	echo "Player $2 rank is $PLAYERRANK"
+	echo "Player can execute these commands $PCOMMANDALLOWED"
+	if [[ $PCOMMANDALLOWED == *"$1"* ]]
+	then
+		echo "Player has authority to execute $1"
+		return 0
+	else
+		echo "Player does not have the rank to execute $1"
+		return 1
+	fi
+}
+core_checkrank() {
+    check_player_rank_allowed "${@:2}"
+}
+set_ranks_database() {
+# Erase existing RANKLOG table
+	log_myerasetable RANKLOG
+# Set strings for ranks and the commands they are allowed to use
+# Gather all the commandlist_rank variable names and set them to an array	
+	RANKCOMMANDS=${!COMMANDLIST*}
+	RANKCOMMANDS=($RANKCOMMANDS)
+	RANKARRAY=0
+	while [ -n "${RANKCOMMANDS[$RANKARRAY]+set}" ]
+	do
+		CURRENTARRAY=${RANKCOMMANDS[$RANKARRAY]}
+		echo "The current array $CURRENTARRAY"
+#		echo ${!CURRENTARRAY}
+		RANKNAME=${CURRENTARRAY/COMMANDLIST/COMMANDS}
+		echo "Here is rank name ${!RANKNAME}"
+		CURRENTVALUE=${!CURRENTARRAY}
+		echo $CURRENTVALUE
+#	var3=$CURRENTVALUE
+		lib_myinsert RANKLOG NAME ${!RANKNAME}
+		lib_myupdate RANKLOG COMMANDSALLOWED "$CURRENTVALUE" NAME ${!RANKNAME}
+		let RANKARRAY++
+    done
+}
+core_setranks() {
+    set_ranks_database
+}
+core_changerank() {
+# Changes a players rank
+# Usage: shadow.dtsd changerank player rank
+	echo "here is the player $2 and here is the rank $3"
+# Gather up all known players from the database and then set them to an array
+	PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
+	PLAYERLIST=($PLAYERLIST)
+	if lib_arraycontains PLAYERLIST $2
+	then
+		RANKLIST=$(lib_mycolumnretrieve RANKLOG NAME)
+		RANKLIST=($RANKLIST)
+		if lib_arraycontains RANKLIST $3
+		then
+			lib_myupdate PLAYERDB RANK "$3" NAME $2
+		else 
+			echo "No rank found"
+		fi
+	else
+		echo "No player found"
+	fi
+}
+chatcommand_RANKME(){
+# Tells you what your rank is and what commands are available to you
+# USAGE: !RANKME
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKME
+	else
+		USERRANK=$(lib_myvalueretrieve RANK PLAYERDB $1)
+		USERCOMMANDS=$(lib_myvalueretrieve COMMANDSALLOWED RANKLOG $USERRANK)
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $1 rank is $USERRANK 
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Commands available are $USERCOMMANDS 
+	fi
+
+}
+chatcommand_RANKLIST(){
+# Lists all the available ranks
+# USAGE: !RANKLIST
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKLIST
+	else
+		LISTRANKS=(lib_mycolumnretrieve RANKLOG COMMANDSALLOWED)
+		# CHATLIST=${LISTRANKS[@]}	
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The Ranks are: $LISTRANKS
+	fi
+}
+chatcommand_RANKSET(){
+# Sets the rank of the player
+# USAGE: !RANKSET <Player> <Rank>
+	if [ "$#" -ne "3" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKSET Name Rank
+	else
+		PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
+		PLAYERLIST=($PLAYERLIST)
+		if lib_arraycontains PLAYERLIST $2
+		then
+			RANKLIST=$(lib_mycolumnretrieve RANKLOG NAME)
+			RANKLIST=($RANKLIST)
+			if lib_arraycontains RANKLIST $3
+			then
+				lib_myupdate PLAYERDB RANK "$3" NAME $2
+			else 
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 There is no rank by that designation
+			fi
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No player found in database
+		fi
+	fi
+}
+chatcommand_RANKUSER(){
+# Finds out the rank of the given player
+# USAGE: !RANKUSER <Player>
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RANKUSER Name
+	else
+		PLAYERLIST=$(lib_mycolumnretrieve PLAYERDB NAME)
+		PLAYERLIST=($PLAYERLIST)
+		if lib_arraycontains PLAYERLIST $2
+		then
+			RANKREQUEST=$(lib_myvalueretrieve RANK PLAYERDB $2)
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 current rank is $RANKREQUEST
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 does not exist in the player database
+		fi
+	fi
+}

@@ -1,0 +1,87 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Main file for running Shadow functions.  Collects all core functions and then executes them with parameters
+
+# Script files for DTSD are broken up into core functions, libraries, and running functions.  
+# Core functions beginning with core_ are designed to interact with the server on a direct level such as starting or stopping it
+# Libraries are indicated with lib_ and contain functions that are designed to help make scripting easier
+
+# Every script can identify a logsearch variable.  The format is LOGSEARCH_function_to_return_to="searchstring"
+# For example return all log lines containing the word chat to the function log_chatcommand 
+# LOGSEARCH_log_chatcommands="[CHAT]"
+
+# Script can identify a MYSQL table and columns.  lib_mycreate will be called to verify the database is setup.
+# The format is MYSQLTABLE_tablename_column=datatype
+# This allows the script to check/create tables and columns automatically in the database.  You must set the default datatype.
+# You can set up MYSQL scripts here as well such as "id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, data VARCHAR(100)" to setup a line number in the database
+# MYSQLTABLE_settings_serverkey=VARCHAR
+
+# Scripts may also us a unique index for Mysql columns with MYSQLALTER_tablename_column="UNIQUE INDEX"
+# This will allow for unique entries without cross checking to see if they already exist in columns
+
+
+#This check was added to make sure the config file is in place
+SCRIPTPATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
+#echo $SCRIPTPATH
+SCRIPTDIR=${SCRIPTPATH%/*}
+#echo $SCRIPTDIR
+if [ ! -e "$SCRIPTDIR/modules/defaults.dtsd" ]
+then
+	if [ "$1" = "setup" ]
+	then 
+		core_setup
+	else
+		echo "No configuration file detected $SCRIPTDIR/modules/defaults.dtsd] please run shadow.dtsd setup"
+		exit
+	fi
+fi
+# All files for the script must end in .dtsd this was chosen since a significant portion of the code was borrowed from DTSD 
+# Load all the scripts associated with DTSD.  Grep -v is used here to remove shadow.dtsd itself to prevent a never ending loop
+# echo ${SOURCES[@]}
+# Go through the sources array and then source each .dtsd file to load all the related scripts
+for MODULE in $(find $SCRIPTDIR/core/*.dtsd -type f) $(find $SCRIPTDIR/modules/*.dtsd -type f) 
+do
+# The check below that is commented out is useful to troubleshoot what scripts are loading successfully
+#	echo "loading module $MODULE"	
+    dos2unix -q $MODULE
+	source $MODULE
+done
+
+CORECOMMANDS=( $(compgen -A function | grep core_) )
+
+# Gather all the core commands that can be ran as arguments to the main script
+declare -a USERCOMMANDS
+for i in "${CORECOMMANDS[@]}"
+do
+  CUTCOMMAND=${i#c*re_}
+  USERCOMMANDS=("${USERCOMMANDS[@]}" "$CUTCOMMAND")
+done
+# Check to see if any arguments were passed
+if [ $# -eq 0 ]
+then
+	echo "Usage: shadow.dtsd [ ${USERCOMMANDS[@]} ]"
+else
+# Use lib array to see if the first parameter matches any functions that start with core_	
+	if lib_arraycontains USERCOMMANDS $1
+	then
+		COREARRAY=0
+# If a match was found go through the array to see where that match was
+		while [ -n "${USERCOMMANDS[$COREARRAY]+set}" ]
+		do
+			if [ "${USERCOMMANDS[$COREARRAY]}" = "$1" ]
+			then
+				#echo "Command found"				
+				ADDCOMMAND="core_$1"
+				#echo "Here is adjusted command $ADDCOMMAND $@"
+# Execute the command that was found
+				eval $ADDCOMMAND $@
+				let COREARRAY++
+			else
+				let COREARRAY++
+			fi
+		done
+	else
+		echo "no command found"
+	fi
+fi
+

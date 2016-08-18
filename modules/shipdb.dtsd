@@ -1,0 +1,149 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions and database for Ships
+
+MYSQLDTSD_SHIPDB_NAME="VARCHAR(50) BINARY"
+MYSQLDTSD_SHIPDB_ENTITYTYPE="VARCHAR(25)"
+MYSQLDTSD_SHIPDB_CURRENTSECTOR="VARCHAR(36)"
+MYSQLDTSD_SHIPDB_ATTACHED="VARCHAR(50)"
+MYSQLDTSD_SHIPDB_DOCKED="VARCHAR(50)"
+MYSQLDTSD_SHIPDB_BLOCK="INT"
+MYSQLDTSD_SHIPDB_MASS="VARCHAR(50)"
+MYSQLDTSD_SHIPDB_CREATOR="VARCHAR(50)"
+MYSQLDTSD_SHIPDB_LASTPOSITION="VARCHAR(50)"
+MYSQLDTSD_SHIPDB_FACTION="VARCHAR(25)"
+MYSQLDTSD_SHIPDB_LASTCONTROLLER="VARCHAR(50)"
+MYSQLDTSD_SHIPDB_LASTUPDATE=TIMESTAMP
+MYSQLALTER_SHIPDB_NAME="UNIQUE INDEX"
+
+MYSQLDTSD_GARAGEDB_PLAYER="VARCHAR(50)"
+MYSQLDTSD_GARAGEDB_SHIP="VARCHAR(50)"
+MYSQLALTER_GARAGEDB_SHIP="UNIQUE INDEX"
+
+LOGSEARCH_ship_boarding="[CONTROLLER][ADD-UNIT] (Server(0)): PlS"
+
+CHATHELP_STARTERSHIP="[Gives a Player a designated starter ship] USAGE: !STARTERSHIP"
+CHATHELP_GARAGE="[Puts a ship away into your garage or retrieves one from the garage] USAGE: !GARAGE <add or remove> <shipname>"
+
+#/spawn_entity spawnsave testspawn 2 2 2 -1 false
+#Remove player from quarantined ship /change_sector_for_copy schema 2 3 4 
+
+
+chatcommand_GARAGE(){
+# Puts a ship away into your garage or retrieves one from the garage
+# USAGE: !GARAGE <add or remove> <shipname>
+	SHIPTOGARAGE="${@:3}"
+	case "$2" in
+	*"add"*) 
+# Ship must be in same sector and must have been boarded last by player
+		if [ "$#" -lt "3" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GARAGE add shipname
+		else
+			echo "Gargage add command executed"
+			SHIPLIST=$(lib_mycolumnretrieve SHIPDB NAME $SHIPTOGARAGE)
+			SHIPLIST=($SHIPLIST)
+			if lib_arraycontains SHIPLIST $SHIPTOGARAGE
+			then
+				echo "Ship found"
+				SHIPSECTOR=$(lib_myvalueretrieve CURRENTSECTOR SHIPDB $SHIPTOGARAGE)
+				SHIPLASTCONTROLLER=$(lib_myvalueretrieve LASTCONTROLLER SHIPDB $SHIPTOGARAGE)
+				PLAYERSECTOR=$(lib_myvalueretrieve CURRENTSECTOR PLAYERDB $1)
+				PLAYERCONTROLTYPE=$(lib_myvalueretrieve CONTROLTYPE PLAYERDB $1)
+				echo "Adding ship $SHIPGARAGE to garage"
+				echo "Ship sector is $SHIPSECTOR player sector is $PLAYERSECTOR"
+				echo "The player is controlling $PLAYERCONTROLTYPE"
+				echo "Last controller of ship was $SHIPLASTCONTROLLER"
+				if [ "$PLAYERSECTOR" = "$SHIPSECTOR" ]
+				then
+					echo "Ship and Player in same sector"
+					if  [ "$SHIPLASTCONTROLLER" = "$1" ]
+					then
+						echo "Ship last controller and player matches"
+						if  [ "$PLAYERCONTROLTYPE" = "Astronaut" ]
+						then
+							echo "Player in space and all conditions met for add to ship garage"
+							lib_screensend $CONFIGDTSD_MAINSCREEN /save_uid \"ENTITY_SHIP_$SHIPTOGARAGE\" \"$SHIPTOGARAGE\"
+							lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid \"ENTITY_SHIP_$SHIPTOGARAGE\"
+							mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO GARAGEDB (SHIP, PLAYER) VALUES (\"$SHIPTOGARAGE\",\"$1\");"
+						else
+							echo "player not in space"
+						fi
+					else
+						echo "Ships last controller was not player"
+					fi
+				else
+				echo "ship and player not in same sector"
+				fi
+			else
+				echo "No shipname found"
+			fi
+		fi
+	;;
+	*"remove"*) 
+		echo "remove from garage executed"
+		SHIPTOREMOVE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "SELECT SHIP FROM GARAGEDB where PLAYER='$1' ORDER BY line ASC LIMIT 1;")
+		echo "here is the ship to remove $SHIPTOREMOVE"
+		lib_trigger garageremove $1 $SHIPTOREMOVE
+	;;
+	esac
+}
+chatcommand_STARTERSHIP(){
+# Gives a Player a designated starter ship
+# USAGE: !STARTERSHIP 
+
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !STARTERSHIP
+	else
+		echo "Startership command executed"
+		lib_trigger startership $1 $EXAMPLESTARTERSHIP
+	fi
+}
+ship_boarding() {
+# SEARCHBOARD="[CONTROLLER][ADD-UNIT]"
+# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: Ship[test ship](132)
+# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: PlayerCharacter[(ENTITY_PLAYERCHARACTER_testdude)(131)]
+# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[testdude ; id(3)(1)f(0)] Added to controllers: SpaceStation[ENTITY_SPACESTATION_test station(151)]
+# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[InfernoSuperNova [InfernoSuperNova]; id(12)(2)f(10085)] Added to controllers: PlayerCharacter[(ENTITY_PLAYERCHARACTER_InfernoSuperNova)(2244)]
+# [CONTROLLER][ADD-UNIT] (Server(0)): PlS[Doomsider [Doomsider]*; id(4)(1)f(0)] Added to controllers: Ship[Doomsider_1437954095149](135)
+
+	echo "Boarding detected"
+	BOARDSTRING="${@:1}"
+	CUTSTRING=${BOARDSTRING%;*}
+	CUTSTRING=${CUTSTRING%[[:space:]]*}
+	PLAYERBOARDING=${CUTSTRING##*[}
+	CUTSTRING=${BOARDSTRING##*:}
+	CONTROLLER=${CUTSTRING%[*}
+	lib_myinsert PLAYERDB NAME $PLAYERBOARDING
+	case "$CONTROLLER" in
+	*"Ship"*) 
+		echo "Ship boarding detected"
+		echo "Player boarding $PLAYERBOARDING"
+		echo "Player controlling a $CONTROLLER"
+		CUTSTRING=${BOARDSTRING##*[}
+		CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+		BOARDSHIPNAME=${CUTSTRING%]*}
+		echo "Player boarding ship $BOARDSHIPNAME"
+		lib_myinsert SHIPDB NAME "$BOARDSHIPNAME"
+		lib_myupdate PLAYERDB CONTROLLING "$BOARDSHIPNAME" NAME $PLAYERBOARDING
+		lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
+		lib_trigger shipinfo SHIPDB $BOARDSHIPNAME
+	;;
+	*"SpaceStation"*)
+		echo "Station boarding detected"
+		CUTSTRING=${BOARDSTRING%(*}
+		BOARDSTATIONNAME=${CUTSTRING##*_}
+		echo "Station boarded is $BOARDSTATIONNAME"
+		lib_myinsert STATIONDB NAME $BOARDSTATIONNAME
+		lib_myupdate PLAYERDB CONTROLLING "$BOARDSTATIONNAME" NAME $PLAYERBOARDING
+		lib_myupdate PLAYERDB CONTROLTYPE $CONTROLLER NAME $PLAYERBOARDING
+		lib_trigger shipinfo STATIONDB $BOARDSTATIONNAME	
+	;;
+	*"PlayerCharacter"*)
+		echo "Astronaut in space"
+		lib_myupdate PLAYERDB CONTROLLING Spacesuit NAME $PLAYERBOARDING
+		lib_myupdate PLAYERDB CONTROLTYPE Astronaut NAME $PLAYERBOARDING
+	;;
+	esac
+}

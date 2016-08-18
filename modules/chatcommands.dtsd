@@ -1,0 +1,659 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Location of all the regular chat commands
+
+CHATHELP_BACKUP="[Starts a live backup of the server] USAGE: !BACKUP"
+CHATHELP_BANPLAYER="[Bans a player from the server] USAGE: !BANPLAYER <Player>"
+CHATHELP_BANSTOP="[Removes a player from the ban list] USAGE: !BANSTOP <Player>"
+CHATHELP_CORE="[Gives player a ship core, 10 minute cooldown] Core usage: CORE"
+CHATHELP_CLEAR="[Removes all items from your inventory] USAGE: !CLEAR"
+CHATHELP_CREDITS="[Gives credits to user or another player] USAGE: !CREDIT AMOUNT or !CREDIT PLAYER AMOUNT"
+CHATHELP_DESPAWN="[Destroys all ships with a specified name from the specified sector] USAGE: !DESPAWN <X> <Y> <Z> <Ship name>"
+CHATHELP_EXPORT="[Saves the specified sector to a file with a specified name] USAGE: !EXPORT <X> <Y> <Z> <Export name>"
+CHATHELP_GIVE="[Gives you, or another player the specified item ID with a specified quantity] USAGE: !GIVE <Player (optional)> <ID> <Amount>"
+CHATHELP_GIVENAME="[Gives you blocks by their given names.  This will string match so for instance red would give you all blocks with red in their name] USAGE: !GIVENAME <Set Amount> <Set type>"
+CHATHELP_GIVEMETA="[Gives you, or another player the specified meta item] USAGE: !GIVEMETA <Player (optional)> <METAUTEN>"
+CHATHELP_GODON="[Turns on god mode for your character] USAGE: !GODON"
+CHATHELP_GODOFF="[Turns off god mode for your character] USAGE: !GODOFF"
+CHATHELP_HELP="[Display help for a chat command] Help usage: HELP chatcommand"
+CHATHELP_IMPORT="[Imports an exported sector file to the sector specified (sector must be unloaded)] USAGE: !IMPORT <X> <Y> <Z> <Export name>"
+CHATHELP_INVISION="[Makes your character invisible to everyone else] Usage: !INVISION"
+CHATHELP_INVISIOFF="[Makes your character visible to everyone else] Usage: !INVISIOFF"
+CHATHELP_KICK="[Kicks the specified player from the server] USAGE: !KICK <Player>"
+CHATHELP_KILL="[Kills a player instantly] USAGE: !KILL <Player>"
+CHATHELP_LOADSHIP="[Spawns in the specified ship from the catalogue to the specified coords] USAGE: !LOADSHIP <Blueprint Name> <Entity Name> <X> <Y> <Z>"
+CHATHELP_PROTECTSTART="[Prevents damage to entities inside the specified sector] USAGE: !PROTECTSTART X Y Z"
+CHATHELP_PROTECTSTOP="[Enables damage to entities inside the specified sector] USAGE: !PROTECTSTOP X Y Z"
+CHATHELP_RESTART="[Shuts the server down and then starts it back up again] USAGE: !RESTART"
+CHATHELP_SHUTDOWN="[Shuts the server down] USAGE: !SHUTDOWN"
+CHATHELP_SPAWNSTART="[Allows enemies to spawn inside the specified sector] USAGE: !SPAWNSTART <X> <Y> <Z>"
+CHATHELP_SPAWNSTOP="[Stops enemies from spawning inside the specified sector] USAGE: !SPAWNSTOP <X> <Y> <Z>"
+CHATHELP_TELEPORT="[Teleports you and the entity you are controlling, or another player and the entity they are controlling to the specified sector] USAGE: !TELEPORT <Player (optional)> <X> <Y> <Z>"
+CHATHELP_WHITEADD="[Adds a player to the whitelist] USAGE: !WHITEADD <Player>"
+CHATHELP_GIVEITEM="[Gives items that are not meta or block like lasers, makerers, etc] USAGE: !GIVEITEM <heal laser superlaser marker power rocket or sniper> with optional player name at the end if you want to give it to someone else"
+CHATHELP_GIVERECIPE="[Gives a recipe by number to yourself or a player] USAGE: !GIVERECIPE NUMBER with optional playername to give to someone else"
+
+# Gives you blocks by their given names.  This will string match so for instance red would give you all blocks with red in their name
+# USAGE: !GIVENAME amount name_of_block
+	
+#####################################USER COMMANDS#####################################
+chatcommand_CORE(){
+#Provides you with a ship core. Only usable once every 10 minutes
+#USAGE: !CORE	
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CORE
+	else
+		PLAYERLASTCORE=$(lib_myvalueretrieve LASTCORE PLAYERDB $1)
+		CURRENTTIME=$(date +%s)
+		ADJUSTEDTIME=$(( $CURRENTTIME - 600 ))
+		if [ "$ADJUSTEDTIME" -gt "$PLAYERLASTCORE" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 1 1
+			lib_myupdate PLAYERDB LASTCORE $CURRENTTIME NAME $1
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have received one core. There is a 10 minute cooldown before you can use it again
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Please allow Core command to cooldown. $((600-($(date +%s)-$PLAYERLASTCORE))) seconds left
+		fi
+	 fi
+}
+chatcommand_HELP() {
+	HELPCOMMANDS=( $(compgen -v | grep CHATHELP_) )
+	HELPARRAY=0
+	declare MATCHHELP
+# $# is the number of parameters issued, in this case we are looking for just one which corresponds to help with no parameters	
+	if [ $# -eq 1 ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $CHATHELP_HELP
+		USERRANK=$(lib_myvalueretrieve RANK PLAYERDB $1)
+		USERCOMMANDS=$(lib_myvalueretrieve COMMANDSALLOWED RANKLOG $USERRANK)
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Commands available are $USERCOMMANDS 
+		MATCHHELP=GOOD
+	fi
+# If there is at least one parameter
+	if [ $# -eq 2 ]
+	then
+		while [ -n "${HELPCOMMANDS[$HELPARRAY]+set}" ]
+		do	
+			CURRENTHELP=${HELPCOMMANDS[$HELPARRAY]}	
+			MATCHCOMMAND=${CURRENTHELP#*_}
+			SEARCHHELP=${2^^}
+			if [ "$MATCHCOMMAND" = "$SEARCHHELP" ] 
+			then
+				lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 ${!CURRENTHELP}
+				MATCHHELP=GOOD
+			fi
+			let HELPARRAY++ 
+		done
+	fi
+# If no match
+	if  [ "$MATCHHELP" != "GOOD" ] 
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 "No command found"
+	fi
+	unset MATCHHELP
+}
+#####################################MODIFIED ADMIN COMMANDS#####################################
+chatcommand_GIVEITEM() {
+# Gives certain items that are not meta or blocks
+# Usage: !giveitem <heal|laser|superlaser|marker|power|rocket|sniper
+	if [ "$#" -lt "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters please use !giveitem item to recieve it yourself or !giveitem item playername to give it to someone else.
+	else
+		case $2 in
+		heal)
+			GIVECOMMAND="/give_heal_weapon"
+		;;
+		laser)
+			GIVECOMMAND="/give_laser_weapon"
+		;;
+		superlaser)
+			GIVECOMMAND="/give_laser_weapon_op"
+		;;
+		marker)
+			GIVECOMMAND="/give_marker_weapon"
+		;;
+		power)
+			GIVECOMMAND="/give_power_supply_weapon"
+		;;
+		rocket)
+			GIVECOMMAND="/give_rocket_launcher_weapon"
+		;;
+		sniper)
+			GIVECOMMAND="/give_sniper_weapon"
+		;;
+		*)
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters please use heal laser superlaser marker power rocket or sniper
+		;;
+		esac
+		if [ "$#" -eq "2" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN $GIVECOMMAND $1
+		fi
+		if [ "$#" -eq "3" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN $GIVECOMMAND $3
+		fi
+	fi
+}
+chatcommand_GIVERECIPE() {
+# Gives a recipe 
+# Usage: !GIVERECIPE NUMBER with optional playername to give to someone else
+		GIVECOMMAND"/give_recipe"
+		if [ "$#" -eq "2" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN $GIVECOMMAND $1
+		elif [ "$#" -eq "3" ]
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN $GIVECOMMAND $3
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters please !GIVERECIPE NUMBER or !GIVERECIPE NUMBER PLAYERNAME to give a recipee to another player
+		fi
+}
+
+
+chatcommand_BACKUP() {
+# Starts a live backup of the server
+# USAGE: !backup
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters.
+	else
+		core_universebackup &
+	fi
+
+}
+chatcommand_BANPLAYER(){
+# Bans a player from the server
+# USAGE: !BANPLAYER <Player>
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !BANPLAYER Name
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /ban_name $2
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The name $2 is now banned from the server
+	fi
+}
+chatcommand_BANSTOP(){
+# Removes a player from the ban list
+# USAGE: !UNBAN <Player>
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !UNBAN Name
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /unban_name $2
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The name $2 is no longer banned
+	fi
+}
+chatcommand_CLEAR(){
+ # Removes all items from your inventory
+ # USAGE: !CLEAR
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CLEAR
+	else	
+		lib_screensend $CONFIGDTSD_MAINSCREEN /give_all_items $1 -99999
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your inventory has been cleaned		
+	fi
+}
+chatcommand_CREDITS(){
+ # Gives you, or another player the specified number of credits
+ # USAGE: !CREDITS <Player (optional)> <Amount>
+	if [ "$#" -ne "2" ] && [ "$#" -ne "3" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !CREDITS Playername Amount or !CREDITS Amount
+	else
+		if [ "$2" -eq "$2" ] 2>/dev/null
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $1 $2
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You received $2 credits
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /give_credits $2 $3
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 received $3 credits
+		fi
+	fi
+}
+chatcommand_DESPAWN(){
+# Destroys all ships with a specified name from the specified sector
+# USAGE: !DESPAWN <X> <Y> <Z> <Ship name>
+	if [ "$#" -ne "5" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !DESPAWN X Y Z Ship_name
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /despawn_sector $5 all true $2 $3 $4
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 All entities called $5 have been removed from sector $2,$3,$4
+	fi
+}
+chatcommand_EXPORT(){
+# Saves the specified sector to a file with a specified name
+# USAGE: !EXPORT <X> <Y> <Z> <Export name>
+	if [ "$#" -ne "5" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !EXPORT X Y Z Export_name
+	else	
+		lib_screensend $CONFIGDTSD_MAINSCREEN /export_sector $2 $3 $4 $5
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The secotr $2,$3,$4 has been exported to a file called $5
+	fi
+}
+chatcommand_GIVE(){
+# Gives you, or another player the specified item ID with a specified quantity
+# USAGE: !GIVE <Player (optional)> <ID> <Amount>
+	if [ "$#" -ne "3" ] && [ "$#" -ne "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVE Playername ID Amount or !GIVE ID Amount
+	else
+		 if [ "$2" -eq "$2" ] 2>/dev/null
+		 then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 $2 $3
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You received $3 of item ID $2
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $2 $3 $4
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 received $4 of $3
+		fi
+	fi
+}
+chatcommand_GIVENAME() {
+# Gives you blocks by their given names.  This will string match so for instance red would give you all blocks with red in their name
+# USAGE: !GIVENAME amount name_of_block
+	lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Attemping to get a block by names
+	SEARCHVAL="${@:3}"
+# echo "Search value $SEARCHVAL"
+	if [ "$#" -ge "3" ] 
+	then
+		SEARCHERESULTS=( $(lib_columnretrievesearch IDNUMBER IDDB NAME "$SEARCHVAL") )
+		RESULTARRAY=0
+		while [ -n "${SEARCHERESULTS[$RESULTARRAY]+set}" ]
+		do
+			CURRENTIDNUMBER=${SEARCHERESULTS[$RESULTARRAY]}
+			lib_screensend $CONFIGDTSD_MAINSCREEN /giveid $1 $CURRENTIDNUMBER $2
+			let RESULTARRAY++
+		done
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVENAME amount name_of_block
+	fi
+
+}
+
+chatcommand_GIVEMETA(){ 
+# Gives you, or another player the specified meta item
+# USAGE: !GIVEMETA <Player (optional)> <METAUTEN>
+	if [ "$#" -ne "2" ] && [ "$#" -ne "3" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GIVE Playername Metaitem or !GIVE Metaitem
+	else
+		if [ "$" -eq "2" ] 2>/dev/null
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /give_metaitem $1 $2
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You received $2
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /give_metaitem $2 $3
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 received $3
+		fi
+	fi
+}
+chatcommand_GODON(){
+# Turns on godmode, making your character immune to all forms of damage
+# USAGE: !GODON
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GODON
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /god_mode $1 true
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are now in god mode
+	fi
+}
+chatcommand_GODOFF(){
+# Turns off godmode, making your character killable again
+# USAGE: !GODOFF
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !GODOFF
+	else
+        lib_screensend $CONFIGDTSD_MAINSCREEN /god_mode $1 false
+        lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are no longer in god mode
+	fi
+}
+chatcommand_IMPORT(){
+# Imports an exported sector file to the sector specified (sector must be unloaded)
+# USAGE: !IMPORT <X> <Y> <Z> <Export name>
+	if [ "$#" -ne "5" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !IMPORT X Y Z Export_name
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /import_sector $2 $3 $4 $5
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Attempted to spawn the sector file $5 to sector $2,$3,$4. If there were players nearby the spawn will have failed
+	fi
+ }
+chatcommand_INVISION(){
+ #Makes your character invisible to everyone else
+ #USAGE: !INVISION	
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !INVISION
+	else	
+		lib_screensend $CONFIGDTSD_MAINSCREEN /invisibility_mode $1 true
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are now invisible
+	fi
+ }
+chatcommand_INVISIOFF(){
+#Makes your character visible to everyone else again
+#USAGE: !INVISIOFF
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !INVISIOFF
+	else	
+		lib_screensend $CONFIGDTSD_MAINSCREEN /invisibility_mode $1 false
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You are no longer invisible
+	fi
+}
+chatcommand_KICK(){
+# Kicks the specified player from the server
+# USAGE: !KICK <Player>
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KICK Player
+	else	
+		lib_screensend $CONFIGDTSD_MAINSCREEN /kick $2
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has been kicked from the server
+	fi
+}
+chatcommand_KILL(){
+# Kills a player instantly
+# USAGE: !KILL <Player>
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !KILL Name
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /kill_character $2 
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 was killed
+	fi
+}
+chatcommand_LOADSHIP(){
+# Spawns in the specified ship from the catalogue to the specified coords
+# USAGE: !LOADSHIP <Blueprint Name> <Entity Name> <X> <Y> <Z>
+	if [ "$#" -ne "6" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !LOADSHIP Blueprint_Name Entity_Name X Y Z
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /spawn_entity $2 $3 $4 $5 $6 0 false
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The blueprint $2 has been spawned in sector $4,$5,$6 and is called $3
+	fi
+}
+chatcommand_PROTECTSTART(){
+# Prevents damage to entities inside the specified sector
+# USAGE: !PROTECT <X> <Y> <Z>	
+	if [ "$#" -ne "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !PROTECT X Y Z
+	else		
+		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 + protected
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is now protected
+	fi
+}
+chatcommand_PROTECTSTOP(){
+# Allows damage to entities inside the specified sector
+# USAGE: !UNPROTECT <X> <Y> <Z>
+	if [ "$#" -ne "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !UNPROTECT X Y Z
+	else		
+		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 - protected
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is no longer protected
+	fi
+}
+chatcommand_RESTART(){
+# This command needs to be re-written, it does not work correctly
+# Shuts the server down and then starts it back up again
+# USAGE: !RESTART
+	if [ "$#" -ne "1" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !RESTART
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The server will now restart
+		core_softreset
+	fi
+}
+chatcommand_SHUTDOWN(){
+# Shuts the server down
+# USAGE: !SHUTDOWN <Time Delay>
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SHUTDOWN Time
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /shutdown $2
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The server will shut down in $2 seconds
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Shutdown issued from chatcommand\");"
+	fi
+}
+chatcommand_SPAWNSTART(){
+# Allows enemies to start attacking you inside the specified sector
+# USAGE: !SPAWNSTART <X> <Y> <Z>
+	if [ "$#" -ne "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTART X Y Z
+	else		
+		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 - peace
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is hostile again
+	fi
+}
+chatcommand_SPAWNSTOP(){
+# Prevents enemies from attacking you while insider the specified sector
+# USAGE: !SPAWNSTOP <X> <Y> <Z>
+	if [ "$#" -ne "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SPAWNSTOP X Y Z
+	else		
+		lib_screensend $CONFIGDTSD_MAINSCREEN /sector_chmod $2 $3 $4 + peace
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Sector $2,$3,$4 is no longer hostile
+	fi
+}
+chatcommand_TELEPORT(){
+#Teleports you and the entity you are controlling, or another player and the entity they are controling to the specified sector
+#USAGE: !TELEPORT <Player (optional)> <X> <Y> <Z>
+	if [ "$#" -ne "4" ] && [ "$#" -ne "5" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/pm $1 Invalid parameters. Please use !TELEPORT <Player (optional)> <X> <Y> <Z>"
+	else	
+		if [ "$2" -eq "$2" ] 2>/dev/null
+		then
+			lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $1 $2 $3 $4
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 You have been teleported to $2,$3,$4
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /change_sector_for $2 $3 $4 $5
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $2 has been teleported to $2,$3,$4
+		fi
+	fi
+}
+chatcommand_WHITEADD(){
+# Adds a player to the whitelist
+# USAGE: !WHITEADD <Player>
+	if [ "$#" -ne "2" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !WHITEADD Name
+	else
+		lib_screensend $CONFIGDTSD_MAINSCREEN /whitelist_name $2
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The name $2 has been whitelisted
+	fi
+}
+#######################WORKING############################
+# #Functional Commands
+# chatcommand_PLAYERWHITELIST(){
+# #Adds or removes players from your personal whitelist, allowing them to use your jumpgates
+#USAGE: !PLAYERWHITELIST <+/-> <Player/All>
+	# if [ "$#" -ne "3" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !PLAYERWHITELIST <+/-> <PlayerName/All>
+	# else
+		# if [ ! -e $GATEWHITELIST/$1 ]
+		# then
+			# echo "AllPlayers" >> $GATEWHITELIST/${GATEINFO[7]}
+		# fi
+		# if [ $2 = "+" ]
+		# then
+			# if [ $3 = "All" ] || [ $3 = "all" ]
+			# then
+				# if grep -q "AllPlayers" $GATEWHITELIST/$1
+				# then
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your gates are already public!
+				# else
+					# echo "AllPlayers" >> $GATEWHITELIST/$1
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your gates have been made public!
+				# fi
+			# else
+				# if grep -q "$3" $GATEWHITELIST/$1
+				# then
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $3 Is already on your whitelist
+				# else
+					# echo $3 >> $GATEWHITELIST/$1
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Added $3 to your whitelist. They can now use your jumpgates!
+				# fi
+			# fi
+		# elif [ $2 = "-" ]
+		# then
+			# if [ $3 = "All" ] || [ $3 = "all" ]
+			# then
+				# if ! grep -q "AllPlayers" $GATEWHITELIST/$1
+				# then
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your gates are already non-public!
+				# else
+					# as_user "sed -i '/AllPlayers/d' $GATEWHITELIST/$1"
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Your gates have been made non-public!
+				# fi
+			# else
+				# if ! grep -q "$3" $GATEWHITELIST/$1
+				# then
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $3 isnt on your whitelist!
+				# else
+					# as_user "sed -i '/$3/d' $GATEWHITELIST/$1"
+					# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Removed $3 from your whitelist!
+				# fi
+			# fi
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid operator! Please only use + or -
+		# fi
+	# fi
+# }
+# #Vanilla Admin Commands
+# chatcommand_BANHAMMER(){
+# #Bans the specified player from the server by IP, Name and Account
+# #USAGE: !BANHAMMER <Player>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !BANHAMMER <Name>
+	# else
+# # BANHAMMER command bans all IPs attached to player name.	Player does not have to be logged on
+# # Set bannarray to zero
+		# BANARRAY=0
+		# lib_screensend $CONFIGDTSD_MAINSCREEN/ban_name $2
+# # Create the temporary file string
+		# BANfiLESTRING="$STARTERPATH/StarMade/server-database/ENTITY_PLAYERSTATE_player.ent"
+# # Edit the file string with the playername to find the actual entity playerstate file
+		# BANfiLENAME=${BANfiLESTRING/player/$2}
+# #		echo "We are are looking for this player entity file $BANfiLENAME"
+# # Grab all the Ip's for the banned player as an array
+		# BANHAMMERIP=( $(cat $BANfiLENAME | strings | grep -v null | grep \/ | cut -d\/ -f2) )
+# # Calculate the array total for debugging purposes
+		# BANIPTOTAL=$(( ${#BANHAMMERIP[@]} ))
+# #		echo "$BANIPTOTAL total IP addresses to ban"
+# # Check for the filename
+		# if	[ -e $BANfiLENAME ]
+		# then
+# # While there is still a value in the array
+			# while [ -n "${BANHAMMERIP[$BANARRAY]+set}" ]
+			# do
+# # Set the current IP to be banned to Bannedip
+				# BANNEDIP=${BANHAMMERIP[$BANARRAY]}
+# #				echo "Banning $BANNEDIP"
+# # Ban that IP
+				# lib_screensend $CONFIGDTSD_MAINSCREEN/ban_ip $BANNEDIP
+# # To prevent spamming all the commands at once
+				# sleep 2
+# # Add 1 to the array
+				# let BANARRAY++
+			# done
+# # if no file is found
+		# else
+# #		echo "No player entity file found"
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 BANHAMMER fail no file for $2 found
+		# fi
+	# fi
+# }
+# chatcommand_SEARCH(){
+# #Searches the universe for the last known coordinates of your ship
+# #USAGE: !SEARCH
+	# if [ "$#" -ne "1" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !SEARCH
+	# else
+# # This commands needs to be disabled if logging is not active
+# # Set searcharray to zero
+		# SEARCHARRAY=0
+# # Get the Shipnames with current player from shiplog
+		# OLD_ifS=$ifS
+		# ifS=$'\n'
+		# SEARCHSHIPNAMES=( $(grep $1 $SHIPLOG) )
+		# ifS=$OLD_ifS
+# # Calculate the array total for debugging purposes
+# #		SEARCHSHIPTOTAL=$(( ${#SEARCHSHIPNAMES[@]} ))
+# #		echo "$SEARCHSHIPTOTAL total ships found"
+# # While the array is set 
+		# while [ -n "${SEARCHSHIPNAMES[$SEARCHARRAY]+set}" ]
+		# do
+# # Set the current grep string to SEARCHSHIP to be displayed
+			# SEARCHSHIP=${SEARCHSHIPNAMES[$SEARCHARRAY]}
+# #			echo "Ship $SEARCHSHIP"
+# # Display that ship
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 $SEARCHSHIP
+# # To prevent spamming all the commands at once
+# # Add 1 to the array
+			# let SEARCHARRAY++
+		# done
+	# fi
+# }
+# chatcommand_LISTWHITE(){ 
+# #Tells you all the names, IPs and accounts that are whitelisted on the server
+# #USAGE: !LISTWHITE <name/account/ip/all>
+	# if [ "$#" -ne "2" ]
+	# then
+		# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !LISTWHITE <name/account/ip/all>
+	# else
+		# WHITELIST=( $( cat $STARTERPATH/StarMade/whitelist.txt ) )
+		# WHITENAME=()
+		# WHITEIP=()
+		# WHITEACCOUNT=()
+		# for ENTRY in ${WHITELIST[@]}
+		# do
+			# case $(echo $ENTRY | cut -d":" -f1) in
+			# nm)
+				# WHITENAME+=( $(echo $ENTRY | cut -d":" -f2) )
+				# ;;
+			# ip)
+				# WHITEIP+=( $(echo $ENTRY | cut -d":" -f2) )
+				# ;;
+			# ac)
+				# WHITEACCOUNT+=( $(echo $ENTRY | cut -d":" -f2) )
+				# ;;
+			# esac
+		# done
+		# if [[ $(echo $2 | tr [a-z] [A-Z]) ==  "NAME" ]]
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 ${WHITENAME[@]}
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Whitelisted name\'s are:
+		# elif [[ $(echo $2 | tr [a-z] [A-Z]) ==  "IP" ]]
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 ${WHITEIP[@]}
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Whitelisted ip\'s are:
+		# elif [[ $(echo $2 | tr [a-z] [A-Z]) ==  "ACCOUNT" ]]
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 ${WHITEACCOUNT[@]}
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Whitelisted account\'s are:
+		# elif [[ $(echo $2 | tr [a-z] [A-Z]) ==  "ALL" ]]
+		# then
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 ${WHITELIST[*]}
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 All whitelisted names, accounts and ip\'s:
+		# else
+			# lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !LISTWHITE <name/account/ip/all>
+		# fi			
+	# fi
+# }

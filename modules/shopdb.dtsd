@@ -1,0 +1,15 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions and database for Shops
+
+MYSQLDTSD_SHOPDB_NAME="VARCHAR(50) BINARY"
+MYSQLDTSD_SHOPDB_CURRENTSECTOR="VARCHAR(36)"
+MYSQLALTER_SHOPDB_NAME="UNIQUE INDEX"
+
+
+#String to collect
+
+#Collected after sector_info
+#[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SHOP_1425000840036, sectorPos=(2, 2, 2), type=1, seed=0, lastModifier=, spawner=, realName=Shop, touched=false, faction=0, pos=(0.0, 0.0, 0.0), minPos=(0, -15, 0), maxPos=(0, 15, 0), creatorID=0]
+#  /shop_restock_full_uid ENTITY_SHOP_-4198426460705605982_315
+

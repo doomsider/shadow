@@ -1,0 +1,300 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions and database for Sectors
+
+MYSQLDTSD_SECTORDB_PEACE="VARCHAR(5)"
+MYSQLDTSD_SECTORDB_PROTECTED="VARCHAR(5)"
+MYSQLDTSD_SECTORDB_TYPE="VARCHAR(25)"
+MYSQLDTSD_SECTORDB_NAME="VARCHAR(36)"
+MYSQLDTSD_SECTORDB_LASTUPDATE=TIMESTAMP
+MYSQLALTER_SECTORDB_NAME="UNIQUE INDEX"
+
+MYSQLDTSD_OFFLIMIT_SECTOR="VARCHAR(36)"
+MYSQLDTSD_OFFLIMIT_PLAYER="VARCHAR(25)"
+
+MYSQLDTSD_JAIL_SECTOR="VARCHAR(36)"
+MYSQLDTSD_JAIL_PLAYER="VARCHAR(25)"
+
+LOGSEARCH_sector_initiallogin="[SERVER][GALAXY] SENDING SYSTEM BACK TO CLIENT"
+
+CHATHELP_JAIL="[Jails or keeps player in certain sectors] Usage: !JAIL x y z playername"
+CHATHELP_GETOUT="[Releases a player from jail and being confined to certain sector] USAGE: !getout playername"
+CHATHELP_OFFLIMITS="[Sets a sector offlimits to everyone but the creator and who they allow in the sector] USAGE: !offlimits <add or remove> <sector> <playername>"
+
+
+sector_initiallogin() {
+	SECTORINITIALLOGINSTRING="${@:1}"
+	SECTORINITIALLOGINSTRING=${SECTORINITIALLOGINSTRING#*]}
+	echo "This was send to initial login $SECTORINITIALLOGINSTRING"
+	CUTSTRING=${SECTORINITIALLOGINSTRING#*:}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+	lib_trigger sectorinfo $SECTORNAME Sector
+}
+chatcommand_JAIL() {
+# Jails or keeps player(s) in certain sectors
+# Usage: !jail x y z playername
+	CHECKPLAYERDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select NAME from PLAYERDB where NAME='$5';")
+	SECTORNAME="$2"_"$3"_"$4"
+	if [ -z "$CHECKPLAYERDB" ]
+	then
+		echo "No existing player to add to jail"
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No player $5 found in database to put in jail in sector $2 $3 $4
+	else
+		CHECKPLAYERJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PLAYER from JAIL where PLAYER='$5' and SECTOR='$SECTORNAME'")
+		if [ -z "$CHECKPLAYERJAIL" ]
+		then
+			echo "Player not already in jail"
+			mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO JAIL (SECTOR, PLAYER) VALUES (\"$SECTORNAME\",\"$5\");"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Player $5 found in database and put in jail in sector $2 $3 $4
+		else
+			lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Player $5 appears to already be in jail in sector $2 $3 $4
+		fi
+	fi
+}
+chatcommand_GETOUT() {
+# Releases a player from jail and being confined to certain sector(s)
+# Usage: !getout playername
+ CHECKPLAYERJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PLAYER from JAIL where PLAYER='$2'")
+	if [ -z "$CHECKPLAYERJAIL" ]
+ 	then
+		echo "No player to let out of jail"
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Player $2 appears to not be in jail
+	else
+		
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Releasing Player $2 from jail
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM JAIL where PLAYER='$2';"
+	fi
+}
+chatcommand_OFFLIMITS(){
+# Sets a sector offlimits to everyone but the creator and who they allow in the sector
+# This command can be changed to use current sector as context and allow players to set their own sectors to offlimits.
+# Usage: !offlimits <add or remove> <sector> <playername>
+# !offlimits add 2 2 2 - This will add offlimits to the sector and set the player to the current user
+# !offlimits add 2 2 2 Newguy
+# !offlimits remove 2 2 2 Newguy
+# !offlimits remove 2 2 2 - This will remove all entries for selected sector
+	OFFLIMITSSTRING="${@:1}"
+	echo "This sent to OFFLIMITS $OFFLIMITSSTRING"
+	CURRENTSECTOR="$3"_"$4"_"$5"
+	echo "Sector in offlimits set to $CURRENTSECTOR"
+	CHECKSECTOREXISTS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from OFFLIMIT where SECTOR='$CURRENTSECTOR' ORDER BY line ASC LIMIT 1;")
+	echo "Check sector exists for offlimits .$CHECKSECTOREXISTS."
+	if [ "$#" -le "4" ]
+	then
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Invalid parameters. Please use !OFFLIMITS add or remove xsector ysector zsector player
+	else
+		if [ "$#" -ge "6" ]
+		then
+			CHECKPLAYERDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select NAME from PLAYERDB where NAME='$6';")
+			CHECKPLAYEROFF=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PLAYER from OFFLIMIT where PLAYER='$6' ORDER BY line ASC LIMIT 1;")
+			echo "The player exists in database .$CHECKPLAYERDB. the player exists in offlimits .$CHECKPLAYEROFF."
+			case $2 in 
+				add)
+					if [ -z "$CHECKPLAYERDB" ]
+					then
+						echo "No existing player to add to sector offlimits"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No player $6 found in database to add to offlimits sector $3 $4 $5 
+					else
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO OFFLIMIT (SECTOR, PLAYER) VALUES (\"$CURRENTSECTOR\",\"$6\");"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Adding player $6 to allowed list of sector $3 $4 $5
+					fi
+				;;
+				remove)
+					if [ -z "$CHECKPLAYEROFF" ]
+					then
+						echo "No existing player to remove in sector offlimits"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 No player $6 found in offlimits to remove from sector $3 $4 $5 
+					else
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM OFFLIMIT where PLAYER='$6';"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Removing player $6 from allowed list for sector $3 $4 $5
+					fi
+				;;
+			esac
+		else
+			case $2 in 
+				add)
+					if [ -z "$CHECKSECTOREXISTS" ]
+					then
+						echo "No existing sector found for add sector to offlimits"
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO OFFLIMIT (SECTOR, PLAYER) VALUES (\"$CURRENTSECTOR\",\"$1\");"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Setting sector $3 $4 $5 offlimits to everyone but $1
+					else
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The sector $3 $4 $5 is already in offlimit
+					fi
+				;;
+				remove)
+					if [ -z "$CHECKSECTOREXISTS" ]
+					then
+						echo "No existing sector found to remove sector in offlimits"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 The sector $3 $4 $5 does not appear to be in offlimits
+					else
+						mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM OFFLIMIT where SECTOR='$CURRENTSECTOR';"
+						lib_screensend $CONFIGDTSD_MAINSCREEN /pm $1 Removing sector $3 $4 $5 from offlimits
+					fi
+				;;
+			esac
+		fi
+	fi
+}
+universejail() {
+# Universe jail keeps a player in designated sectors
+# Usage: universejail x y z x y z playername - 1st x y z represent the old sector and 2nd is the new sector
+	UNIVERSEJAILSTRING="${@:1}"
+	echo "This sent to OFFLIMITS $UNIVERSEJAILSTRING"
+	CHECKJAILSTATUS=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PLAYER from JAIL where PLAYER='$7';")
+	if [ -z "$CHECKJAILSTATUS" ]
+	then
+		echo "No jail found for player $7"
+	else
+		ORIGINALSECTOR="$1"_"$2"_"$3"
+		ENTEREDSECTOR="$4"_"$5"_"$6"
+		STILLINJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from JAIL where PLAYER='$7' and SECTOR='$ENTEREDSECTOR' ORDER BY line ASC LIMIT 1;")
+		if [ -z "$STILLINJAIL" ]
+		then
+			echo "Player has attempted to leave jail"
+			OLDSECTORINJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from JAIL where PLAYER='$7' and SECTOR='$ORIGINALSECTOR' ORDER BY line ASC LIMIT 1;")
+			if [ -z "$OLDSECTORINJAIL" ]
+			then
+			echo "Player has left the jail and cannot return to previous sector"
+			SECTORJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from JAIL where PLAYER='$7' ORDER BY line ASC LIMIT 1;")
+			cutstring=${SECTORJAIL//_/ }
+			COLLECTSECTORARRAY=($cutstring)
+			COLLECTX=${COLLECTSECTORARRAY[0]}
+			COLLECTY=${COLLECTSECTORARRAY[1]}
+			COLLECTZ=${COLLECTSECTORARRAY[2]}
+			sleep 4
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /pm $7 It appears you are stuck in this sector...
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $7 $COLLECTX $COLLECTY $COLLECTZ
+			else
+			echo "Player has left the jail and will be returned to their previous sector"
+			sleep 4
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /pm $7 It appears you are stuck in this sector...
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $7 $1 $2 $3
+			fi
+		else
+			echo "Player is moving around in jail"
+			
+		fi		
+	fi
+}
+universeofflimits() {
+# Universeofflimits set a portion of the universe off limits and prevents a player from entering it without permission
+# Usage: universeofflimits x y z x y z name - first xyz is the original sectors and the second xyz is the sector entered
+	UNIVERSEOFFSTRING="${@:1}"
+	echo "This sent to OFFLIMITS $UNIVERSEOFFSTRING"
+	ORIGINALX=$1
+	ORIGINALY=$2
+	ORIGINALZ=$3
+	ENTEREDX=$4
+	ENTEREDY=$5
+	ENTEREDZ=$6
+	ORIGINALSECTOR="$1"_"$2"_"$3"
+	ENTEREDSECTOR="$4"_"$5"_"$6"
+	echo "Off limits entered sector $ENTEREDSECTOR original sector $ORIGINALSECTOR"
+	CHECKSECTOROFF=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from OFFLIMIT where SECTOR='$ENTEREDSECTOR' ORDER BY line ASC LIMIT 1;")
+	echo "Here is CHECKSECTOROFF .$CHECKSECTOROFF."
+	CHECKPLAYEROFF=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select SECTOR from OFFLIMIT where SECTOR='$ENTEREDSECTOR' AND PLAYER='$7' ORDER BY line ASC LIMIT 1;")
+	echo "Here is CHECKPLAYEROFF .$CHECKPLAYEROFF."
+	if [ -z "$CHECKSECTOROFF" ]
+	then
+		echo "No offlimits sector found"
+	else
+		echo "Offlimit sector found"
+		if [ -z "$CHECKPLAYEROFF" ]
+		then
+			echo "Player not allowed to be in sector"
+			sleep 4
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /pm $7 You have been returned to you original sector! It appears you do not have permission to be there
+			lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $7 $ORIGINALX $ORIGINALY $ORIGINALZ
+		else
+			echo "Player allowed in Sector"
+		fi
+	fi
+		
+}
+universeboarder() {
+# Universeboarder set limits and wraps players around once they have reached then end of the universe
+# Usage: universeboarder x y z name
+	if [ "$UNIVERSEBOARDER" = "YES" ]
+	then
+# Add a check to make sure the player is not in jail which can be set up outside of universe boundaries 
+		CHECKJAIL=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select PLAYER from JAIL where PLAYER='$4';")
+		if [ -z "$CHECKJAIL" ]
+		then
+			UCENTER=$UNIVERSECENTER
+			echo "UCENTER $UCENTER"
+			UCENTER=${UCENTER//_/ }
+			UCENTER=($UCENTER)
+			XCENTER=${UCENTER[0]}
+			YCENTER=${UCENTER[1]}
+			ZCENTER=${UCENTER[2]}
+			XCOORD=$1
+			YCOORD=$2
+			ZCOORD=$3
+			XULIMIT=$(($XCENTER + $UNIVERSERADIUS))
+			YULIMIT=$(($YCENTER + $UNIVERSERADIUS))
+			ZULIMIT=$(($ZCENTER + $UNIVERSERADIUS))
+			XLLIMIT=$(($XCENTER - $UNIVERSERADIUS))
+			YLLIMIT=$(($YCENTER - $UNIVERSERADIUS))
+			ZLLIMIT=$(($ZCENTER - $UNIVERSERADIUS))
+			XUEXCESS=$(($XULIMIT + 2))
+			YUEXCESS=$(($YULIMIT + 2))
+			ZUEXCESS=$(($ZULIMIT + 2))
+			XLEXCESS=$(($XLLIMIT - 2))
+			YLEXCESS=$(($YLLIMIT - 2))
+			ZLEXCESS=$(($ZLLIMIT - 2))
+			echo "Universe board active with XCENTER $XCENTER YCENTER $YCENTER ZCENTER $ZCENTER XCOORD $XCOORD YCOORD $YCOORD ZCOORD $ZCOORD XULIMIT $XULIMIT YULIMIT $YULIMIT ZULIMIT $ZULIMIT"
+			echo "XLLIMIT $XLLIMIT YLLIMIT $YLLIMIT ZLLIMIT $ZLLIMIT XUEXCESS $XUEXCESS YUEXCESS $YUEXCESS ZUEXCESS $ZUEXCESS XLEXCESS $XLEXCESS YLEXCESS $YLEXCESS ZLEXCESS $ZLEXCESS"
+			if [ "$XCOORD" -ge "$XULIMIT" ] || [ "$YCOORD" -ge "$YULIMIT" ] || [ "$ZCOORD" -ge "$ZULIMIT" ] || [ "$XCOORD" -lt "$XLLIMIT" ] || [ "$YCOORD" -lt "$YLLIMIT" ] || [ "$ZCOORD" -lt "$ZLLIMIT" ]
+			then
+	# X-Coord Checking
+				if [ "$XCOORD" -ge "$XULIMIT" ]
+				then
+					NEWX=$(($XCOORD - $XULIMIT + $XLLIMIT))
+				elif [ "$XCOORD" -lt "$XLLIMIT" ]
+				then
+					NEWX=$(($XCOORD - $XLLIMIT + $XULIMIT))
+				else
+					NEWX=$XCOORD
+				fi
+	# Y-Coord checking
+				if [ "$YCOORD" -ge "$YULIMIT" ]
+				then
+					NEWY=$(($YCOORD - $YULIMIT + $YLLIMIT))
+				elif [ "$YCOORD" -lt "$YLLIMIT" ]
+				then
+					NEWY=$(($YCOORD - $YLLIMIT + $YULIMIT))
+				else
+					NEWY=$YCOORD
+				fi
+	# Z-Coord Checking
+				if [ "$ZCOORD" -ge "$ZULIMIT" ]
+				then
+					NEWZ=$(($ZCOORD - $ZULIMIT + $ZLLIMIT))
+				elif [ "$ZCOORD" -lt "$ZLLIMIT" ]
+				then
+					NEWZ=$(($ZCOORD - $ZLLIMIT + $ZULIMIT))
+				else
+					NEWZ=$ZCOORD
+				fi
+	# Checks if they are too far outside of the boarder, and overrides the previous checks if they are
+				if [ "$XCOORD" -ge "$XUEXCESS" ] || [ "$XCOORD" -le "$XLEXCESS" ] || [ "$YCOORD" -ge "$YUEXCESS" ] || [ "$YCOORD" -le "$YLEXCESS" ] || [ "$ZCOORD" -ge "$ZUEXCESS" ] || [ "$ZCOORD" -le "$ZLEXCESS" ]
+				then
+					NEWX=$XCENTER
+					NEWY=$YCENTER
+					NEWZ=$ZCENTER
+				fi
+				sleep 4
+				lib_screensend $CONFIGDTSD_MAINSCREEN  /pm $4 You have warped to the opposite side of the universe! It appears you cant go further out...
+				lib_screensend $CONFIGDTSD_MAINSCREEN  /change_sector_for $4 $NEWX $NEWY $NEWZ
+			fi
+		else
+			echo "Bypassing universe boarder user in jail sector"
+		fi
+	fi
+}

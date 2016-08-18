@@ -1,0 +1,334 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# This is the setup function used to determine dependencies and setup the game server config file and database
+
+core_setup() {
+	echo "Press enter to accept default answer (capitalised) or type in your setting."
+	echo "Note: running this will overwrite existing configuration"
+	read -p "Do you wish to setup Shadow? [y/N] : " INPUT
+	case $INPUT in
+		[YesyesYESYy]* ) 
+			echo "Checking for requirements"
+		;;
+		* ) 
+			echo "exiting setup"
+			exit
+		;;
+	esac
+	echo "Doing basic test to see if Starmade is present"	
+	if [ -f "$SCRIPTDIR/StarMade/data/config/BlockConfig.xml" ]
+	then 
+		echo "Starmade appears to be installed (found block xml file)"
+		FOUNDSTARMADE=YES
+	else
+		FOUNDSTARMADE=NO
+	fi
+	echo "Doing basic test for Java installation.  Note:  This does not check for version compatibility"
+	if command -v java >/dev/null
+	then
+		echo "Java found"
+		FOUNDJAVA=YES
+	else
+		FOUNDJAVA=NO		
+	fi
+	echo "Doing basic test for Mysql installation."
+	if command -v mysql >/dev/null
+	then
+		echo "Mysql found"
+		FOUNDMYSQL=YES
+	else
+		FOUNDMYSQL=NO
+	fi
+	echo "Doing basic test for Screen installation."
+	if command -v screen >/dev/null
+	then
+		echo "Screen found"
+		FOUNDSCREEN=YES		
+	else
+		FOUNDSCREEN=NO
+	fi
+	echo "Doing basic test for Zip installation."
+	if command -v zip >/dev/null
+	then
+		echo "Zip was found"
+		FOUNDZIP=YES
+	else
+		FOUNDZIP=NO
+	fi
+	echo "Doing basic test for Dos2unix installation."
+	if command -v dos2unix >/dev/null
+	then
+		echo "dos2unix was found"
+		FOUNDDOS2UNIX=YES
+	else
+		FOUNDDOS2UNIX=NO
+	fi
+	if command -v curl >/dev/null
+	then
+		echo "curl was found"
+		FOUNDCURL=YES
+	else
+		FOUNDCURL=NO
+	fi
+		if command -v git >/dev/null
+	then
+		echo "git was found"
+		FOUNDGIT=YES
+	else
+		FOUNDGIT=NO
+	fi
+	if [[ $FOUNDSCREEN == NO ]] || [[ $FOUNDMYSQL == NO ]] || [[ $FOUNDJAVA == NO ]] || [[ $FOUNDZIP == NO ]] || [[ $FOUNDSTARMADE == NO ]] || [[ $FOUNDDOS2UNIX == NO ]] || [[ $FOUNDCURL == NO ]] || [[ $FOUNDGIT == NO ]]
+	then
+		if [[ $FOUNDSTARMADE == NO ]]
+		then
+			echo "Please install Starmade or copy over and existing install.  IE to install/update with Shadow type - ./shadow.dtsd download"
+		fi
+		if [[ $FOUNDSCREEN == NO ]]
+		then
+			echo "Please install screen.  IE: for Ubuntu type - sudo apt-get install screen"
+		fi	
+		if [[ $FOUNDMYSQL == NO ]]
+		then
+			echo "Please install Mysql and set a root password.  IE: for Ubuntu type - sudo apt-get install mysql-server libapache2-mod-auth-mysql php5-mysql"
+		fi
+		if [[ $FOUNDJAVA == NO ]]
+		then
+			echo "Please install Java.  IE: for Ubuntu type - sudo apt-get install default-jre"
+		fi
+		if [[ $FOUNDZIP == NO ]]
+		then
+			echo "Please install Zip.  IE: for Ubuntu type - sudo apt-get install zip"
+		fi
+		if [[ $FOUNDDOS2UNIX == NO ]]
+		then
+			echo "Please install dos2unix.  IE: for Ubuntu type - sudo apt-get install dos2unix"
+		fi
+		if [[ $FOUNDCURL == NO ]]
+		then
+			echo "Please install curl.  IE: for Ubuntu type - sudo apt-get install curl"
+		fi
+		if [[ $FOUNDGIT == NO ]]
+		then
+			echo "Please install git.  IE: for Ubuntu type - sudo apt-get install git"
+		fi
+		exit
+	fi
+	read -p "Do you wish to have this script to setup Mysql user/pass and database or have you already done this? (requires root user for mysql) [y/N] : " INPUT
+	case $INPUT in
+		[YesyesYESYy]* ) 
+            echo "Setting up Mysql user and database"
+            MYSQLUSERDEFAULT=dtsduser
+            read -p "The user for the mysql database [$MYSQLUSERDEFAULT] : " INPUT
+            if [ -n "$INPUT" ]
+            then
+                CONFIGDTSD_MYSQLUSER=$INPUT
+            else
+                CONFIGDTSD_MYSQLUSER=$MYSQLUSERDEFAULT
+            fi
+            MYSQLUSERPASS=pass
+            read -p "The password for the user in the mysql database - do not leave this default if you care about security [$MYSQLUSERPASS] : " INPUT
+            if [ -n "$INPUT" ]
+            then
+                CONFIGDTSD_MYSQLPASS=$INPUT
+            else
+                CONFIGDTSD_MYSQLPASS=$MYSQLUSERPASS
+            fi
+            MYSQLDBDEFAULT=dtsddb
+            read -p "The name for the mysql database [$MYSQLDBDEFAULT] : " INPUT
+            if [ -n "$INPUT" ]
+            then
+                CONFIGDTSD_MYSQLDB=$INPUT
+            else
+                CONFIGDTSD_MYSQLDB=$MYSQLDBDEFAULT
+            fi
+                echo "Testing user and database"
+    # Stderr is redirected to stdout here to capture an error message from Mysql
+            if mysql -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "SHOW DATABASES;"  2>&1 | grep denied >/dev/null
+            then 
+                echo "It appears the user account is not setup"
+                USERFOUND=NO
+            else 
+                echo "Username exists checking for database"
+                USERFOUND=YES
+                if mysql -u $CONFIGDTSD_MYSQLUSER -p$CONFIGDTSD_MYSQLPASS -e "SHOW DATABASES;" | grep $CONFIGDTSD_MYSQLDB >/dev/null
+                then 
+                    echo "Database found"
+                    DBFOUND=YES
+                else
+                    echo "No Database detected"
+                    DBFOUND=NO
+                fi
+        
+            fi
+            if [[ $USERFOUND == YES ]] && [[ $DBFOUND == YES ]]
+            then
+                echo "User and database setup successfully"
+            fi
+            if [[ $USERFOUND == NO ]] || [[ $DBFOUND == NO ]]
+            then
+                ADMINLOOP=YES
+                while [[ $ADMINLOOP == YES ]]
+                do
+                    read -p "Do you wish to use administrative Mysql account to setup database/user? [y/N] : " INPUT	
+                    case $INPUT in
+                    [YesyesYESYy]* ) 
+                        MYSQLROOTDEFAULT=root
+                        read -p "The name for admin or root for mysql [$MYSQLROOTDEFAULT] : " INPUT
+                        if [ -n "$INPUT" ]
+                        then
+                            MYSQLROOT=$INPUT
+                        else
+                            MYSQLROOT=$MYSQLROOTDEFAULT
+                        fi
+                        read -p "The password for the root mysql account : " INPUT
+                        MYSQLROOTPASS=$INPUT
+                        if mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "SHOW DATABASES;"  2>&1 | grep denied >/dev/null
+                        then 
+                            echo "Unable to verify administrator access"
+                            ADMINLOOP=YES
+                        else 
+                            echo "Potential administrator user able to log in"
+                            ADMINLOOP=NO
+# Turn on Scheduler 		 						
+							mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "SET GLOBAL event_scheduler = ON;" 
+                            mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "CREATE DATABASE $CONFIGDTSD_MYSQLDB;" 
+                            if mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "SHOW DATABASES;"  | grep $CONFIGDTSD_MYSQLDB >/dev/null
+                            then
+                                ADMINLOOP=NO
+                                echo "Setting up user access to database"
+                                mysql -u $MYSQLROOT -p$MYSQLROOTPASS -e "GRANT ALL PRIVILEGES ON $CONFIGDTSD_MYSQLDB.* TO $CONFIGDTSD_MYSQLUSER@localhost IDENTIFIED BY '$CONFIGDTSD_MYSQLPASS';"
+                            else
+                                echo "Unable to confirm administrator/root account"
+                                ADMINLOOP=YES	
+                            fi
+                        fi
+                    ;;
+                    * ) 
+                        echo "Please setup a Mysql DB and user with full access to the target DB"
+                        exit
+                    ;;
+                    esac
+                done
+            fi
+        ;;
+        * ) 
+            echo "Please create a database and user and give that user access to database IE: GRANT ALL PRIVILEGES ON dtsddb.* TO dtsduser@localhost IDENTIFIED BY 'pass';"
+            exit
+        ;;
+	esac
+	CONFIGDTSD_INSTALLPATH=$SCRIPTDIR
+    CONFIGDTSD_SCRIPTPATH=$SCRIPTPATH
+	ME=`whoami`
+	read -p "User that has privileges to run the game and read write access to game directories [$ME] : " INPUT
+	if [ -n "$INPUT" ]
+	then
+		echo "User set to $INPUT"
+		CONFIGDTSD_USERNAME=$INPUT
+	else
+		echo "User set to $ME"
+		CONFIGDTSD_USERNAME=$ME
+	fi
+	SERVICEDEFAULT=StarMade.jar
+	read -p "The file that is used to run the server [$SERVICEDEFAULT] : " INPUT
+	if [ -n "$INPUT" ]
+	then
+		CONFIGDTSD_SERVICE=$INPUT
+	else
+		CONFIGDTSD_SERVICE=$SERVICEDEFAULT
+	fi
+	MAXMEMDEFAULT=512m
+	read -p "The default maximum memory java can use [$MAXMEMDEFAULT] : " INPUT
+	if [ -n "$INPUT" ]
+	then
+		CONFIGDTSD_MAXMEM=$INPUT
+	else
+		CONFIGDTSD_MAXMEM=$MAXMEMDEFAULT
+	fi
+	MINMEMDEFAULT=256m
+	read -p "The default minimum memory java can use [$MINMEMDEFAULT] : " INPUT
+	if [ -n "$INPUT" ]
+	then
+		CONFIGDTSD_MINMEM=$INPUT
+	else
+		CONFIGDTSD_MINMEM=$MINMEMDEFAULT
+	fi
+	PORTDEFAULT=4242
+	read -p "The default port Starmade can use [$PORTDEFAULT] : " INPUT
+	if [ -n "$INPUT" ]
+	then
+		CONFIGDTSD_PORT=$INPUT
+	else
+		CONFIGDTSD_PORT=$PORTDEFAULT
+	fi
+	MAINSCREENDEFAULT=smscreen
+	read -p "The default screen the server will run on [$MAINSCREENDEFAULT] : " INPUT
+	if [ -n "$INPUT" ]
+	then
+		CONFIGDTSD_MAINSCREEN=$INPUT
+	else
+		CONFIGDTSD_MAINSCREEN=$MAINSCREENDEFAULT
+	fi
+	DTSDSCREENDEFAULT=dtsdscreen
+	read -p "The default screen for script functions [$DTSDSCREENDEFAULT] : " INPUT
+	if [ -n "$INPUT" ]
+	then
+		CONFIGDTSD_DTSDSCREEN=$INPUT
+	else
+		CONFIGDTSD_DTSDSCREEN=$DTSDSCREENDEFAULT
+	fi
+    SETUPFUNCS=( $(compgen -A function | grep SETUP_) )
+    for func in ${SETUPFUNCS[@]}
+    do
+        $func
+    done
+	DEFAULTVAR=( $(compgen -v | grep CONFIGDTSD_ | grep -v DTSDDEFAULTVALUE) )
+	DEFAULTARRAY=0
+	echo ${DEFAULTVAR[@]}
+	echo ${#DEFAULTVAR[@]}
+	if [ -e $SCRIPTDIR/modules/defaults.dtsd ]
+	then
+		echo "defaults.dtsd found"
+		while [ -n "${DEFAULTVAR[$DEFAULTARRAY]+set}" ]
+		do
+			CURRENTDEFAULT=${DEFAULTVAR[$DEFAULTARRAY]}
+			VALUENAME=$CURRENTDEFAULT
+			DEFAULTVALUE=${!CURRENTDEFAULT}
+			if grep "$VALUENAME" $SCRIPTDIR/modules/defaults.dtsd > /dev/null
+			then
+				EXISTINGVARIABLE=$(grep "$VALUENAME" $CONFIGDTSD_INSTALLPATH/modules/defaults.dtsd)
+				EXISTINGVARIABLENAME=${EXISTINGVARIABLE%=*}
+				EXISTINGVALUE=${EXISTINGVARIABLE#*=}
+				echo "EXISTINGVARIABLENAME $EXISTINGVARIABLENAME EXISTINGVARIABLE $EXISTINGVARIABLE EXISTINGVALUE $EXISTINGVALUE"
+				echo "Updating VALUENAME $VALUENAME DEFAULTVALUE $DEFAULTVALUE "
+				sed -i "s/$EXISTINGVARIABLE/$EXISTINGVARIABLENAME=\"$DEFAULTVALUE\"/g" $SCRIPTDIR/modules/defaults.dtsd
+			else
+				echo "Adding VALUENAME $VALUENAME DEFAULTVALUE $DEFAULTVALUE "
+				printf "%s=%q\n" "$VALUENAME=\"$DEFAULTVALUE\"" >> $SCRIPTDIR/modules/defaults.dtsd
+			fi
+			let DEFAULTARRAY++
+		done
+	else
+		echo "no defaults.dtsd found"
+		touch $SCRIPTDIR/modules/defaults.dtsd
+		while [ -n "${DEFAULTVAR[$DEFAULTARRAY]+set}" ]
+		do
+			CURRENTDEFAULT=${DEFAULTVAR[$DEFAULTARRAY]}
+#			VALUENAME=$CURRENTDEFAULT
+			DEFAULTVALUE=${!CURRENTDEFAULT}
+			WRITEDEFAULT="$CURRENTDEFAULT=$DEFAULTVALUE"
+			printf "%s\n" "$CURRENTDEFAULT=\"$DEFAULTVALUE\"" >> $SCRIPTDIR/modules/defaults.dtsd
+			let DEFAULTARRAY++
+		done
+		echo "defaults.dtsd file created in /modules"
+	fi
+	echo "Setting up tables and columns, ranks, and search"
+	lib_makemysqloption
+	lib_mycreate
+	set_ranks_database
+	core_makesearchdb
+	core_addevents
+	lib_makedefaults
+	echo "Building ID database this may take a minute"
+	lib_pause
+	core_parseblocks
+}

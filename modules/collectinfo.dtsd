@@ -1,0 +1,784 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Database to store info from entities
+
+MYSQLDTSD_ADMINLOG_NAME="VARCHAR(25) BINARY"
+MYSQLDTSD_ADMINLOG_COMMAND="VARCHAR(50)"
+MYSQLDTSD_ADMINLOG_TIME=TIMESTAMP
+
+MYSQLDTSD_SERVERSTATUS_STATUS="VARCHAR(50)"
+MYSQLDTSD_SERVERSTATUS_TIME=TIMESTAMP
+
+MYSQLDTSD_GUESTBOOK_NAME="VARCHAR(25) BINARY"
+MYSQLDTSD_GUESTBOOK_STATUS="VARCHAR(20)"
+MYSQLDTSD_GUESTBOOK_IP="VARCHAR(15) DEFAULT 'Not Collected'"
+MYSQLDTSD_GUESTBOOK_TIME=TIMESTAMP
+
+MYSQLDTSD_DESTROYLOG_NAME="VARCHAR(25) BINARY"
+MYSQLDTSD_DESTROYLOG_TYPE="VARCHAR(50)"
+MYSQLDTSD_DESTROYLOG_DESTROYTIME=TIMESTAMP
+
+LOGSEARCH_player_changesector="has players attached. Doing Sector Change for PlS"
+LOGSEARCH_sector_info="[SERVER-LOCAL-ADMIN] LOADED SECTOR INFO: Sector"
+LOGSEARCH_sector_entityinfo="[SERVER-LOCAL-ADMIN] LoadedEntity [uid="
+LOGSEARCH_entity_destroy="[SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY:"
+LOGSEARCH_admin_commandlog="[ADMIN COMMAND]"
+LOGSEARCH_client_connected="[SERVER][LOGIN] new client connected"
+LOGSEARCH_client_logout="[SERVER] SETTING LOGOUT SPAWNING POINT"
+LOGSEARCH_blueprint_load="[BLUEPRINT][LOAD]"
+LOGSEARCH_blueprint_buy="[BLUEPRINT][BUY]"
+
+LOGSEARCH_collect_player_CREDITS="[SERVER-LOCAL-ADMIN] [PL] CREDITS:"
+LOGSEARCH_collect_player_FACTION="[SERVER-LOCAL-ADMIN] [PL] FACTION:"
+LOGSEARCH_collect_player_CURRENTIP="[SERVER-LOCAL-ADMIN] [PL] IP:"
+LOGSEARCH_collect_player_NAME="[SERVER-LOCAL-ADMIN] [PL] Name:"
+LOGSEARCH_collect_player_SECTOR="[SERVER-LOCAL-ADMIN] [PL] SECTOR:"
+LOGSEARCH_collect_player_LASTPOSITION="[SERVER-LOCAL-ADMIN] [PL] CONTROLLING-POS:"
+
+LOGSEARCH_collect_ship_ATTACHED="[SERVER-LOCAL-ADMIN] Attached:"
+LOGSEARCH_collect_ship_DOCKED="[SERVER-LOCAL-ADMIN] DockedUIDs:"
+LOGSEARCH_collect_ship_BLOCKS="[SERVER-LOCAL-ADMIN] Blocks:"
+LOGSEARCH_collect_ship_MASS="[SERVER-LOCAL-ADMIN] Mass:"
+LOGSEARCH_collect_ship_CREATOR="[SERVER-LOCAL-ADMIN] Creator:"
+LOGSEARCH_collect_ship_CURRENTSECTOR="[SERVER-LOCAL-ADMIN] Sector:"
+LOGSEARCH_collect_ship_LASTPOSITION="[SERVER-LOCAL-ADMIN] Local-Pos:"
+LOGSEARCH_collect_ship_UID="[SERVER-LOCAL-ADMIN] UID:"
+
+blueprint_load() {
+# [BLUEPRINT][LOAD] <admin> loaded killership as killership in (2, 2, 2) as faction 0
+# [BLUEPRINT][LOAD] <system> loaded Isanth Type-Zero Cc as MOB_Isanth Type-Zero Cc_1435850965418_0 in (2, 2, 2) as faction -1
+	LOADBPSTRING="${@:1}"
+	LOADBPSTRING=${LOADBPSTRING#*]}
+	echo "This was sent to blueprint load $LOADBPSTRING"
+	CUTSTRING=${LOADBPSTRING#*\(}
+	CUTSTRING=${CUTSTRING%%)*}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+# Quick way to parse the ship names because the possible spaces in the ship names have to be accounted for.  This method will fail if the ship has " as " in the BP name.	
+	CUTSTRING="${LOADBPSTRING/ as /.}"
+	CUTSTRING="${CUTSTRING/> loaded /.}"
+	CUTSTRING="${CUTSTRING/ in (/.}"
+	CUTSTRING="${CUTSTRING#*.}"
+	BPNAME="${CUTSTRING%%.*}"
+	CUTSTRING="${CUTSTRING#*.}"
+	SPAWNNAME="${CUTSTRING%%.*}"
+	STRING="${LOADBPSTRING##*n}"
+	FACTIONID="${STRING#"${STRING%%[![:space:]]*}"}"
+# Introduces a problem of not knowing what DB to put the entity in to, this will have to be addressed automatically in the collect script by including entity type for ships and stations and cross checking to make sure they are in the right database.
+	lib_myinsert SHIPDB NAME $SPAWNNAME
+	lib_myupdate SHIPDB FACTION $FACTIONID NAME $SPAWNNAME
+	lib_trigger shipinfo SHIPDB $SPAWNNAME
+}
+blueprint_buy() {
+# [BLUEPRINT][BUY] Doomsider bought blueprint from metaItem: 2blockship as 2blockshipspawn; Price: 1125; to sector: (2, 2, 2) (loadTime: 19ms, spawnTime: 14ms)
+	BUYBPSTRING="${@:1}"
+	BUYBPSTRING=${BUYBPSTRING#*]}
+	echo "This was sent to blueprint load $BUYBPSTRING"
+	CUTSTRING=${BUYBPSTRING#*\(}
+	CUTSTRING=${CUTSTRING%%)*}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+# Quick way to parse the ship names because the possible spaces in the ship names have to be accounted for.  This method will fail if the ship has " as " in the BP name.	
+	CUTSTRING="${BUYBPSTRING/ as /.}"
+	CUTSTRING="${CUTSTRING/metaItem: /.}"
+	CUTSTRING="${CUTSTRING#*.}"
+	BPNAME="${CUTSTRING%%.*}"
+	CUTSTRING="${CUTSTRING#*.}"
+	SPAWNNAME="${CUTSTRING%%;*}"
+	lib_myinsert SHIPDB NAME $SPAWNNAME
+	lib_myupdate SHIPDB FACTION 0 NAME $SPAWNNAME
+	lib_trigger shipinfo SHIPDB $SPAWNNAME
+}
+admin_commandlog() {
+# [ADMIN COMMAND] GIVEID from RegisteredClient: MewGuy (1) connected: true params: [MewGuy, 123, 100]
+# [ADMIN COMMAND] SECTOR_INFO from org.schema.schine.network.server.AdminLocalClient@75c33175 params: [2, 2, 2]
+	ADMINLOGSTRING="${@:1}"
+	ADMINLOGSTRING=${ADMINLOGSTRING#*]}
+	echo "This was sent to admin commandlog $ADMINLOGSTRING"
+	if [[ $ADMINLOGSTRING == *"RegisteredClient"* ]] && [[ $ADMINLOGSTRING != *"SERVERMESSAGE"* ]]
+	then
+		echo "Admin command from player sent"
+		cutstring=${ADMINLOGSTRING#*:}
+		cutstring=${cutstring%(*}
+		cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
+		ADMIN_NAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+		cutstring=${ADMINLOGSTRING#*]}
+		cutstring=${cutstring%f*}
+		ADMIN_COMMAND="${cutstring%"${cutstring##*[![:space:]]}"}"
+		cutstring=${ADMINLOGSTRING##*[}
+		cutstring=${cutstring%]*}
+		ADMIN_PARAMETERS=${cutstring//,/}
+		echo "Collected admin name $ADMIN_NAME admin command $ADMIN_COMMAND and admin parameters $ADMIN_PARAMETERS"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO ADMINLOG (NAME, COMMAND) VALUES (\"$ADMIN_NAME\",\"$ADMIN_COMMAND $ADMIN_PARAMETERS\");"
+	else
+		echo "Admin command from console sent"
+	fi
+}
+# Function to remove entities
+entity_destroy() {
+# [SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_SHIP_spawnship2.ent
+# [SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_SPACESTATION_destroyme.ent
+# DELETE FROM bar where field1 like '%foo%' 
+# [SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_SPACESTATION_station_2.ent
+# [SERVER][SEGMENTCONTROLLER] PERMANENTLY DELETING ENTITY: ENTITY_FLOATINGROCK_1432202013135_2_2_2_0.ent
+	DESTROYSTRING="${@:1}"
+	DESTROYSTRING=${DESTROYSTRING#*]}
+	echo "This was sent to entity_destroy $DESTROYSTRING"
+	FIRSTCUT=${DESTROYSTRING#*:}
+	CUTSTRING=${FIRSTCUT#*_}
+	ENTITYDESTROYED=${CUTSTRING%%_*}
+	CUTSTRING=${CUTSTRING#*_}
+	NAMEDESTROYED=${CUTSTRING%%.*}
+	echo "This is the entity type $ENTITYDESTROYED and the name $NAMEDESTROYED sent to entity destroy"
+	case "$ENTITYDESTROYED" in
+	*"SHIP"*) 
+		echo "destroyed ship detected"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM SHIPDB where NAME='$NAMEDESTROYED';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DESTROYLOG (NAME, TYPE) VALUES (\"$NAMEDESTROYED\",\"$ENTITYDESTROYED\");"
+	;;
+	*"SPACESTATION"*) 
+		echo "destroyed spacestation detected"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM STATIONDB where NAME='$NAMEDESTROYED';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DESTROYLOG (NAME, TYPE) VALUES (\"$NAMEDESTROYED\",\"$ENTITYDESTROYED\");"
+	;;
+	*"FLOATINGROCK"*) 
+		echo "destroyed asteroid detected"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "DELETE FROM ASTEROIDDB where NAME='$NAMEDESTROYED';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO DESTROYLOG (NAME, TYPE) VALUES (\"$NAMEDESTROYED\",\"$ENTITYDESTROYED\");"
+	;;
+	esac
+}
+# Functions to collect player info
+client_connected() {
+	CLIENTCONNECTSTRING="${@:1}"
+	CLIENTCONNECTSTRING=${CLIENTCONNECTSTRING#*]}
+	cutstring=${CLIENTCONNECTSTRING##*:}
+	CONNECTNAME="${cutstring#"${cutstring%%[![:space:]]*}"}"
+	echo "This was sent to client connected $CLIENTCONNECTSTRING"
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO GUESTBOOK (NAME, STATUS) VALUES (\"$CONNECTNAME\",\"connected\");"
+	lib_myinsert PLAYERDB NAME $CONNECTNAME
+	lib_myupdate PLAYERDB ONLINE y NAME $CONNECTNAME
+}
+client_logout() {
+#[SERVER] SETTING LOGOUT SPAWNING POINT OF PlS[MewGuy ; id(15)(1)f(0)] TO (-305.9333, 12.027243, 143.01651)
+	CLIENTLOGOUTSTRING="${@:1}"
+	echo "This was sent to client logout $CLIENTCONNECTSTRING"
+	cutstring=${CLIENTLOGOUTSTRING%;*}
+	cutstring=${cutstring##*[}
+	LOGOUTNAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+	CUTSTRING=${CLIENTLOGOUTSTRING##*\(}
+	CUTSTRING=${CUTSTRING%%)*}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+	echo "collected $LOGOUTNAME name with $POSITIONNAME as last position"
+	lib_myupdate PLAYERDB LASTPOSITION $POSITIONNAME NAME $LOGOUTNAME
+	mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO GUESTBOOK (NAME, STATUS) VALUES (\"$LOGOUTNAME\",\"logout\");"
+	lib_myupdate PLAYERDB ONLINE n NAME $CONNECTNAME
+}
+collect_player_LASTPOSITION() {
+	PLAYERLASTPOSITIONSTRING="${@:1}"
+	PLAYERLASTPOSITIONSTRING=${PLAYERLASTPOSITIONSTRING#*]}
+	CUTSTRING=${PLAYERLASTPOSITIONSTRING#*\(}
+	CUTSTRING=${CUTSTRING%%)*}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+	echo "This was send to collect player current position $PLAYERLASTPOSITIONSTRING"
+	COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+	lib_myupdate PLAYERDB LASTPOSITION $POSITIONNAME NAME $COLLECTPLAYERNAME
+}
+collect_player_SECTOR() {
+	PLAYERSECTORSTRING="${@:1}"
+	PLAYERSECTORSTRING=${PLAYERSECTORSTRING#*]}
+	echo "This was send to collect player sector $PLAYERSECTORSTRING"
+	CUTSTRING=${PLAYERSECTORSTRING##*\(}
+	XSECTOR=${CUTSTRING%%,*}
+	echo "collect this X value $XSECTOR"
+	CUTSTRING=${PLAYERSECTORSTRING##*\(}
+	CUTSTRING=${CUTSTRING#*,}
+	CUTSTRING=${CUTSTRING%,*}
+	YSECTOR="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	echo "collect this Y value $YSECTOR"
+	CUTSTRING=${PLAYERSECTORSTRING##*\(}
+	CUTSTRING=${CUTSTRING%\)*}
+	CUTSTRING=${CUTSTRING##*,}
+	ZSECTOR="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	echo "collect this Z value $ZSECTOR"
+	CURRENTSECTOR="$XSECTOR"_"$YSECTOR"_"$ZSECTOR"
+	COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+	lib_myupdate PLAYERDB CURRENTSECTOR $CURRENTSECTOR NAME $COLLECTPLAYERNAME
+}
+collect_player_CREDITS() {
+	# [SERVER-LOCAL-ADMIN] [PL] CREDITS: 20000
+	COLLECTSTRING="${@:1}"
+	COLLECTSTRING=${COLLECTSTRING#*]}
+	cutstring=${COLLECTSTRING##*:}
+	cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
+	COLLECT_PLAYER_CREDITS="${cutstring%"${cutstring##*[![:space:]]}"}"
+	echo "This was send to collect player credits $COLLECT_PLAYER_CREDITS"
+	COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+	lib_myupdate PLAYERDB CREDITS $COLLECT_PLAYER_CREDITS NAME $COLLECTPLAYERNAME
+}
+collect_player_FACTION() {
+	# [SERVER-LOCAL-ADMIN] [PL] FACTION: null
+	# [2015-07-13 00:15:52] [SERVER-LOCAL-ADMIN] [PL] FACTION: Faction [id=10001, name=Testers, description=a faction, size: 2; FP: 2916]
+	COLLECTSTRING="${@:1}"
+	COLLECTSTRING=${COLLECTSTRING#*]}
+	cutstring=${COLLECTSTRING#*:}
+	if [[ $cutstring == *"null"* ]]
+	then
+		COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+		lib_myupdate PLAYERDB FACTION null NAME $COLLECTPLAYERNAME
+		echo "This was send to collect player faction null" 
+	fi
+	if [[ $cutstring == *"Faction"* ]]
+	then
+		cutstring=${cutstring#*=}
+		COLLECT_PLAYER_FACTION=${cutstring%%,*}
+		cutstring=${cutstring#*=}
+		COLLECT_PLAYER_FACTIONAME=${cutstring%%,*}
+		COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+		lib_myupdate PLAYERDB FACTION $COLLECT_PLAYER_FACTION NAME $COLLECTPLAYERNAME
+		echo "This was send to collect player faction $COLLECT_PLAYER_FACTION $COLLECT_PLAYER_FACTIONAME" 
+	fi
+}
+collect_player_CURRENTIP() {
+# [SERVER-LOCAL-ADMIN] [PL] IP: /192.168.1.9
+	COLLECTSTRING="${@:1}"
+	cutstring=${COLLECTSTRING#*/}
+	cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
+	COLLECT_PLAYER_CURRENTIP="${cutstring%"${cutstring##*[![:space:]]}"}"
+	echo "This was send to collect player IP $COLLECT_PLAYER_CURRENTIP"
+	COLLECTPLAYERNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='playerinfo' ORDER BY line ASC LIMIT 1;")
+	lib_myupdate PLAYERDB CURRENTIP $COLLECT_PLAYER_CURRENTIP NAME $COLLECTPLAYERNAME
+	lib_release guestbookip $COLLECTPLAYERNAME
+}
+collect_player_NAME() {
+# [SERVER-LOCAL-ADMIN] [PL] Name: Doomsider
+	COLLECTSTRING="${@:1}"
+	COLLECTSTRING=${COLLECTSTRING#*]}
+	cutstring=${COLLECTSTRING##*:}
+	cutstring="${cutstring#"${cutstring%%[![:space:]]*}"}"
+	COLLECT_PLAYER_NAME="${cutstring%"${cutstring##*[![:space:]]}"}"
+	echo "This was send to collect player name $COLLECT_PLAYER_NAME"
+	lib_myinsert PLAYERDB NAME $COLLECT_PLAYER_NAME
+	lib_release playerinfo $COLLECT_PLAYER_NAME
+	lib_release playerdeposit $COLLECT_PLAYER_NAME
+	lib_release startership $COLLECT_PLAYER_NAME
+	lib_release garageremove $COLLECT_PLAYER_NAME
+	lib_release shipreturn $COLLECT_PLAYER_NAME
+}
+# Functions to collect from sector info
+sector_entityinfo() {
+#[ADMIN COMMAND] SECTOR_INFO from org.schema.schine.network.server.AdminLocalClient@614b3189 params: [3, -1, 3]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLAYERCHARACTER_harry, type=Astronaut]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANETCORE_6_8_-6, type=Planet Core]
+
+#[SERVER-LOCAL-ADMIN] LOADED SECTOR INFO: Sector[7](3, -1, 3); Protected: false; Peace: false; Seed: -4196432438942463595; Type: VOID;
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SPACESTATION_test_station_10_block, type=Space Station, seed=0, lastModifier=, spawner=, realName=test_station_10_block, touched=true, faction=0, pos=(-285.80713, -22.024189, 56.327763), minPos=(-4, -4, -4), maxPos=(4, 4, 4), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SHOP_1431965817638, type=Shop, seed=0, lastModifier=, spawner=, realName=Shop, touched=false, faction=0, pos=(0.0, 0.0, 0.0), minPos=(0, -15, 0), maxPos=(0, 15, 0), creatorID=0]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_FLOATINGROCK_1432202013135_2_2_2_0, type=Asteroid, seed=7652247429851126783, lastModifier=, spawner=, realName=undef, touched=false, faction=0, pos=(115.0, -116.0, 76.0), minPos=(-1, -4, -3), maxPos=(2, 2, 2), creatorID=7]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANET_qwwwwwww, type=Planet Segment, seed=5009764450413293528, lastModifier=, spawner=, realName=Planet, touched=false, faction=0, pos=(-94.77713, 0.67864233, 47.775173), minPos=(-9, -1, -9), maxPos=(9, 4, 9), creatorID=1]
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLANETCORE_6_8_-6, type=Planet Core]
+	echo "Entity info detected"
+	ENTITYINFOSTRING="${@:1}"
+	ENTITYINFOSTRING=${ENTITYINFOSTRING#*]}
+# string="[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_PLAYERCHARACTER_harry, type=Astronaut]"; string=${string#*=};  string=${string#*_};  string=${string#*_};  string=${string%%,*}; echo ""; echo $string; echo ""
+	FIRSTEQUALCUT=${ENTITYINFOSTRING#*=}
+	CUTSTRING=${FIRSTEQUALCUT#*_}
+	CUTSTRING=${CUTSTRING#*_}
+	ENTITYNAME=${CUTSTRING%%,*}
+	echo "Entity name is $ENTITYNAME"
+	SECONDEQUALCUT=${FIRSTEQUALCUT#*=}
+	CUTSTRING=${SECONDEQUALCUT%%]*}
+	ENTITYTYPE=${CUTSTRING%%,*}
+	echo "Entity type is $ENTITYTYPE"	
+	case "$ENTITYTYPE" in
+	*"Segment"*)
+		if [ "$REMOVEPLANETS" = "YES" ]
+		then
+			FULLENTITYNAME=${FIRSTEQUALCUT%%,*}
+			echo "Planet Segment $FULLENTITYNAME and is set to be removed"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid $FULLENTITYNAME 
+		fi
+		
+	;;
+	*"Core"*)
+		if [ "$REMOVEPLANETS" = "YES" ]
+		then
+			FULLENTITYNAME=${FIRSTEQUALCUT%%,*}
+			echo "Planet Segment $FULLENTITYNAME and is set to be removed"
+			lib_screensend $CONFIGDTSD_MAINSCREEN /destroy_uid $FULLENTITYNAME 
+		fi
+	;;
+	*"Ship"*)
+#[SERVER-LOCAL-ADMIN] LoadedEntity [uid=ENTITY_SHIP_ship test, type=Ship, seed=0, lastModifier=, spawner=ENTITY_PLAYERSTATE_harry, realName=ship test, touched=true, faction=0, pos=(56.865887, 910.5996, 5.6264873), minPos=(-2, -2, -2), maxPos=(2, 2, 2), creatorID=0]
+		THIRDEQUALCUT=${SECONDEQUALCUT#*=}
+		SEED=${THIRDEQUALCUT%%,*}
+		echo "See $SEED"
+		FOURTHEQUALCUT=${THIRDEQUALCUT#*=}
+		LASTMODIFY=${FOURTHEQUALCUT%%,*}
+		echo "LASTMODIFY $LASTMODIFY"
+		FITHEQUALCUT=${FOURTHEQUALCUT#*=}
+		SPAWNER=${FITHEQUALCUT%%,*}
+		echo "SPAWNER $SPAWNER"
+		SIXTHEQUALCUT=${FITHEQUALCUT#*=}
+		REALNAME=${SIXTHEQUALCUT%%,*}
+		echo "REALNAME $REALNAME"
+		SEVENTHEQUALCUT=${SIXTHEQUALCUT#*=}
+		TOUCHED=${SEVENTHEQUALCUT%%,*}
+		echo "TOUCHED $TOUCHED"
+		EIGHTHQUALCUT=${SEVENTHEQUALCUT#*=}
+		FACTIONID=${EIGHTHQUALCUT%%,*}
+		echo "FACTION $FACTION"
+		NINTHEQUALCUT=${EIGHTHQUALCUT#*=}		
+		CUTSTRING=${NINTHEQUALCUT#*\(}
+		CUTSTRING=${CUTSTRING%%)*}
+		CUTSTRING=${CUTSTRING//,/}
+		COLLECTSECTORARRAY=($CUTSTRING)
+		COLLECTX=${COLLECTSECTORARRAY[0]}
+		COLLECTY=${COLLECTSECTORARRAY[1]}
+		COLLECTZ=${COLLECTSECTORARRAY[2]}
+		POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+		echo "POSITIONNAME $POSITIONNAME"
+		echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z for position from entity info"
+		COLLECTSECTORNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
+		lib_myinsert SHIPDB NAME "$ENTITYNAME"
+		lib_myupdate SHIPDB CURRENTSECTOR "$COLLECTSECTORNAME" NAME "$ENTITYNAME"
+		lib_myupdate SHIPDB LASTPOSITION "$POSITIONNAME" NAME "$ENTITYNAME"
+		lib_myupdate SHIPDB FACTION "$FACTIONID" NAME "$ENTITYNAME"
+	;;	
+	*"Space Station"*)
+		THIRDEQUALCUT=${SECONDEQUALCUT#*=}
+		SEED=${THIRDEQUALCUT%%,*}
+		echo "See $SEED"
+		FOURTHEQUALCUT=${THIRDEQUALCUT#*=}
+		LASTMODIFY=${FOURTHEQUALCUT%%,*}
+		echo "LASTMODIFY $LASTMODIFY"
+		FITHEQUALCUT=${FOURTHEQUALCUT#*=}
+		SPAWNER=${FITHEQUALCUT%%,*}
+		echo "SPAWNER $SPAWNER"
+		SIXTHEQUALCUT=${FITHEQUALCUT#*=}
+		REALNAME=${SIXTHEQUALCUT%%,*}
+		echo "REALNAME $REALNAME"
+		SEVENTHEQUALCUT=${SIXTHEQUALCUT#*=}
+		TOUCHED=${SEVENTHEQUALCUT%%,*}
+		echo "TOUCHED $TOUCHED"
+		EIGHTHQUALCUT=${SEVENTHEQUALCUT#*=}
+		FACTIONID=${EIGHTHQUALCUT%%,*}
+		echo "FACTION $FACTION"
+		NINTHEQUALCUT=${EIGHTHQUALCUT#*=}		
+		CUTSTRING=${NINTHEQUALCUT#*\(}
+		CUTSTRING=${CUTSTRING%%)*}
+		CUTSTRING=${CUTSTRING//,/}
+		COLLECTSECTORARRAY=($CUTSTRING)
+		COLLECTX=${COLLECTSECTORARRAY[0]}
+		COLLECTY=${COLLECTSECTORARRAY[1]}
+		COLLECTZ=${COLLECTSECTORARRAY[2]}
+		POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+		echo "POSITIONNAME $POSITIONNAME"
+		echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z for position from entity info"
+		COLLECTSECTORNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
+		lib_myinsert STATIONDB NAME "$ENTITYNAME"
+		lib_myupdate STATIONDB CURRENTSECTOR "$COLLECTSECTORNAME" NAME "$ENTITYNAME"
+		lib_myupdate STATIONDB LASTPOSITION "$POSITIONNAME" NAME "$ENTITYNAME"
+		lib_myupdate STATIONDB FACTION "$FACTIONID" NAME "$ENTITYNAME"
+	;;
+	*"Shop"*)
+		COLLECTSECTORNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
+		lib_myinsert SHOPDB NAME "$ENTITYNAME"
+		lib_myupdate SHOPDB CURRENTSECTOR "$COLLECTSECTORNAME" NAME "$ENTITYNAME"
+	;;
+	*"Asteroid"*)
+		THIRDEQUALCUT=${SECONDEQUALCUT#*=}
+		SEED=${THIRDEQUALCUT%%,*}
+		echo "See $SEED"
+		FOURTHEQUALCUT=${THIRDEQUALCUT#*=}
+		LASTMODIFY=${FOURTHEQUALCUT%%,*}
+		echo "LASTMODIFY $LASTMODIFY"
+		FITHEQUALCUT=${FOURTHEQUALCUT#*=}
+		SPAWNER=${FITHEQUALCUT%%,*}
+		echo "SPAWNER $SPAWNER"
+		SIXTHEQUALCUT=${FITHEQUALCUT#*=}
+		REALNAME=${SIXTHEQUALCUT%%,*}
+		echo "REALNAME $REALNAME"
+		SEVENTHEQUALCUT=${SIXTHEQUALCUT#*=}
+		TOUCHED=${SEVENTHEQUALCUT%%,*}
+		echo "TOUCHED $TOUCHED"
+		EIGHTHQUALCUT=${SEVENTHEQUALCUT#*=}
+		FACTIONID=${EIGHTHQUALCUT%%,*}
+		echo "FACTION $FACTION"
+		NINTHEQUALCUT=${EIGHTHQUALCUT#*=}		
+		CUTSTRING=${NINTHEQUALCUT#*\(}
+		CUTSTRING=${CUTSTRING%%)*}
+		CUTSTRING=${CUTSTRING//,/}
+		COLLECTSECTORARRAY=($CUTSTRING)
+		COLLECTX=${COLLECTSECTORARRAY[0]}
+		COLLECTY=${COLLECTSECTORARRAY[1]}
+		COLLECTZ=${COLLECTSECTORARRAY[2]}
+		POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+		echo "POSITIONNAME $POSITIONNAME"
+		echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z for position from entity info"
+		COLLECTSECTORNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
+		COLLECTSECTORNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='sectorinfo' ORDER BY line ASC LIMIT 1;")
+		lib_myinsert ASTEROIDDB NAME "$ENTITYNAME"
+		lib_myupdate ASTEROIDDB LASTPOSITION "$POSITIONNAME" NAME "$ENTITYNAME"
+		lib_myupdate ASTEROIDDB CURRENTSECTOR "$COLLECTSECTORNAME" NAME "$ENTITYNAME"
+	;;
+	esac
+}
+sector_info() {
+# string="[SERVER-LOCAL-ADMIN] SECTOR INFO: Sector[8](1, 2, 3); Protected: false; Peace: false; Seed: 0; Type: MAIN"; echo ""; string=${string#*\(}; string=${string%\)*}; string=${string//,/}; array=($string); echo $string; echo ""; echo ${array[1]}; echo ${#array[1]}
+	echo "Sector info detected"
+	SECTORINFOSTRING="${@:1}"
+	SECTORINFOSTRING=${SECTORINFOSTRING#*]}
+	CUTSTRING=${SECTORINFOSTRING#*\(}
+	CUTSTRING=${CUTSTRING%\)*}
+	CUTSTRING=${CUTSTRING//,/}
+	COLLECTSECTORARRAY=($CUTSTRING)
+	COLLECTX=${COLLECTSECTORARRAY[0]}
+	COLLECTY=${COLLECTSECTORARRAY[1]}
+	COLLECTZ=${COLLECTSECTORARRAY[2]}
+	SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+	echo "here is sector name $SECTORNAME"
+	lib_myinsert SECTORDB NAME $SECTORNAME
+	echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z"
+	CUTFIRSTSEMISTRING=${SECTORINFOSTRING#*\;}
+	CUTSTRING=${CUTFIRSTSEMISTRING#*:}
+	CUTSTRING=${CUTSTRING%%\;*}
+	COLLECTPROTECTEDSTATUS="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	lib_myupdate SECTORDB PROTECTED $COLLECTPROTECTEDSTATUS NAME $SECTORNAME
+	echo "This is the protect status $COLLECTPROTECTEDSTATUS"
+	CUTSECONDSEMISTRING=${CUTFIRSTSEMISTRING#*\;}
+	CUTSTRING=${CUTSECONDSEMISTRING#*:}
+	CUTSTRING=${CUTSTRING%%\;*}
+	COLLECTPEACESTATUS="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	lib_myupdate SECTORDB PEACE $COLLECTPEACESTATUS NAME $SECTORNAME
+	echo "This is the peace status $COLLECTPEACESTATUS"
+	CUTTHIRDSEMISTRING=${CUTSECONDSEMISTRING#*\;}
+	CUTSTRING=${CUTTHIRDSEMISTRING#*:}
+	CUTSTRING=${CUTSTRING%%\;*}
+	COLLECTSEED="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	echo "This is the seed $COLLECTSEED"
+	CUTFOURTHSEMISTRING=${CUTTHIRDSEMISTRING#*\;}
+	CUTSTRING=${CUTFOURTHSEMISTRING#*:}
+	CUTSTRING=${CUTSTRING%%\;*}
+	COLLECTTYPE="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	lib_myupdate SECTORDB TYPE $COLLECTTYPE NAME $SECTORNAME
+	echo "This is the type $COLLECTTYPE"
+	lib_release sectorinfo $SECTORNAME
+}
+# Functions to collect ship and station info
+collect_ship_UID() {
+# [SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_ship_testdude_6block
+	SHIPUIDSTRING="${@:1}"
+	SHIPUIDSTRING=${SHIPUIDSTRING#*]}
+	CUTSTRING=${SHIPUIDSTRING#*_}
+	ENTITYTYPE=${CUTSTRING%%_*}
+	echo "This is the entity type from UID $ENTITYTYPE"
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
+	lib_myupdate $COLLECTDB ENTITYTYPE $ENTITYTYPE NAME $COLLECTSHIPNAME	
+}
+collect_ship_LASTPOSITION() {
+	SHIPLASTPOSSTRING="${@:1}"
+	SHIPLASTPOSSTRING=${SHIPLASTPOSSTRING#*]}
+	echo "This sent to last position $SHIPLASTPOSSTRING"
+	FIRSTCUT=${SHIPLASTPOSSTRING#*:}
+	if [ -n "${FIRSTCUT}" ] 
+	then
+		CUTSTRING=${SHIPLASTPOSSTRING#*\(}
+		CUTSTRING=${CUTSTRING%\)*}
+		CUTSTRING=${CUTSTRING//,/}
+		COLLECTSECTORARRAY=($CUTSTRING)
+		COLLECTX=${COLLECTSECTORARRAY[0]}
+		COLLECTY=${COLLECTSECTORARRAY[1]}
+		COLLECTZ=${COLLECTSECTORARRAY[2]}
+		POSITIONNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+		echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z for ship position"
+	else
+		POSITIONNAME=none			
+		echo "no last position detected"
+	fi
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
+	lib_myupdate $COLLECTDB LASTPOSITION $POSITIONNAME NAME $COLLECTSHIPNAME	
+	lib_release shipinfo $COLLECTSHIPNAME
+# This check was added for spawning blueprint information collect because there is no way to determine whether it is a ship or station initially.	
+	CHECKENTITYTYPE=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select ENTITYTYPE from SHIPDB where NAME='$COLLECTSHIPNAME';")
+	echo "This is the check for entity type $CHECKENTITYTYPE"
+	if [[ $CHECKENTITYTYPE == "SPACESTATION" ]]
+	then
+		echo "Spacestation found in ship database"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "insert into STATIONDB (NAME, CURRENTSECTOR, ATTACHED, DOCKED, BLOCK, MASS, CREATOR, LASTPOSITION, FACTION, LASTCONTROLLER, ENTITYTYPE) select NAME, CURRENTSECTOR, ATTACHED, DOCKED, BLOCK, MASS, CREATOR, LASTPOSITION, FACTION, LASTCONTROLLER, ENTITYTYPE from SHIPDB where NAME='$COLLECTSHIPNAME';"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "delete from SHIPDB where NAME='$COLLECTSHIPNAME';"
+	fi
+}
+collect_ship_ATTACHED() {
+#[SERVER-LOCAL-ADMIN] Attached: [PlS[harry_dude ; id(6)(1)f(0)]]
+#[SERVER-LOCAL-ADMIN] Attached: [PlS[Doomsider [Doomsider]*; id(4)(1)f(0)]]
+	SHIPATTACHEDSTRING="${@:1}"
+	SHIPATTACHEDSTRING=${SHIPATTACHEDSTRING#*]}
+	FIRSTCUT=${SHIPATTACHEDSTRING##*[}
+	SECONDCUT=${FIRSTCUT%]*}
+	if [ -n "${SECONDCUT}" ]
+	then
+		CUTSTRING=${SHIPATTACHEDSTRING%;*}
+		CUTSTRING=${CUTSTRING%[[:space:]]*}
+		COLLECT_SHIP_ATTACHED=${CUTSTRING##*[}
+		echo "this is the attached player $COLLECT_SHIP_ATTACHED"
+	else
+		echo "nothing attached to this ship"
+		COLLECT_SHIP_ATTACHED=none
+	fi
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
+	lib_myupdate $COLLECTDB ATTACHED $COLLECT_SHIP_ATTACHED NAME $COLLECTSHIPNAME
+}
+collect_ship_DOCKED() {
+# [SERVER-LOCAL-ADMIN] DockedUIDs
+	SHIPDOCKEDSTRING="${@:1}"
+	SHIPDOCKEDSTRING=${SHIPDOCKEDSTRING#*]}
+	FIRSTCUT=${SHIPDOCKEDSTRIN#*:}
+	if [ -n "${FIRSTCUT}" ] 
+	then
+		CUTSTRING=${SHIPDOCKEDSTRING%%;*}
+		CUTSTRING=${CUTSTRING##*[}
+		COLLECT_SHIP_DOCKED="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+		echo "this is docked $COLLECT_SHIP_DOCKED"
+	else
+		echo "nothing attached to this ship"
+		COLLECT_SHIP_DOCKED=none
+	fi
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
+	lib_myupdate $COLLECTDB DOCKED $COLLECT_SHIP_DOCKED NAME $COLLECTSHIPNAME
+}
+collect_ship_BLOCKS() {
+	SHIPBLOCKSSTRING="${@:1}"
+	SHIPBLOCKSSTRING=${SHIPBLOCKSSTRING#*]}
+#	string="[SEND][SERVERMESSAGE] Blocks: 1 to RegisteredClient: harry_dude (2) connected: true"; string=${string#*:}; string=${string%%t*}; string="${string%"${string##*[![:space:]]}"}"; string="${string#"${string%%[![:space:]]*}"}";echo ""; echo $string; echo ${#string}; echo ""
+	CUTSTRING=${SHIPBLOCKSSTRING#*:}
+	if [ -n "${CUTSTRING}" ] 
+	then
+		CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+		COLLECT_SHIP_BLOCK="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+		echo "this is the ships blocks $COLLECT_SHIP_BLOCK"
+	else
+		echo "no blocks detected"
+		COLLECT_SHIP_BLOCK=none
+	fi
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
+	lib_myupdate $COLLECTDB BLOCK $COLLECT_SHIP_BLOCK NAME $COLLECTSHIPNAME
+}
+collect_ship_MASS() {
+	SHIPMASSSTRING="${@:1}"
+	SHIPMASSSTRING=${SHIPMASSSTRING#*]}
+	CUTSTRING=${SHIPMASSSTRING#*:}
+	if [ -n "${CUTSTRING}" ] 
+	then
+		CUTSTRING="${CUTSTRING%"${CUTSTRING##*[![:space:]]}"}"
+		COLLECT_SHIP_MASS="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+		echo "this is the ships mass $COLLECT_SHIP_MASS"
+	else
+		echo "no mass detected"
+		COLLECT_SHIP_MASS=none
+	fi
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
+	lib_myupdate $COLLECTDB MASS $COLLECT_SHIP_MASS NAME $COLLECTSHIPNAME
+}
+collect_ship_CREATOR() {
+    # string="[SEND][SERVERMESSAGE] Creator: ENTITY_PLAYERSTATE_harry_dude to RegisteredClient: harry_dude (3) connected: true"; echo ""; string=${string#*_};  string=${string#*_}; string=${string%%t*}; string="${string%"${string##*[![:space:]]}"}"; echo $string; echo ${#string}; echo 
+	SHIPCREATORSTRING="${@:1}"
+	SHIPCREATORSTRING=${SHIPCREATORSTRING#*]}
+	FIRSTCUT=${SHIPCREATORSTRING#*:}
+	if [ -n "${FIRSTCUT}" ] 
+	then
+		CUTSTRING=${FIRSTCUT#*_}
+		CUTSTRING=${CUTSTRING#*_}
+		COLLECT_SHIP_CREATOR="${CUTSTRING%"$CUTSTRING##*[![:space:]]}"}"
+# Remove greater than or less than from string to prevent mysql error when admin is the creator
+		COLLECT_SHIP_CREATOR=${COLLECT_SHIP_CREATOR//</}
+		COLLECT_SHIP_CREATOR=${COLLECT_SHIP_CREATOR//>/}
+		echo "this is the ships creator $COLLECT_SHIP_CREATOR"
+	else
+		echo "no creator detected"
+		COLLECT_SHIP_CREATOR=none
+	fi
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
+	lib_myupdate $COLLECTDB CREATOR $COLLECT_SHIP_CREATOR NAME $COLLECTSHIPNAME
+}
+collect_ship_CURRENTSECTOR() {
+	COLLECTSHIPSECTORSTRING="${@:1}"
+	COLLECTSHIPSECTORSTRING=${COLLECTSHIPSECTORSTRING#*]}
+	FIRSTCUT=${COLLECTSHIPSECTORSTRING#*:}
+	if [ -n "${FIRSTCUT}" ] 
+	then
+		CUTSTRING=${COLLECTSHIPSECTORSTRING#*\(}
+		CUTSTRING=${CUTSTRING%\)*}
+		CUTSTRING=${CUTSTRING//,/}
+		COLLECTSECTORARRAY=($CUTSTRING)
+		COLLECTX=${COLLECTSECTORARRAY[0]}
+		COLLECTY=${COLLECTSECTORARRAY[1]}
+		COLLECTZ=${COLLECTSECTORARRAY[2]}
+		SECTORNAME="$COLLECTX"_"$COLLECTY"_"$COLLECTZ"
+		echo "Collected $COLLECTX for x $COLLECTY for y $COLLECTZ for z for current entity sector"
+	else
+		echo "no current sector detected"
+		SECTORNAME=none
+	fi
+	COLLECTSHIPNAME=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE3 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the name collect from triggerdb $COLLECTSHIPNAME"
+	COLLECTDB=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select VALUE2 from TRIGGERDB where VALUE1='shipinfo' ORDER BY line ASC LIMIT 1;")
+	echo "This is the db collect from triggerdb $COLLECTDB"
+	lib_myupdate $COLLECTDB CURRENTSECTOR $SECTORNAME NAME $COLLECTSHIPNAME
+}
+# Function for sector change for players
+player_changesector() {
+# Strings to retrieve
+# SEARCHCHANGE="has players attached. Doing Sector Change for PlS"
+# [SERVER] Ship[test ship](132) has players attached. Doing Sector Change for PlS[testdude ; id(3)(1)f(0)]: Sector[4](2, 2, 2) -> Sector[9](1, 2, 2)
+# [SERVER] PlayerCharacter[(ENTITY_PLAYERCHARACTER_testdude)(131)] has players attached. Doing Sector Change for PlS[testdude ; id(3)(1)f(0)]: Sector[9](1, 2, 2) -> Sector[4](2, 2, 2)
+# string="[SERVER] Ship[test ship](132) has players attached. Doing Sector Change for PlS[testdude ; id(3)(1)f(0)]: Sector[4](2, 2, 2) -> Sector[9](1, 2, 2)"; string=${string#*]}; string=${string%%[*}; string="${string#"${string%%[![:space:]]*}"}"; echo ${#string}; echo $string
+	echo "Change sector detected for player"
+	SECTORSTRING="${@:1}"
+	SECTORSTRING=${SECTORSTRING#*]}
+	CUTSTRING=${SECTORSTRING#*]}
+	CUTSTRING=${CUTSTRING%%[*}
+	CHANGESECTORCONTROL="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+	case "$CHANGESECTORCONTROL" in
+	*"Ship"*) 
+		echo "Ship changed sector with player"
+		CUTSTRING=${SECTORSTRING#*[}
+		CUTSTRING=${CUTSTRING#*[}
+		CHANGESHIPNAME=${CUTSTRING%%]*}
+		echo "this is the shipname $CHANGESHIPNAME"
+		CUTSTRING=${SECTORSTRING%;*}
+		CUTSTRING=${CUTSTRING%[[:space:]]*}
+		CHANGEPLAYERNAME="${CUTSTRING##*[}"
+		echo "this is the playername $CHANGEPLAYERNAME"
+		OLDSECTORCUT=${SECTORSTRING#*:}
+		CUTSTRING=${OLDSECTORCUT#*\(}
+		CUTSTRING=${CUTSTRING%%\)*}
+		CUTSTRING=${CUTSTRING//,/}
+		COLLECTSECTORARRAY=($CUTSTRING)
+		OLDX=${COLLECTSECTORARRAY[0]}
+		OLDY=${COLLECTSECTORARRAY[1]}
+		OLDZ=${COLLECTSECTORARRAY[2]}
+		OLDSECTORNAME="$OLDX"_"$OLDY"_"$OLDZ"
+		echo "this is old sector $OLDX $OLDY $OLDZ $OLDSECTORNAME "
+		CUTSTRING=${SECTORSTRING%\)*}
+		SECTORSTRING=${CUTSTRING##*\(}
+		CHANGESECTORX=${SECTORSTRING%%,*}
+		echo "sector x $CHANGESECTORX"
+		CUTSTRING=${SECTORSTRING%,*}
+		CUTSTRING=${CUTSTRING#*,}
+		CHANGESECTORY="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+		echo "sector y $CHANGESECTORY"
+		CUTSTRING=${SECTORSTRING##*,}
+		CHANGESECTORZ="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+		echo "sector z $CHANGESECTORZ"
+		CURRENTCHANGESECTOR="$CHANGESECTORX"_"$CHANGESECTORY"_"$CHANGESECTORZ"
+		lib_myinsert SHIPDB NAME $CHANGESHIPNAME
+		lib_myupdate PLAYERDB CURRENTSECTOR $CURRENTCHANGESECTOR NAME $CHANGEPLAYERNAME
+		lib_myupdate SHIPDB CURRENTSECTOR $CURRENTCHANGESECTOR NAME $CHANGESHIPNAME
+		lib_trigger sectorinfo $CURRENTCHANGESECTOR Sector
+		universejail $OLDX $OLDY $OLDZ $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
+		universeofflimits $OLDX $OLDY $OLDZ $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
+		universeboarder $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
+	;;
+	*"SpaceStation"*) 
+		echo "Station changed sector with player"
+	;;
+	*"PlayerCharacter"*)
+		echo "Player changed sector"
+		CUTSTRING=${SECTORSTRING%;*}
+		CUTSTRING=${CUTSTRING%[[:space:]]*}
+		CHANGEPLAYERNAME="${CUTSTRING##*[}"
+		echo "Playername for changing sector in spacesuit $CHANGEPLAYERNAME"
+		OLDSECTORCUT=${SECTORSTRING#*:}
+		CUTSTRING=${OLDSECTORCUT#*\(}
+		CUTSTRING=${CUTSTRING%%\)*}
+		CUTSTRING=${CUTSTRING//,/}
+		COLLECTSECTORARRAY=($CUTSTRING)
+		OLDX=${COLLECTSECTORARRAY[0]}
+		OLDY=${COLLECTSECTORARRAY[1]}
+		OLDZ=${COLLECTSECTORARRAY[2]}
+		OLDSECTORNAME="$OLDX"_"$OLDY"_"$OLDZ"
+		echo "this is old sector $OLDX $OLDY $OLDZ $OLDSECTORNAME "
+		CUTSTRING=${SECTORSTRING%\)*}
+		SECTORSTRING=${CUTSTRING##*\(}
+		CHANGESECTORX=${SECTORSTRING%%,*}
+		echo "sector x $CHANGESECTORX"
+		CUTSTRING=${SECTORSTRING%,*}
+		CUTSTRING=${CUTSTRING#*,}
+		CHANGESECTORY="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+		echo "sector y $CHANGESECTORY"
+		CUTSTRING=${SECTORSTRING##*,}
+		CHANGESECTORZ="${CUTSTRING#"${CUTSTRING%%[![:space:]]*}"}"
+		echo "sector z $CHANGESECTORZ"
+		lib_myupdate PLAYERDB CURRENTSECTOR $CURRENTCHANGESECTOR NAME $CHANGEPLAYERNAME
+		lib_trigger sectorinfo $CURRENTCHANGESECTOR Sector
+		universejail $OLDX $OLDY $OLDZ $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
+		universeofflimits $OLDX $OLDY $OLDZ $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
+		universeboarder $CHANGESECTORX $CHANGESECTORY $CHANGESECTORZ $CHANGEPLAYERNAME &
+	;;
+	esac
+}
+
+#[SERVER][LOGIN] login failed (ERROR_ALREADY_LOGGED_IN): SET CLIENT TO NULL
+
+# Strings to retrieve for Ship and Station info
+#Received after /sector_info not loaded
+#[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SHIP_space ship, sectorPos=(2, 2, 2), type=5, seed=0, lastModifier=, spawner=<admin>, realName=space ship, touched=true, faction=0, pos=(440.3829, 2.4231818, -369.9619), minPos=(-2, -1, -1), maxPos=(1, 0, 1), creatorID=0]
+#Received after /ship_info_name not loaded
+#[SERVER-LOCAL-ADMIN] DatabaseEntry [uid=ENTITY_SHIP_test ship, sectorPos=(1, 2, 2), type=5, seed=0, lastModifier=, spawner=ENTITY_PLAYERSTATE_testdude, realName=test ship, touched=true, faction=0, pos=(691.1531, -15.3399725, 0.22808628), minPos=(-2, -2, -2), maxPos=(2, 2, 2), creatorID=0]
+#Received after /ship_info_name loaded
+#[SERVER-LOCAL-ADMIN] [INFO] new ship found in loaded objects 
+#[SERVER-LOCAL-ADMIN] Attached: [PlS[harry_dude ; id(284)(3)f(0)]] 
+#[SERVER-LOCAL-ADMIN] DockedUIDs:  
+#[SERVER-LOCAL-ADMIN] Blocks: 1
+#[SERVER-LOCAL-ADMIN] Mass: 0.1 
+#[SERVER-LOCAL-ADMIN] LastModified: 
+#[SERVER-LOCAL-ADMIN] Creator: ENTITY_PLAYERSTATE_harry_dude 
+#[SERVER-LOCAL-ADMIN] Sector: 150 -> Sector[150](2, 2, 2) 
+#[SERVER-LOCAL-ADMIN] Name: new ship 
+#[SERVER-LOCAL-ADMIN] UID: ENTITY_SHIP_new ship 
+#[SERVER-LOCAL-ADMIN] MinBB(chunks): (-2, -2, -2) 
+#[SERVER-LOCAL-ADMIN] MaxBB(chunks): (2, 2, 2)
+#[SERVER-LOCAL-ADMIN] Blocks: 1 
+#[SERVER-LOCAL-ADMIN] Local-Pos: (8.301939, -3.4012308, -16.057693) 
+#[SERVER-LOCAL-ADMIN] Orientation: (0.0, -0.70710677, 0.0, 0.70710677) 
+#[SERVER-LOCAL-ADMIN] Ship

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions to reduce the size of the database or to backup all the used sectors
+
+
+# Use export and import to reset the database by saving all used player sectors, deleting the database, and then restoring the sectors.
+#/export_sector 2 3 4 mySavedSector
+#/import_sector 2 3 4 mySavedSector
+
+
+#String to collect

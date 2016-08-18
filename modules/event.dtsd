@@ -1,0 +1,307 @@
+#!/bin/bash
+# Shadow .01 Based off of DTSD
+# Functions for adding times events to the server through the use of Mysql Events
+
+# In order to use scheduler is must be turned on with SET GLOBAL event_scheduler = ON; issued from root for Mysql
+# Events are created by this format MYSQLEVENT_FREQUENCY_TIMEVALUE_TIMEQUANTITY_EVENTNAME="EVENT_FUNCTION_NAME"
+# Events with repeat for frequency will be repeated this events will be stopped and reset on server restart.  
+# Events with system for frequency will also be repeated but they will not be reset upon server restarting.  They should be scheduled to prevent overlap and interference from other system events.    
+
+# Acceptable variables for time quantity are YEAR | QUARTER | MONTH | DAY | HOUR | MINUTE | WEEK | SECOND | YEAR_MONTH | DAY_HOUR | DAY_MINUTE | DAY_SECOND | HOUR_MINUTE | HOUR_SECOND | MINUTE_SECOND
+# Acceptable variables for frequency are REPEAT time time_value or SYSTEM time time_value
+# CREATE EVENT my_event ON SCHEDULE EVERY 1 DAY STARTS str_to_date( date_format(now(), '%Y%m%d 0200'), '%Y%m%d %H%i' ) + INTERVAL 1 DAY DO INSERT INTO COMMANDDB (COMMAND) VALUES ("EVENT_SERVERVERSION");
+# CREATE EVENT my_event ON SCHEDULE EVERY 120 SECOND STARTS str_to_date( date_format(now(), '%Y%m%d %H%i'), '%Y%m%d %H%i' ) + INTERVAL 120 SECOND DO INSERT INTO COMMANDDB (COMMAND) VALUES ("EVENT_SERVERVERSION");
+
+MYSQLEVENT_REPEAT_60_SECOND_VOTECHECK="EVENT_VOTECHECK &"
+MYSQLEVENT_REPEAT_300_SECOND_SERVERSTATUS="EVENT_SERVERSTATUS &"
+MYSQLEVENT_REPEAT_3600_SECOND_SERVERVERSION="EVENT_SERVERVERSION &"
+MYSQLEVENT_SYSTEM_12_HOUR_SERVERRESTART="EVENT_SERVERRESTART &"
+MYSQLEVENT_SYSTEM_24_HOUR_SERVERUNIVERSEBACKUP="EVENT_UNIVERSEBACKUP &"
+
+#MYSQLEVENT_ONCEADAY_12_SERVERRESTART="EVENT_SERVERRESTART &"
+#MYSQLEVENT_ONCEADAY_20_SERVERUNIVERSEBACKUP="EVENT_UNIVERSEBACKUP &"
+
+
+DTSDHELP_myscheduler="\nMyscheduler usage: shadow.dtsd myscheduler on or off\nTurns the Myql Scheduler on or off.  Requires root password for Mysql\n"
+DTSDHELP_clearschedule="\nClearschedule usage: shadow.dtsd clearschedule\nClears scheduled tasks\n"
+DTSDHELP_addevents="\nAddevents usage: shadow.dtsd addevents\nAdds events from the script to the Mysql database\n"
+
+core_myscheduler() {
+# [Turns the Myql Scheduler on or off.  Requires root password for Mysql] myscheduler usage:  shadow.dtsd myscheduler <on/off>
+	if [ "$#" -ne "2" ]
+	then
+		echo "Usage:  myscheduler on or off"
+	else
+		case $2 in
+		on)
+		echo "Turning on Mysql Scheduler"
+		  read -p "The password for Mysql root : " INPUT
+            if [ -n "$INPUT" ]
+            then
+				mysql -u root -p$INPUT -e "SET GLOBAL event_scheduler = ON;"
+            else
+				"You must use root password to turn on or off scheduler"
+				exit
+            fi
+		;;
+		off)
+		echo "Turning off Mysql Scheduler"
+		  read -p "The password for Mysql root : " INPUT
+            if [ -n "$INPUT" ]
+            then
+				mysql -u root -p$INPUT -e "SET GLOBAL event_scheduler = OFF;"
+            else
+				"You must use root password to turn on or off scheduler"
+				exit
+            fi
+		;;
+		esac
+	fi
+}
+core_clearschedule() {
+# [Clears scheduled tasks] clearschedule usage: shadow.dtsd clearschedule
+	echo "Clearing all Schedules"
+	CREATEVAR=( $(compgen -v | grep MYSQLEVENT_ ) )
+	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
+	do
+		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
+		SCHEDULECOMMAND=${CURRENTSEARCH##*_}
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "drop event $SCHEDULECOMMAND;"
+		let CREATEARRAY++
+	done
+}
+core_clearschedulerepeat() {
+# [Clears scheduled tasks] clearschedule usage: shadow.dtsd clearschedulerepeat
+	echo "Clearing all repeat Schedules"
+	CREATEVAR=( $(compgen -v | grep MYSQLEVENT_REPEAT ) )
+	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
+	do
+		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
+		SCHEDULECOMMAND=${CURRENTSEARCH##*_}
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "drop event $SCHEDULECOMMAND;"
+		let CREATEARRAY++
+	done
+}
+core_addevents() {
+# [Adds events from the script to the Mysql database] usage: shadow.dtsd addevents
+CREATEVAR=( $(compgen -v | grep MYSQLEVENT_ ) )
+CREATEARRAY=0
+	while [ -n "${CREATEVAR[$CREATEARRAY]+set}" ]
+	do
+		CURRENTSEARCH=${CREATEVAR[$CREATEARRAY]}
+		cutstring=${CURRENTSEARCH#*_}
+		SCHEDULETYPE=${cutstring%%_*}
+		echo "this is SCHEDULETYPE $SCHEDULETYPE"
+		case $SCHEDULETYPE in
+			REPEAT)
+				cutstring=${cutstring#*_}
+				TIMEVALUE=${cutstring%%_*}
+				cutstring=${cutstring#*_}
+				TIMEQUANTITY=${cutstring%%_*}
+				EVENTNAME=${cutstring#*_}
+				SCHEDULECOMMAND=${!CURRENTSEARCH}
+# Rather than just drop the event here in case there are changes in the script it would be better to compare to see if there are differences, if so drop the old event.  This way existing timers could remain counting
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY STARTS str_to_date( date_format(now(), '%Y%m%d %H%i'), '%Y%m%d %H%i' ) + INTERVAL $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
+				#mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"		
+			;;
+			SYSTEM)
+				cutstring=${cutstring#*_}
+				TIMEVALUE=${cutstring%%_*}
+				cutstring=${cutstring#*_}
+				TIMEQUANTITY=${cutstring%%_*}
+				EVENTNAME=${cutstring#*_}
+				SCHEDULECOMMAND=${!CURRENTSEARCH}
+# Rather than just drop the event here in case there are changes in the script it would be better to compare to see if there are differences, if so drop the old event.  This way existing timers could remain counting
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "CREATE EVENT $EVENTNAME ON SCHEDULE EVERY $TIMEVALUE $TIMEQUANTITY STARTS str_to_date( date_format(now(), '%Y%m%d %H%i'), '%Y%m%d %H%i' ) + INTERVAL $TIMEVALUE $TIMEQUANTITY DO INSERT INTO COMMANDDB (COMMAND) VALUES (\"$SCHEDULECOMMAND\");"
+			;;
+		esac
+		let CREATEARRAY++
+	done
+}
+EVENT_SERVERMESSAGE() {
+# A simple server message to send to all players
+	lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Welcome to the server type !help to see extra commands"
+}
+EVENT_VOTECHECK() {
+core_votecheck
+}
+EVENT_SERVERSTATUS() {
+	echo "Checking Server Status"
+	if lib_check_server_running
+	then
+		MYSQLSTOP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
+		CURRENTTIME=$(date +%s)
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
+# Extra redundant send just to make sure server recieved it	
+		sleep 2
+		lib_screensend $CONFIGDTSD_MAINSCREEN /pm SHADOW_SERVER_CHECK_$CURRENTTIME testing
+		sleep 30
+		SERVERREPAIR=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%Database Repairing itself%\" and SERVERLOG.line >= $MYSQLSTOP";) 
+		if [ -n "$SERVERREPAIR" ]
+			then
+			echo "Sever appears to be repairing database"
+		else
+			echo "Server is not repairing database "
+			CHECKSERVER=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "select LOGSTRING from SERVERLOG where LOGSTRING like \"%SHADOW_SERVER_CHECK_$CURRENTTIME%\";")
+			echo "CHECKSERVER $CHECKSERVER"
+			if [ -n "$CHECKSERVER" ]
+			then
+				echo "Sever appears to be running"
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Server Running\");"
+			else
+				echo "Server appears to be down"
+				mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart server frozen\");"
+				core_softreset
+			fi
+		fi
+	else
+		echo "Starmade is not running!"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart no server detected\");"
+		core_softreset
+	fi
+}
+EVENT_SERVERRESTART() {
+core_softreset
+}
+EVENT_UNIVERSEBACKUP() {
+core_universebackup
+}
+EVENT_SERVERVERSION() {
+# Manually check for latest version and install it 
+# Grab the releaseindex as a very long string variable
+	releaseindex=$(curl http://files.star-made.org/releasebuildindex)
+# Go to the end of the variable at the last .
+	newversion=${releaseindex##*.}
+	echo "newversion $newversion"
+# Get the first version to compare
+	cutstring=${newversion#*_}
+	NEWSMVERSION1=${cutstring%_*}
+	echo "NEWSMVERSION1 $NEWSMVERSION1"
+# Get the second version to compare
+	NEWSMVERSION2=${cutstring#*_}
+	echo "NEWSMVERSION2 $NEWSMVERSION2"
+# Gather the old version from the version.txt file in StarMade
+oldversion=$(cat $CONFIGDTSD_INSTALLPATH/StarMade/version.txt)
+	echo "oldversion $oldversion"
+# Get the first version to compare
+	cutstring=${oldversion#*#}
+	OLDSMVER1=${cutstring%_*}
+	echo "OLDSMVER1 $OLDSMVER1"
+# Get the second version to compare
+	OLDSMVER2=${cutstring#*_}
+	echo "OLDSMVER2 $OLDSMVER2"
+# If the first or second newversion exceeds the first or second old version
+	if [ "$NEWSMVERSION1" -gt "$OLDSMVER1" ] || [ "$NEWSMVERSION2" -gt "$OLDSMVER2" ]
+	then 
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"New Version Detected\");"
+		echo "Newer Version Detected"
+		core_clearschedule
+# At this point the cronjobs and server will need to be stopped and a backup made just in case
+		lib_screensend $CONFIGDTSD_MAINSCREEN "/chat New version detected going down for backup and upgrade"
+		if lib_check_server_running
+		then
+			echo "$SERVICE is running... stopping."
+# Issue Chat and a command to the server to shutdown
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/force_save"
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/chat Server Going down be back in a bit."
+			lib_screensend $CONFIGDTSD_MAINSCREEN "/shutdown 60"
+# Give the server a chance to gracefully shutdown if not kill it and then seg fault it if necessary
+			sleep 60
+			for LOOPNO in {0..30}
+			do
+				if lib_check_server_running
+				then
+					sleep 1
+				else
+					echo $CONFIGDTSD_SERVICE took $LOOPNO seconds to close
+				break
+				fi
+			done
+		fi
+		if lib_check_server_running
+		then
+			echo $CONFIGDTSD_SERVICE is taking too long to close and may be frozen. Forcing shut down
+			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+			kill $PID
+			for LOOPNO in {0..30}
+			do
+				if lib_check_server_running
+				then
+					sleep 1
+				else
+					echo $CONFIGDTSD_SERVICE took $(($LOOPNO + 30)) seconds to close, and had to be force shut down
+			break
+				fi
+			done
+		fi
+		if lib_check_server_running 
+		then
+			PID=$(ps aux | grep -v grep | grep $CONFIGDTSD_SERVICE | grep -v tee | grep port:$CONFIGDTSD_PORT | awk '{print $2}')
+			kill -9 $PID			
+			$CONFIGDTSD_SERVICE took too long to close. $CONFIGDTSD_SERVICE had to be killed
+		else
+			echo "$CONFIGDTSD_SERVICE not running"
+		fi
+# Core backup is commented out here but it is a good idea.  As the database grows zipping it up can take a long time so this has been taken into consideration for default config.
+		#core_backup
+# Set the field seperator to new line and then store the chucksums as an array with each element being a line
+		OLD_IFS=$IFS
+		IFS=$'\n'
+		releaseindex=( $(curl http://files.star-made.org$newversion/checksums) )
+		IFS=$OLD_IFS
+# Set line count to 0 then go through the array line by line until the array index is unset		
+		LINECOUNT=0
+		while [ -n "${releaseindex[$LINECOUNT]+set}" ] 
+		do
+			CURRENTSTRING=${releaseindex[$LINECOUNT]}
+			#echo $CURRENTSTRING
+# Format the current line by removing everything after the first space and then removing ./ in the beginning of the name		
+			cutstring=${CURRENTSTRING%[[:space:]]*}
+			cutstring=${cutstring%[[:space:]]*}
+			CURRENTFILE=${cutstring/.\//}
+			FORMATFILE=${CURRENTFILE// /%20}
+			cutstring=${CURRENTSTRING%[[:space:]]*}
+			cutstring=${cutstring##*[[:space:]]}
+			CURRENTCKSUM=${cutstring%%[[:space:]]*}
+			OLDCKSUMSTRING=$(cksum "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE")
+# Check to see if OLDCKSUMSTRING is set, if not this indicates the file does not exist
+			if [ -z "$OLDCKSUMSTRING" ]
+			then
+				echo "No existing file found - downloading file"
+# Makes sure directory structure is created if it does not exist for the file write
+				if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ] 
+				then
+					mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+					rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+				fi
+				curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+			else
+				cutstring=${OLDCKSUMSTRING#*[[:space:]]}
+				OLDCKSUM=${cutstring%%[[:space:]]*}
+				echo "CURRENTFILE $CURRENTFILE CURRENTCKSUM $CURRENTCKSUM OLDCKSUM $OLDCKSUM"
+# Check to see if the cksums differ
+				if [ "$CURRENTCKSUM" -ne "$OLDCKSUM" ]
+				then
+# Download the new file and then copy it into the proper location
+					echo "Updated file detected - downloading file"
+# Makes sure directory structure is created if it does not exist for the file write
+					if [ ! -f "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE" ] 
+					then
+						mkdir -p "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+						rm -r "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+					fi
+					curl "http://files.star-made.org$newversion/$FORMATFILE" > "$CONFIGDTSD_INSTALLPATH/StarMade/$CURRENTFILE"
+				else
+					echo "Current file detected - no action"
+				fi
+			fi
+			let LINECOUNT++
+		done
+		curl "http://files.star-made.org$newversion/version.txt" > "$CONFIGDTSD_INSTALLPATH/StarMade/version.txt"
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Restart after update\");"
+		core_softreset
+	else
+		mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -e "INSERT INTO SERVERSTATUS (STATUS) VALUES (\"Version current\");"
+		echo "No new version detected"
+	fi
+}

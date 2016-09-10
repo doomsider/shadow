@@ -62,7 +62,7 @@ core_logloop() {
 # Remove any quotes from the log to prevent processing issues in mysql
 			sed -i 's/\"//g' $WRITEDIR/SERVERLOG.txt
 # Mysqlimport is a command line version of load data infile and rapidly inserts a file into Mysql
-			mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local $dtsddb $WRITEDIR/SERVERLOG.txt
+			mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local $DTSDDB $WRITEDIR/SERVERLOG.txt
 # Get the last line of the MYSQL table Serverlog where th log is being dumped
 			MYSQLSTOP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
 			#echo "MYSQLSTOP $MYSQLSTOP"

@@ -37,7 +37,11 @@ core_logloop() {
 	while true
 	do
 		LOGACTIVE=false
+<<<<<<< HEAD
 		NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/StarMade/logs/logstarmade.0.log | cut -d" " -f1) 
+=======
+		NUMOFLINES=$(wc -l $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 | cut -d" " -f1) 
+>>>>>>> 3332c5ba9ec3014ddc74e2147190a050eee97bc0
 # In case Linestart does not have a value give it an integer value of 1.  The prevents a startup error on the script.
 		if [ -z "$LINESTART" ]
 		then
@@ -58,11 +62,15 @@ core_logloop() {
 			#echo "$LINESTART is linestart"
 			let LINESTART++
 # Use sed to gather the current selection of lines
+<<<<<<< HEAD
 			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/StarMade/logs/logstarmade.0.log > $WRITEDIR/SERVERLOG.txt
+=======
+			sed -n "$LINESTART,$NUMOFLINES p" $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 > $WRITEDIR/SERVERLOG.txt
+>>>>>>> 3332c5ba9ec3014ddc74e2147190a050eee97bc0
 # Remove any quotes from the log to prevent processing issues in mysql
 			sed -i 's/\"//g' $WRITEDIR/SERVERLOG.txt
 # Mysqlimport is a command line version of load data infile and rapidly inserts a file into Mysql
-			mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local $dtsddb $WRITEDIR/SERVERLOG.txt
+			mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb $WRITEDIR/SERVERLOG.txt
 # Get the last line of the MYSQL table Serverlog where th log is being dumped
 			MYSQLSTOP=$(mysql --defaults-extra-file=$CONFIGDTSD_INSTALLPATH/core/shadow.cnf -sNe "SELECT line FROM SERVERLOG ORDER BY line DESC LIMIT 1;")
 			#echo "MYSQLSTOP $MYSQLSTOP"
@@ -134,7 +142,11 @@ core_loadlog() {
 	log_myerasetable log
 	while lib_check_server_running
 	do 
+<<<<<<< HEAD
 		 mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb $CONFIGDTSD_INSTALLPATH/StarMade/logs/logstarmade.0.log
+=======
+		 mysqlimport --user=$CONFIGDTSD_MYSQLUSER --password=$CONFIGDTSD_MYSQLPASS --columns=LOGSTRING --fields-terminated-by='\n' --silent --local dtsddb $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0
+>>>>>>> 3332c5ba9ec3014ddc74e2147190a050eee97bc0
 # Sleep added here to keep it from burning up the CPU.  This value can be modified based upon how aggressive you want the script to run.
 		 sleep 1
 	done
@@ -143,7 +155,11 @@ core_loadlog() {
 core_taillog() {
 	log_myerasetable SERVERLOG
 # Tail with -F to prevent rollover file from stopping read is extremely fast and lightweight method for feeding log lines into the database
+<<<<<<< HEAD
 	tail -F $CONFIGDTSD_INSTALLPATH/StarMade/logs/logstarmade.0.log |
+=======
+	tail -F $CONFIGDTSD_INSTALLPATH/StarMade/logs/log.txt.0 |
+>>>>>>> 3332c5ba9ec3014ddc74e2147190a050eee97bc0
     while read a; do
 # Quotations will cause Mysql to error so they are removed with a in line edit 
 		STRING=${a//\"/}
